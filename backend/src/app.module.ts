@@ -1,10 +1,32 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { DbModule } from './db/db.module';
+import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bull';
+import { Secrets } from './common/secrets';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { applyThrottlerConfig } from './common/util';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRoot({
+      redis: {
+        host: Secrets.REDIS_HOST,
+        port: Secrets.REDIS_PORT,
+        password: Secrets.REDIS_PASSWORD,
+        family: 0,
+      },
+    }),
+    ThrottlerModule.forRoot(applyThrottlerConfig()),
+    DbModule,
+  ],
+
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
