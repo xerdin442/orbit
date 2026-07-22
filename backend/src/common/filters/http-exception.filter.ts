@@ -7,13 +7,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { Logger } from '@src/common/logger';
-
-interface ErrorResponse {
-  error: {
-    code: string;
-    message: string;
-  };
-}
+import type { ErrorResponse } from '@src/common/types';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
