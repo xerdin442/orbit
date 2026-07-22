@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
 import {
@@ -29,6 +30,18 @@ export class DeploymentsService {
 
     if (!env) {
       throw new NotFoundException('Environment not found');
+    }
+
+    const active = await this.db.deployment.findFirst({
+      where: {
+        environmentId,
+        buildStatus: { notIn: [BuildStatus.ready, BuildStatus.failed] },
+        lifecycleStatus: { not: LifecycleStatus.aborted },
+      },
+    });
+
+    if (active) {
+      throw new ConflictException('A deployment is already in progress');
     }
 
     const deployment = await this.db.deployment.create({
