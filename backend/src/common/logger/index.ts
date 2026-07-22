@@ -11,7 +11,7 @@ const myFormat = printf(({ level, message, timestamp, label }) => {
   return `${String(timestamp)} ${String(label)} ${level} ${String(message)}`;
 });
 
-const Logger = (context: string): WinstonLogger => {
+export const Logger = (context: string): WinstonLogger => {
   return createLogger({
     level: 'debug',
     format: combine(
@@ -31,5 +31,3 @@ const Logger = (context: string): WinstonLogger => {
     ],
   });
 };
-
-export default Logger;

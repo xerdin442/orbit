@@ -1,14 +1,11 @@
-import { Request } from 'express';
-
-export interface ErrorResponse {
-  error: {
-    code: string;
-    message: string;
-  };
-}
+import type { Request } from 'express';
 
 export interface AuthenticatedRequest extends Request {
   user: { id: string };
+}
+
+export interface JwtPayload {
+  sub: string;
 }
 
 export interface GitHubUser {
@@ -20,8 +17,4 @@ export interface GitHubUser {
 
 export interface GitHubTokenResponse {
   access_token: string;
-}
-
-export interface JwtPayload {
-  sub: string;
 }
