@@ -1,15 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { DbService } from '@src/db/db.service';
-import Logger from '@src/common/logger';
+import { Logger } from '@src/common/logger';
 
 @Injectable()
 export class ProjectsService {
-  private readonly logger = Logger('ProjectsService');
+  private readonly logger = Logger(ProjectsService.name);
 
   constructor(private readonly db: DbService) {}
 
   async create(userId: string, dto: CreateProjectDto) {
+    const defaultBranch = dto.defaultBranch ?? 'main';
+
     const project = await this.db.$transaction(async (tx) => {
       const created = await tx.project.create({
         data: {
@@ -19,17 +21,24 @@ export class ProjectsService {
             create: {
               repositoryUrl: dto.repositoryUrl,
               provider: 'github',
-              defaultBranch: dto.defaultBranch ?? 'main',
+              defaultBranch,
+            },
+          },
+          environments: {
+            create: {
+              name: 'Production',
+              branch: defaultBranch,
+              autoDeploy: true,
             },
           },
         },
-        include: { source: true },
+        include: { source: true, environments: true },
       });
 
       return created;
     });
 
-    logger.info(`Project created: ${project.id} by user ${userId}`);
+    this.logger.info(`Project created: ${project.id} by user ${userId}`);
 
     return project;
   }

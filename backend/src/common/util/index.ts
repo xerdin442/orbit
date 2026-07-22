@@ -1,5 +1,5 @@
 import { ThrottlerModuleOptions, ThrottlerOptions } from '@nestjs/throttler';
-import { Secrets } from '../secrets';
+import { Secrets } from '@src/common/secrets';
 
 export const applyThrottlerConfig = (): ThrottlerModuleOptions => {
   const throttles: ThrottlerOptions[] = [
