@@ -17,4 +17,53 @@ import * as Prisma from './internal/prismaNamespaceBrowser.js'
 export { Prisma }
 export * as $Enums from './enums.js'
 export * from './enums.js';
-
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
+/**
+ * Model Project
+ * 
+ */
+export type Project = Prisma.ProjectModel
+/**
+ * Model Source
+ * 
+ */
+export type Source = Prisma.SourceModel
+/**
+ * Model Environment
+ * 
+ */
+export type Environment = Prisma.EnvironmentModel
+/**
+ * Model Deployment
+ * 
+ */
+export type Deployment = Prisma.DeploymentModel
+/**
+ * Model DeploymentLog
+ * 
+ */
+export type DeploymentLog = Prisma.DeploymentLogModel
+/**
+ * Model Resource
+ * 
+ */
+export type Resource = Prisma.ResourceModel
+/**
+ * Model EnvironmentVariable
+ * 
+ */
+export type EnvironmentVariable = Prisma.EnvironmentVariableModel
+/**
+ * Model Domain
+ * 
+ */
+export type Domain = Prisma.DomainModel
+/**
+ * Model GitHubInstallation
+ * 
+ */
+export type GitHubInstallation = Prisma.GitHubInstallationModel

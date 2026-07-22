@@ -6,6 +6,9 @@ import { Secrets } from './common/secrets';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { applyThrottlerConfig } from './common/util';
 import { APP_GUARD } from '@nestjs/core';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { APP_GUARD } from '@nestjs/core';
     }),
     ThrottlerModule.forRoot(applyThrottlerConfig()),
     DbModule,
+    AuthModule,
+    UsersModule,
+    ProjectsModule,
   ],
 
   providers: [
