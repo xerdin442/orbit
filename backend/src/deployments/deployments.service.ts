@@ -140,4 +140,13 @@ export class DeploymentsService {
       },
     });
   }
+
+  async abortDeployment(id: string) {
+    this.logger.info(`Deployment aborted by user: ${id}`);
+
+    return this.db.deployment.update({
+      where: { id },
+      data: { buildStatus: BuildStatus.aborted },
+    });
+  }
 }
