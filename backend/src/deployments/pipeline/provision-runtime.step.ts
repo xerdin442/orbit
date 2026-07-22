@@ -1,5 +1,7 @@
 import { DockerService } from '@src/infrastructure/docker.service';
 import { DbService } from '@src/db/db.service';
+import { LogService } from '@src/infrastructure/log.service';
+import { LogLevel } from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -12,9 +14,16 @@ export class ProvisionRuntimeStep implements DeploymentStep {
   constructor(
     private readonly docker: DockerService,
     private readonly db: DbService,
+    private readonly log: LogService,
   ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Provisioning runtime...',
+    );
+
     const network = await this.docker.getOrCreateProjectNetwork(ctx.project.id);
     ctx.networkId = network.id;
 
@@ -23,7 +32,11 @@ export class ProvisionRuntimeStep implements DeploymentStep {
     });
 
     for (const v of vars) {
-      ctx.variables[v.key] = v.value;
+      try {
+        ctx.variables[v.key] = v.value;
+      } catch {
+        ctx.variables[v.key] = v.value;
+      }
     }
 
     const resources = await this.db.resource.findMany({
@@ -40,5 +53,11 @@ export class ProvisionRuntimeStep implements DeploymentStep {
         }
       }
     }
+
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      `${Object.keys(ctx.variables).length} variables loaded`,
+    );
   }
 }

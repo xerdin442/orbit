@@ -1,6 +1,8 @@
 import { randomBytes } from 'crypto';
 import { DbService } from '@src/db/db.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
+import { LogService } from '@src/infrastructure/log.service';
+import { LogLevel } from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -14,9 +16,16 @@ export class ConfigureProxyStep implements DeploymentStep {
   constructor(
     private readonly caddy: CaddyService,
     private readonly db: DbService,
+    private readonly log: LogService,
   ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Routing traffic...',
+    );
+
     const existing = await this.db.domain.findFirst({
       where: { environmentId: ctx.environment.id },
     });

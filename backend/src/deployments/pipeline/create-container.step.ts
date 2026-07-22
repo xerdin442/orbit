@@ -1,5 +1,7 @@
 import Docker from 'dockerode';
 import { DockerService } from '@src/infrastructure/docker.service';
+import { LogService } from '@src/infrastructure/log.service';
+import { LogLevel } from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -9,9 +11,18 @@ import {
 export class CreateContainerStep implements DeploymentStep {
   readonly name = DeploymentStepName.CreateContainer;
 
-  constructor(private readonly docker: DockerService) {}
+  constructor(
+    private readonly docker: DockerService,
+    private readonly log: LogService,
+  ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Creating container...',
+    );
+
     const name = `project-${ctx.project.id}-deployment-${ctx.deployment.id}`;
 
     const envVars: string[] = [];

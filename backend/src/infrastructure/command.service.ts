@@ -1,18 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import { spawn } from 'child_process';
 import { CommandResult } from '@src/common/types';
+import { Logger } from '@src/common/logger';
+
+const logger = Logger('CommandService');
+
+export type OnStdout = (data: string) => void;
 
 @Injectable()
 export class CommandService {
-  execute(command: string, args: string[]): Promise<CommandResult> {
+  execute(
+    command: string,
+    args: string[],
+    onStdout?: OnStdout,
+  ): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
+      logger.info(`Executing: ${command} ${args.join(' ')}`);
+
       const child = spawn(command, args, { shell: false });
 
       let stdout = '';
       let stderr = '';
 
       child.stdout.on('data', (data: Buffer) => {
-        stdout += data.toString();
+        const text = data.toString();
+        stdout += text;
+
+        if (onStdout) {
+          onStdout(text);
+        }
       });
 
       child.stderr.on('data', (data: Buffer) => {
@@ -29,14 +45,17 @@ export class CommandService {
     });
   }
 
-  async gitClone(repoUrl: string, branch: string, targetPath: string) {
-    return this.execute('git', [
-      'clone',
-      '--branch',
-      branch,
-      repoUrl,
-      targetPath,
-    ]);
+  async gitClone(
+    repoUrl: string,
+    branch: string,
+    targetPath: string,
+    onStdout?: OnStdout,
+  ) {
+    return this.execute(
+      'git',
+      ['clone', '--branch', branch, repoUrl, targetPath],
+      onStdout,
+    );
   }
 
   async gitRevParse(targetPath: string) {
@@ -53,7 +72,15 @@ export class CommandService {
     ]);
   }
 
-  async railpackBuild(sourcePath: string, imageTag: string) {
-    return this.execute('railpack', ['build', sourcePath, '--tag', imageTag]);
+  async railpackBuild(
+    sourcePath: string,
+    imageTag: string,
+    onStdout?: OnStdout,
+  ) {
+    return this.execute(
+      'railpack',
+      ['build', sourcePath, '--tag', imageTag],
+      onStdout,
+    );
   }
 }

@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { Observable, map } from 'rxjs';
 import { DeploymentsService } from './deployments.service';
-import { LogService } from './log.service';
+import { LogService } from '@src/infrastructure/log.service';
 import type { LogEntry } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { DeploymentTrigger } from '@generated/client';

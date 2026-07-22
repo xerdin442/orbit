@@ -1,4 +1,6 @@
 import { DockerService } from '@src/infrastructure/docker.service';
+import { LogService } from '@src/infrastructure/log.service';
+import { LogLevel } from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -9,12 +11,19 @@ import {
 export class HealthCheckStep implements DeploymentStep {
   readonly name = DeploymentStepName.HealthCheck;
 
-  constructor(private readonly docker: DockerService) {}
+  constructor(
+    private readonly docker: DockerService,
+    private readonly log: LogService,
+  ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
-    if (!ctx.project.healthCheck) {
-      return;
-    }
+    if (!ctx.project.healthCheck) return;
+
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Running health check...',
+    );
 
     const container = await this.docker.inspectContainer(ctx.containerId);
     const ip =
@@ -29,6 +38,11 @@ export class HealthCheckStep implements DeploymentStep {
         const response = await fetch(`http://${ip}:3000/health`);
 
         if (response.ok) {
+          await this.log.append(
+            ctx.deployment.id,
+            LogLevel.INFO,
+            'Health check successful.',
+          );
           return;
         }
 

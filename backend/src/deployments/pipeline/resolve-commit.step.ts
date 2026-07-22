@@ -1,4 +1,6 @@
 import { CommandService } from '@src/infrastructure/command.service';
+import { LogService } from '@src/infrastructure/log.service';
+import { LogLevel } from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -9,9 +11,18 @@ import {
 export class ResolveCommitStep implements DeploymentStep {
   readonly name = DeploymentStepName.ResolveCommit;
 
-  constructor(private readonly command: CommandService) {}
+  constructor(
+    private readonly command: CommandService,
+    private readonly log: LogService,
+  ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Resolving commit...',
+    );
+
     const shaResult = await this.command.gitRevParse(ctx.workspace);
 
     if (shaResult.exitCode !== 0) {

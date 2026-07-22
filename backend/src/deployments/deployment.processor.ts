@@ -7,7 +7,7 @@ import { DockerService } from '@src/infrastructure/docker.service';
 import { CommandService } from '@src/infrastructure/command.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
 import { DbService } from '@src/db/db.service';
-import { LogService } from './log.service';
+import { LogService } from '@src/infrastructure/log.service';
 import { DeploymentsService } from './deployments.service';
 import {
   DeploymentContext,
@@ -143,14 +143,14 @@ export class DeploymentProcessor {
 
   private buildNormalPipeline() {
     return [
-      new ProvisionRuntimeStep(this.docker, this.db),
-      new CloneRepositoryStep(this.command),
-      new ResolveCommitStep(this.command),
-      new BuildImageStep(this.command),
-      new CreateContainerStep(this.docker),
-      new StartContainerStep(this.docker),
-      new HealthCheckStep(this.docker),
-      new ConfigureProxyStep(this.caddy, this.db),
+      new ProvisionRuntimeStep(this.docker, this.db, this.logService),
+      new CloneRepositoryStep(this.command, this.logService),
+      new ResolveCommitStep(this.command, this.logService),
+      new BuildImageStep(this.command, this.logService),
+      new CreateContainerStep(this.docker, this.logService),
+      new StartContainerStep(this.docker, this.logService),
+      new HealthCheckStep(this.docker, this.logService),
+      new ConfigureProxyStep(this.caddy, this.db, this.logService),
       new ActivateDeploymentStep(this.db),
       new CleanupStep(this.docker, this.caddy, this.db),
     ];
