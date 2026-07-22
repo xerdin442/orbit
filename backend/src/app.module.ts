@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { EnvironmentsModule } from './environments/environments.module';
+import { InfrastructureModule } from '@src/infrastructure/infrastructure.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { EnvironmentsModule } from './environments/environments.module';
     UsersModule,
     ProjectsModule,
     EnvironmentsModule,
+    InfrastructureModule,
   ],
 
   providers: [
