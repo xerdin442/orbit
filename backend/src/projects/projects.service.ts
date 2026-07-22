@@ -16,6 +16,7 @@ export class ProjectsService {
       const created = await tx.project.create({
         data: {
           name: dto.name,
+          healthCheck: dto.healthCheck ?? false,
           ownerId: userId,
           source: {
             create: {
@@ -75,7 +76,7 @@ export class ProjectsService {
 
     const updated = await this.db.project.update({
       where: { id },
-      data: { name: dto.name },
+      data: dto,
       include: { source: true },
     });
 

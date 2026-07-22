@@ -464,10 +464,6 @@ export type EnvironmentUncheckedUpdateManyWithoutProjectNestedInput = {
   deleteMany?: Prisma.EnvironmentScalarWhereInput | Prisma.EnvironmentScalarWhereInput[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type EnvironmentCreateNestedOneWithoutDeploymentsInput = {
   create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedCreateWithoutDeploymentsInput>
   connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutDeploymentsInput

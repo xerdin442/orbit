@@ -71,10 +71,11 @@ model User {
 }
 
 model Project {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String
+  healthCheck Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])

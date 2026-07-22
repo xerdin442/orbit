@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  Matches,
+} from 'class-validator';
 
 const repoUrlPattern =
   /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+(\.git)?$/;
@@ -16,6 +22,10 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   defaultBranch?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  healthCheck?: boolean;
 }
 
 export class UpdateProjectDto {
@@ -23,4 +33,8 @@ export class UpdateProjectDto {
   @IsNotEmpty()
   @IsOptional()
   name?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  healthCheck?: boolean;
 }
