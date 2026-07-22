@@ -27,6 +27,7 @@ export type AggregateProject = {
 export type ProjectMinAggregateOutputType = {
   id: string | null
   name: string | null
+  healthCheck: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
   ownerId: string | null
@@ -35,6 +36,7 @@ export type ProjectMinAggregateOutputType = {
 export type ProjectMaxAggregateOutputType = {
   id: string | null
   name: string | null
+  healthCheck: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
   ownerId: string | null
@@ -43,6 +45,7 @@ export type ProjectMaxAggregateOutputType = {
 export type ProjectCountAggregateOutputType = {
   id: number
   name: number
+  healthCheck: number
   createdAt: number
   updatedAt: number
   ownerId: number
@@ -53,6 +56,7 @@ export type ProjectCountAggregateOutputType = {
 export type ProjectMinAggregateInputType = {
   id?: true
   name?: true
+  healthCheck?: true
   createdAt?: true
   updatedAt?: true
   ownerId?: true
@@ -61,6 +65,7 @@ export type ProjectMinAggregateInputType = {
 export type ProjectMaxAggregateInputType = {
   id?: true
   name?: true
+  healthCheck?: true
   createdAt?: true
   updatedAt?: true
   ownerId?: true
@@ -69,6 +74,7 @@ export type ProjectMaxAggregateInputType = {
 export type ProjectCountAggregateInputType = {
   id?: true
   name?: true
+  healthCheck?: true
   createdAt?: true
   updatedAt?: true
   ownerId?: true
@@ -150,6 +156,7 @@ export type ProjectGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type ProjectGroupByOutputType = {
   id: string
   name: string
+  healthCheck: boolean
   createdAt: Date
   updatedAt: Date
   ownerId: string
@@ -179,6 +186,7 @@ export type ProjectWhereInput = {
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
   id?: Prisma.StringFilter<"Project"> | string
   name?: Prisma.StringFilter<"Project"> | string
+  healthCheck?: Prisma.BoolFilter<"Project"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   ownerId?: Prisma.StringFilter<"Project"> | string
@@ -190,6 +198,7 @@ export type ProjectWhereInput = {
 export type ProjectOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  healthCheck?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -204,6 +213,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.ProjectWhereInput[]
   NOT?: Prisma.ProjectWhereInput | Prisma.ProjectWhereInput[]
   name?: Prisma.StringFilter<"Project"> | string
+  healthCheck?: Prisma.BoolFilter<"Project"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   ownerId?: Prisma.StringFilter<"Project"> | string
@@ -215,6 +225,7 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
 export type ProjectOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  healthCheck?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -229,6 +240,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
   NOT?: Prisma.ProjectScalarWhereWithAggregatesInput | Prisma.ProjectScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Project"> | string
   name?: Prisma.StringWithAggregatesFilter<"Project"> | string
+  healthCheck?: Prisma.BoolWithAggregatesFilter<"Project"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Project"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Project"> | Date | string
   ownerId?: Prisma.StringWithAggregatesFilter<"Project"> | string
@@ -237,6 +249,7 @@ export type ProjectScalarWhereWithAggregatesInput = {
 export type ProjectCreateInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -247,6 +260,7 @@ export type ProjectCreateInput = {
 export type ProjectUncheckedCreateInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   ownerId: string
@@ -257,6 +271,7 @@ export type ProjectUncheckedCreateInput = {
 export type ProjectUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -267,6 +282,7 @@ export type ProjectUpdateInput = {
 export type ProjectUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -277,6 +293,7 @@ export type ProjectUncheckedUpdateInput = {
 export type ProjectCreateManyInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   ownerId: string
@@ -285,6 +302,7 @@ export type ProjectCreateManyInput = {
 export type ProjectUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -292,6 +310,7 @@ export type ProjectUpdateManyMutationInput = {
 export type ProjectUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -310,6 +329,7 @@ export type ProjectOrderByRelationAggregateInput = {
 export type ProjectCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  healthCheck?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -318,6 +338,7 @@ export type ProjectCountOrderByAggregateInput = {
 export type ProjectMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  healthCheck?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -326,6 +347,7 @@ export type ProjectMaxOrderByAggregateInput = {
 export type ProjectMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  healthCheck?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
@@ -378,6 +400,10 @@ export type ProjectUncheckedUpdateManyWithoutOwnerNestedInput = {
   deleteMany?: Prisma.ProjectScalarWhereInput | Prisma.ProjectScalarWhereInput[]
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type ProjectCreateNestedOneWithoutSourceInput = {
   create?: Prisma.XOR<Prisma.ProjectCreateWithoutSourceInput, Prisma.ProjectUncheckedCreateWithoutSourceInput>
   connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutSourceInput
@@ -409,6 +435,7 @@ export type ProjectUpdateOneRequiredWithoutEnvironmentsNestedInput = {
 export type ProjectCreateWithoutOwnerInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   source?: Prisma.SourceCreateNestedOneWithoutProjectInput
@@ -418,6 +445,7 @@ export type ProjectCreateWithoutOwnerInput = {
 export type ProjectUncheckedCreateWithoutOwnerInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   source?: Prisma.SourceUncheckedCreateNestedOneWithoutProjectInput
@@ -456,6 +484,7 @@ export type ProjectScalarWhereInput = {
   NOT?: Prisma.ProjectScalarWhereInput | Prisma.ProjectScalarWhereInput[]
   id?: Prisma.StringFilter<"Project"> | string
   name?: Prisma.StringFilter<"Project"> | string
+  healthCheck?: Prisma.BoolFilter<"Project"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Project"> | Date | string
   ownerId?: Prisma.StringFilter<"Project"> | string
@@ -464,6 +493,7 @@ export type ProjectScalarWhereInput = {
 export type ProjectCreateWithoutSourceInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -473,6 +503,7 @@ export type ProjectCreateWithoutSourceInput = {
 export type ProjectUncheckedCreateWithoutSourceInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   ownerId: string
@@ -498,6 +529,7 @@ export type ProjectUpdateToOneWithWhereWithoutSourceInput = {
 export type ProjectUpdateWithoutSourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -507,6 +539,7 @@ export type ProjectUpdateWithoutSourceInput = {
 export type ProjectUncheckedUpdateWithoutSourceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -516,6 +549,7 @@ export type ProjectUncheckedUpdateWithoutSourceInput = {
 export type ProjectCreateWithoutEnvironmentsInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutProjectsInput
@@ -525,6 +559,7 @@ export type ProjectCreateWithoutEnvironmentsInput = {
 export type ProjectUncheckedCreateWithoutEnvironmentsInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   ownerId: string
@@ -550,6 +585,7 @@ export type ProjectUpdateToOneWithWhereWithoutEnvironmentsInput = {
 export type ProjectUpdateWithoutEnvironmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutProjectsNestedInput
@@ -559,6 +595,7 @@ export type ProjectUpdateWithoutEnvironmentsInput = {
 export type ProjectUncheckedUpdateWithoutEnvironmentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ownerId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -568,6 +605,7 @@ export type ProjectUncheckedUpdateWithoutEnvironmentsInput = {
 export type ProjectCreateManyOwnerInput = {
   id?: string
   name: string
+  healthCheck?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -575,6 +613,7 @@ export type ProjectCreateManyOwnerInput = {
 export type ProjectUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   source?: Prisma.SourceUpdateOneWithoutProjectNestedInput
@@ -584,6 +623,7 @@ export type ProjectUpdateWithoutOwnerInput = {
 export type ProjectUncheckedUpdateWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   source?: Prisma.SourceUncheckedUpdateOneWithoutProjectNestedInput
@@ -593,6 +633,7 @@ export type ProjectUncheckedUpdateWithoutOwnerInput = {
 export type ProjectUncheckedUpdateManyWithoutOwnerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  healthCheck?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -631,6 +672,7 @@ export type ProjectCountOutputTypeCountEnvironmentsArgs<ExtArgs extends runtime.
 export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  healthCheck?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ownerId?: boolean
@@ -643,6 +685,7 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  healthCheck?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ownerId?: boolean
@@ -652,6 +695,7 @@ export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   name?: boolean
+  healthCheck?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ownerId?: boolean
@@ -661,12 +705,13 @@ export type ProjectSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type ProjectSelectScalar = {
   id?: boolean
   name?: boolean
+  healthCheck?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   ownerId?: boolean
 }
 
-export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "createdAt" | "updatedAt" | "ownerId", ExtArgs["result"]["project"]>
+export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "healthCheck" | "createdAt" | "updatedAt" | "ownerId", ExtArgs["result"]["project"]>
 export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   source?: boolean | Prisma.Project$sourceArgs<ExtArgs>
@@ -690,6 +735,7 @@ export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     name: string
+    healthCheck: boolean
     createdAt: Date
     updatedAt: Date
     ownerId: string
@@ -1121,6 +1167,7 @@ export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.
 export interface ProjectFieldRefs {
   readonly id: Prisma.FieldRef<"Project", 'String'>
   readonly name: Prisma.FieldRef<"Project", 'String'>
+  readonly healthCheck: Prisma.FieldRef<"Project", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Project", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Project", 'DateTime'>
   readonly ownerId: Prisma.FieldRef<"Project", 'String'>
