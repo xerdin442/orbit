@@ -8,3 +8,210 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum BuildStatus {
+  pending
+  cloning
+  building
+  deploying
+  ready
+  failed
+}
+
+enum LifecycleStatus {
+  active
+  inactive
+  aborted
+}
+
+enum DeploymentTrigger {
+  manual
+  webhook
+  redeploy
+  rollback
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+enum ResourceType {
+  postgres
+  mysql
+  redis
+  mongo
+  clickhouse
+}
+
+enum ResourceStatus {
+  provisioning
+  ready
+  unhealthy
+  failed
+}
+
+enum DomainStatus {
+  pending
+  active
+  error
+}
+
+model User {
+  id             String   @id @default(uuid())
+  githubUserId   Int      @unique
+  githubUsername String
+  email          String?
+  avatarUrl      String?
+  createdAt      DateTime @default(now())
+
+  projects            Project[]
+  githubInstallations GitHubInstallation[]
+}
+
+model Project {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  source       Source?
+  environments Environment[]
+
+  @@index([ownerId])
+}
+
+model Source {
+  id             String @id @default(uuid())
+  repositoryUrl  String
+  provider       String
+  defaultBranch  String @default("main")
+  installationId Int?
+
+  projectId String  @unique
+  project   Project @relation(fields: [projectId], references: [id])
+}
+
+model Environment {
+  id                  String  @id @default(uuid())
+  name                String
+  branch              String
+  autoDeploy          Boolean @default(false)
+  currentDeploymentId String?
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  deployments Deployment[]
+  resources   Resource[]
+  variables   EnvironmentVariable[]
+  domains     Domain[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+model Deployment {
+  id              String            @id @default(uuid())
+  commitSha       String
+  commitMessage   String?
+  imageTag        String            @unique
+  containerId     String?
+  trigger         DeploymentTrigger @default(manual)
+  buildStatus     BuildStatus       @default(pending)
+  lifecycleStatus LifecycleStatus   @default(inactive)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  environmentId String
+  environment   Environment @relation(fields: [environmentId], references: [id])
+
+  logs DeploymentLog[]
+
+  @@index([environmentId])
+}
+
+model DeploymentLog {
+  id           String     @id @default(uuid())
+  timestamp    DateTime   @default(now())
+  level        LogLevel   @default(INFO)
+  message      String
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id])
+
+  @@index([deploymentId])
+}
+
+model Resource {
+  id          String         @id @default(uuid())
+  type        ResourceType
+  name        String
+  status      ResourceStatus @default(provisioning)
+  hostname    String?
+  ports       Json?
+  credentials Json?
+  containerId String?
+  volumeId    String?
+  networkId   String?
+
+  environmentId String
+  environment   Environment @relation(fields: [environmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([environmentId, name])
+  @@index([environmentId])
+}
+
+model EnvironmentVariable {
+  id        String   @id @default(uuid())
+  key       String
+  value     String
+  generated Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  environmentId String
+  environment   Environment @relation(fields: [environmentId], references: [id])
+
+  @@unique([environmentId, key])
+  @@index([environmentId])
+}
+
+model Domain {
+  id         String       @id @default(uuid())
+  hostname   String       @unique
+  sslEnabled Boolean      @default(false)
+  status     DomainStatus @default(pending)
+
+  environmentId String
+  environment   Environment @relation(fields: [environmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([environmentId])
+}
+
+model GitHubInstallation {
+  id                  String @id @default(uuid())
+  installationId      Int
+  accountLogin        String
+  accountType         String
+  repositorySelection Json?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([installationId])
+  @@index([userId])
+}
