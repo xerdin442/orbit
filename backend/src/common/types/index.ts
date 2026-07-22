@@ -18,3 +18,9 @@ export interface GitHubUser {
 export interface GitHubTokenResponse {
   access_token: string;
 }
+
+export interface CommandResult {
+  exitCode: number | null;
+  stdout: string;
+  stderr: string;
+}
