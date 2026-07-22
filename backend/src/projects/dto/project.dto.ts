@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsBoolean,
+  IsObject,
   Matches,
 } from 'class-validator';
 
@@ -30,6 +31,10 @@ export class CreateProjectDto {
   @IsBoolean()
   @IsOptional()
   healthCheck?: boolean;
+
+  @IsObject()
+  @IsOptional()
+  envVars?: Record<string, string>;
 }
 
 export class UpdateProjectDto {

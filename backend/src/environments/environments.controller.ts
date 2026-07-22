@@ -14,6 +14,7 @@ import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
 } from './dto/environment.dto';
+import { CreateVariableDto, UpdateVariableDto } from './dto/variable.dto';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 
@@ -48,5 +49,33 @@ export class EnvironmentsController {
   @Delete(':id')
   delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.environments.delete(id, req.user.id);
+  }
+
+  @Get(':id/variables')
+  getVariables(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.environments.getVariables(id, req.user.id);
+  }
+
+  @Post(':id/variables')
+  createVariable(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: CreateVariableDto,
+  ) {
+    return this.environments.createVariable(id, req.user.id, dto);
+  }
+
+  @Patch('variables/:id')
+  updateVariable(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateVariableDto,
+  ) {
+    return this.environments.updateVariable(id, req.user.id, dto);
+  }
+
+  @Delete('variables/:id')
+  deleteVariable(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.environments.deleteVariable(id, req.user.id);
   }
 }

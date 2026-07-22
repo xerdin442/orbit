@@ -1,3 +1,4 @@
+import { rm } from 'fs/promises';
 import { Processor, Process } from '@nestjs/bull';
 import type { Job } from 'bull';
 import { Logger } from '@src/common/logger';
@@ -47,13 +48,21 @@ export class DeploymentProcessor {
     const steps = this.buildNormalPipeline();
 
     for (const step of steps) {
-      try {
+      const deployment = await this.deployments.findById(deploymentId);
+
+      if (deployment.buildStatus === BuildStatus.aborted) {
         await this.logService.append(
           deploymentId,
           LogLevel.INFO,
-          `[${step.name}] Starting...`,
+          'Deployment was aborted.',
         );
 
+        await this.cleanupAborted(ctx);
+        this.logService.complete(deploymentId);
+        return;
+      }
+
+      try {
         await this.deployments.updateBuildStatus(
           deploymentId,
           this.statusForStep(step.name),
@@ -145,6 +154,21 @@ export class DeploymentProcessor {
       new ActivateDeploymentStep(this.db),
       new CleanupStep(this.docker, this.caddy, this.db),
     ];
+  }
+
+  private async cleanupAborted(ctx: DeploymentContext): Promise<void> {
+    if (ctx.containerId) {
+      try {
+        await this.docker.stopContainer(ctx.containerId);
+        await this.docker.removeContainer(ctx.containerId);
+      } catch {
+        // container already gone
+      }
+    }
+
+    if (ctx.workspace) {
+      await rm(ctx.workspace, { recursive: true, force: true });
+    }
   }
 
   private statusForStep(stepName: DeploymentStepName): BuildStatus {

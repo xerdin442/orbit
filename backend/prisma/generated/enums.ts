@@ -16,7 +16,8 @@ export const BuildStatus = {
   building: 'building',
   deploying: 'deploying',
   ready: 'ready',
-  failed: 'failed'
+  failed: 'failed',
+  aborted: 'aborted'
 } as const
 
 export type BuildStatus = (typeof BuildStatus)[keyof typeof BuildStatus]

@@ -10,6 +10,7 @@ interface SecretsConfig {
   PORT: number;
   DATABASE_URL: string;
   JWT_SECRET: string;
+  ENCRYPTION_KEY: string;
   REDIS_PORT: number;
   REDIS_HOST: string;
   REDIS_PASSWORD: string;
@@ -37,6 +38,7 @@ export const Secrets: SecretsConfig = {
   PORT: getNumber('PORT'),
   DATABASE_URL: getString('DATABASE_URL'),
   JWT_SECRET: getString('JWT_SECRET'),
+  ENCRYPTION_KEY: getString('ENCRYPTION_KEY'),
   REDIS_PORT: getNumber('REDIS_PORT'),
   REDIS_HOST: getString('REDIS_HOST'),
   REDIS_PASSWORD: getString('REDIS_PASSWORD'),

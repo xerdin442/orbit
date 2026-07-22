@@ -1,42 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { DbService } from '@src/db/db.service';
+import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { Logger } from '@src/common/logger';
 
 @Injectable()
 export class ProjectsService {
   private readonly logger = Logger(ProjectsService.name);
 
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly encryption: EncryptionService,
+  ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
     const defaultBranch = dto.defaultBranch ?? 'main';
 
     const project = await this.db.$transaction(async (tx) => {
-      const created = await tx.project.create({
+      const env = await tx.environment.create({
         data: {
-          name: dto.name.toLowerCase(),
-          healthCheck: dto.healthCheck ?? false,
-          ownerId: userId,
-          source: {
+          name: 'production',
+          branch: defaultBranch,
+          autoDeploy: true,
+          project: {
             create: {
-              repositoryUrl: dto.repositoryUrl,
-              provider: 'github',
-              defaultBranch,
-            },
-          },
-          environments: {
-            create: {
-              name: 'Production',
-              branch: defaultBranch,
-              autoDeploy: true,
+              name: dto.name.toLowerCase(),
+              healthCheck: dto.healthCheck ?? false,
+              ownerId: userId,
+              source: {
+                create: {
+                  repositoryUrl: dto.repositoryUrl,
+                  provider: 'github',
+                  defaultBranch,
+                },
+              },
             },
           },
         },
-        include: { source: true, environments: true },
+        include: { project: { include: { source: true } } },
       });
 
-      return created;
+      if (dto.envVars) {
+        const vars = Object.entries(dto.envVars).map(([key, value]) => ({
+          key,
+          value: this.encryption.encrypt(value),
+          environmentId: env.id,
+        }));
+
+        await tx.environmentVariable.createMany({ data: vars });
+      }
+
+      return env.project;
     });
 
     this.logger.info(`Project created: ${project.id} by user ${userId}`);
