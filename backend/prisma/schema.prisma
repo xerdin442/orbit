@@ -11,6 +11,7 @@ datasource db {
 
 enum BuildStatus {
   pending
+  provisioning
   cloning
   building
   deploying
@@ -35,6 +36,7 @@ enum LogLevel {
   INFO
   WARN
   ERROR
+  SUCCESS
 }
 
 enum ResourceType {

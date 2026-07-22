@@ -11,6 +11,7 @@
 
 export const BuildStatus = {
   pending: 'pending',
+  provisioning: 'provisioning',
   cloning: 'cloning',
   building: 'building',
   deploying: 'deploying',
@@ -43,7 +44,8 @@ export type DeploymentTrigger = (typeof DeploymentTrigger)[keyof typeof Deployme
 export const LogLevel = {
   INFO: 'INFO',
   WARN: 'WARN',
-  ERROR: 'ERROR'
+  ERROR: 'ERROR',
+  SUCCESS: 'SUCCESS'
 } as const
 
 export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
