@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
+import { GitHubService } from '@src/github/github.service';
 import { Logger } from '@src/common/logger';
 
 @Injectable()
@@ -11,6 +12,7 @@ export class ProjectsService {
   constructor(
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
+    private readonly github: GitHubService,
   ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
@@ -32,6 +34,7 @@ export class ProjectsService {
                   repositoryUrl: dto.repositoryUrl,
                   provider: 'github',
                   defaultBranch,
+                  installationId: dto.installationId,
                 },
               },
             },
@@ -114,5 +117,22 @@ export class ProjectsService {
     await this.db.project.delete({ where: { id } });
 
     this.logger.info(`Project deleted: ${id}`);
+  }
+
+  async findAvailableBranches(projectId: string) {
+    const source = await this.db.source.findUniqueOrThrow({
+      where: { projectId },
+    });
+
+    if (!source?.installationId) {
+      return [];
+    }
+
+    const branches = await this.github.listBranches(
+      source.installationId,
+      source.repositoryUrl,
+    );
+
+    return branches.filter((b) => b.name !== source.defaultBranch);
   }
 }

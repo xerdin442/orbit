@@ -3,12 +3,13 @@ import {
   IsNotEmpty,
   IsOptional,
   IsBoolean,
+  IsNumber,
   IsObject,
   Matches,
 } from 'class-validator';
 
 const repoUrlPattern =
-  /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+(\.git)?$/;
+  /^https?:\/\/(www\.)?github\.com\/[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/;
 
 export class CreateProjectDto {
   @IsString()
@@ -31,6 +32,10 @@ export class CreateProjectDto {
   @IsBoolean()
   @IsOptional()
   healthCheck?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  installationId?: number;
 
   @IsObject()
   @IsOptional()

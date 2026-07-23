@@ -12,6 +12,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { EnvironmentsModule } from './environments/environments.module';
 import { InfrastructureModule } from '@src/infrastructure/infrastructure.module';
 import { DeploymentsModule } from '@src/deployments/deployments.module';
+import { GitHubModule } from '@src/github/github.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { DeploymentsModule } from '@src/deployments/deployments.module';
     EnvironmentsModule,
     InfrastructureModule,
     DeploymentsModule,
+    GitHubModule,
   ],
 
   providers: [
