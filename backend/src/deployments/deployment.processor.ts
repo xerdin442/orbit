@@ -2,12 +2,13 @@ import { rm } from 'fs/promises';
 import { Processor, Process } from '@nestjs/bull';
 import type { Job } from 'bull';
 import { Logger } from '@src/common/logger';
-import { LogLevel, BuildStatus } from '@generated/client';
+import { ActivityType, LogLevel, BuildStatus } from '@generated/client';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { CommandService } from '@src/infrastructure/command.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
 import { DbService } from '@src/db/db.service';
 import { LogService } from '@src/infrastructure/log.service';
+import { ActivityService } from '@src/activity/activity.service';
 import { DeploymentsService } from './deployments.service';
 import {
   DeploymentContext,
@@ -37,6 +38,7 @@ export class DeploymentProcessor {
     private readonly db: DbService,
     private readonly logService: LogService,
     private readonly deployments: DeploymentsService,
+    private readonly activity: ActivityService,
   ) {}
 
   @Process()
@@ -85,6 +87,12 @@ export class DeploymentProcessor {
 
           await this.deployments.markFailed(deploymentId);
           this.logService.complete(deploymentId);
+
+          await this.activity.log(
+            ActivityType.deployment_failed,
+            ctx.project.ownerId,
+            { deploymentId, environmentId: ctx.environment.id },
+          );
           return;
         }
 
@@ -110,6 +118,12 @@ export class DeploymentProcessor {
     );
 
     this.logger.info(`[${deploymentId}] Deployment completed`);
+
+    await this.activity.log(
+      ActivityType.deployment_completed,
+      ctx.project.ownerId,
+      { deploymentId, environmentId: ctx.environment.id },
+    );
 
     this.logService.complete(deploymentId);
   }
@@ -150,7 +164,12 @@ export class DeploymentProcessor {
       new CreateContainerStep(this.docker, this.logService),
       new StartContainerStep(this.docker, this.logService),
       new HealthCheckStep(this.docker, this.logService),
-      new ConfigureProxyStep(this.caddy, this.db, this.logService),
+      new ConfigureProxyStep(
+        this.caddy,
+        this.db,
+        this.logService,
+        this.activity,
+      ),
       new ActivateDeploymentStep(this.db),
       new CleanupStep(this.docker, this.caddy, this.db),
     ];

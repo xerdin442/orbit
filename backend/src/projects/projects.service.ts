@@ -3,16 +3,16 @@ import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { GitHubService } from '@src/github/github.service';
-import { Logger } from '@src/common/logger';
+import { ActivityService } from '@src/activity/activity.service';
+import { ActivityType } from '@generated/client';
 
 @Injectable()
 export class ProjectsService {
-  private readonly logger = Logger(ProjectsService.name);
-
   constructor(
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
     private readonly github: GitHubService,
+    private readonly activity: ActivityService,
   ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
@@ -56,7 +56,9 @@ export class ProjectsService {
       return env.project;
     });
 
-    this.logger.info(`Project created: ${project.id} by user ${userId}`);
+    await this.activity.log(ActivityType.project_created, userId, {
+      projectId: project.id,
+    });
 
     return project;
   }
@@ -100,7 +102,9 @@ export class ProjectsService {
       include: { source: true },
     });
 
-    this.logger.info(`Project updated: ${id}`);
+    await this.activity.log(ActivityType.project_updated, userId, {
+      projectId: id,
+    });
 
     return updated;
   }
@@ -116,7 +120,9 @@ export class ProjectsService {
 
     await this.db.project.delete({ where: { id } });
 
-    this.logger.info(`Project deleted: ${id}`);
+    await this.activity.log(ActivityType.project_deleted, userId, {
+      projectId: id,
+    });
   }
 
   async findAvailableBranches(projectId: string) {
