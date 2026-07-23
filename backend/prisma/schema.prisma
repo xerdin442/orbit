@@ -81,6 +81,7 @@ enum ActivityType {
   domain_removed
   github_installation_added
   github_installation_removed
+  github_webhook_event
   resource_provisioned
   resource_deleted
 }

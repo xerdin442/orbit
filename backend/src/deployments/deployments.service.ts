@@ -10,12 +10,9 @@ import {
   LifecycleStatus,
   DeploymentTrigger,
 } from '@generated/client';
-import { Logger } from '@src/common/logger';
 
 @Injectable()
 export class DeploymentsService {
-  private readonly logger = Logger(DeploymentsService.name);
-
   constructor(private readonly db: DbService) {}
 
   async createDeployment(environmentId: string, trigger: DeploymentTrigger) {
@@ -44,7 +41,7 @@ export class DeploymentsService {
       throw new ConflictException('A deployment is already in progress');
     }
 
-    const deployment = await this.db.deployment.create({
+    return this.db.deployment.create({
       data: {
         environmentId,
         trigger,
@@ -54,8 +51,6 @@ export class DeploymentsService {
         lifecycleStatus: LifecycleStatus.inactive,
       },
     });
-
-    return deployment;
   }
 
   async findById(id: string) {
@@ -90,7 +85,7 @@ export class DeploymentsService {
       );
     }
 
-    const rollbackDeployment = await this.db.deployment.create({
+    return await this.db.deployment.create({
       data: {
         environmentId: deployment.environmentId,
         trigger: DeploymentTrigger.rollback,
@@ -101,8 +96,6 @@ export class DeploymentsService {
         lifecycleStatus: LifecycleStatus.inactive,
       },
     });
-
-    return rollbackDeployment;
   }
 
   async updateBuildStatus(id: string, buildStatus: BuildStatus) {
@@ -130,8 +123,6 @@ export class DeploymentsService {
   }
 
   async markFailed(id: string) {
-    this.logger.info(`Deployment failed: ${id}`);
-
     return this.db.deployment.update({
       where: { id },
       data: {
@@ -142,8 +133,6 @@ export class DeploymentsService {
   }
 
   async abortDeployment(id: string) {
-    this.logger.info(`Deployment aborted by user: ${id}`);
-
     return this.db.deployment.update({
       where: { id },
       data: { buildStatus: BuildStatus.aborted },

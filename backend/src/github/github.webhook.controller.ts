@@ -13,8 +13,10 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import type { Queue } from 'bull';
 import { DbService } from '@src/db/db.service';
 import { Secrets } from '@src/common/secrets';
+import { ActivityService } from '@src/activity/activity.service';
 import { Logger } from '@src/common/logger';
 import {
+  ActivityType,
   BuildStatus,
   DeploymentTrigger,
   LifecycleStatus,
@@ -27,6 +29,7 @@ export class GitHubWebhookController {
 
   constructor(
     private readonly db: DbService,
+    private readonly activity: ActivityService,
     @InjectQueue('deployments') private readonly deployQueue: Queue,
   ) {}
 
@@ -49,9 +52,9 @@ export class GitHubWebhookController {
 
     const payload = JSON.parse(rawBody.toString()) as GitHubWebhookPayload;
 
-    this.logger.info(
-      `Webhook event: ${event} on ${payload.repository?.full_name}. Installation id: ${payload.installation?.id}.`,
-    );
+    await this.activity.log(ActivityType.github_webhook_event, 'github', {
+      webhookEvent: event,
+    });
 
     if (event === 'installation' || event === 'installation_repositories') {
       if (payload.action === 'deleted' || payload.action === 'removed') {
@@ -119,6 +122,10 @@ export class GitHubWebhookController {
       return;
     }
 
+    const install = await this.db.gitHubInstallation.findFirst({
+      where: { installationId },
+    });
+
     await this.db.source.updateMany({
       where: { installationId },
       data: { installationId: null },
@@ -127,5 +134,13 @@ export class GitHubWebhookController {
     await this.db.gitHubInstallation.deleteMany({
       where: { installationId },
     });
+
+    if (install) {
+      await this.activity.log(
+        ActivityType.github_installation_removed,
+        install.userId,
+        { installationId },
+      );
+    }
   }
 }

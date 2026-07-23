@@ -2,13 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
 import { ActivityType } from '@generated/client';
 import type { Prisma } from '@generated/client';
-import { Logger } from '@src/common/logger';
 import { ActivityLogFilter } from '@src/common/types';
 
 @Injectable()
 export class ActivityService {
-  private readonly logger = Logger(ActivityService.name);
-
   constructor(private readonly db: DbService) {}
 
   async log(
@@ -16,17 +13,13 @@ export class ActivityService {
     actorId: string,
     metadata?: Record<string, unknown>,
   ) {
-    const activity = await this.db.activity.create({
+    await this.db.activity.create({
       data: {
         type,
         actorId,
         metadata: metadata as Prisma.InputJsonValue,
       },
     });
-
-    this.logger.info(`Activity: ${type} by ${actorId}`);
-
-    return activity;
   }
 
   async findAll(options?: ActivityLogFilter) {
@@ -53,6 +46,13 @@ export class ActivityService {
 
     if (options?.domainId) {
       where.metadata = { path: ['domainId'], equals: options.domainId };
+    }
+
+    if (options?.deploymentId) {
+      where.metadata = {
+        path: ['deploymentId'],
+        equals: options.deploymentId,
+      };
     }
 
     if (options?.resourceId) {

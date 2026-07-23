@@ -121,6 +121,7 @@ export interface ActivityLogFilter {
   actorId?: string;
   projectId?: string;
   environmentId?: string;
+  deploymentId?: string;
   domainId?: string;
   resourceId?: string;
   type?: ActivityType;
