@@ -2,15 +2,16 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@src/users/users.service';
 import { Secrets } from '@src/common/secrets';
-import { Logger } from '@src/common/logger';
+import { ActivityService } from '@src/activity/activity.service';
+import { ActivityType } from '@generated/client';
 import type { GitHubTokenResponse, GitHubUser } from '@src/common/types';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = Logger(AuthService.name);
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,
+    private readonly activity: ActivityService,
   ) {}
 
   getGitHubOAuthUrl(): string {
@@ -23,7 +24,7 @@ export class AuthService {
     return `https://github.com/login/oauth/authorize?${params.toString()}`;
   }
 
-  async handleGitHubCallback(code: string): Promise<{ accessToken: string }> {
+  async handleGitHubCallback(code: string): Promise<string> {
     const gitHubToken = await this.exchangeCodeForToken(code);
     const gitHubUser = await this.fetchGitHubUser(gitHubToken);
 
@@ -36,11 +37,17 @@ export class AuthService {
         email: gitHubUser.email ?? undefined,
         avatarUrl: gitHubUser.avatar_url,
       });
+
+      await this.activity.log(ActivityType.user_signed_up, user.id, {
+        email: gitHubUser.email,
+      });
+    } else {
+      await this.activity.log(ActivityType.user_signed_in, user.id, {
+        email: gitHubUser.email,
+      });
     }
 
-    const accessToken = this.jwt.sign({ sub: user.id });
-
-    return { accessToken };
+    return this.jwt.sign({ sub: user.id });
   }
 
   private async exchangeCodeForToken(code: string): Promise<string> {

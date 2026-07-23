@@ -11,7 +11,7 @@ export class ActivityService {
 
   constructor(private readonly db: DbService) {}
 
-  async create(
+  async log(
     type: ActivityType,
     actorId: string,
     metadata?: Record<string, unknown>,
