@@ -60,6 +60,31 @@ enum DomainStatus {
   error
 }
 
+enum ActivityType {
+  user_signed_up
+  user_signed_in
+  project_created
+  project_updated
+  project_deleted
+  environment_created
+  environment_updated
+  environment_deleted
+  deployment_started
+  deployment_completed
+  deployment_failed
+  deployment_rolled_back
+  deployment_aborted
+  variable_created
+  variable_updated
+  variable_deleted
+  domain_added
+  domain_removed
+  github_installation_added
+  github_installation_removed
+  resource_provisioned
+  resource_deleted
+}
+
 model User {
   id             String   @id @default(uuid())
   githubUserId   Int      @unique
@@ -217,4 +242,15 @@ model GitHubInstallation {
 
   @@index([installationId])
   @@index([userId])
+}
+
+model Activity {
+  id        String       @id @default(uuid())
+  type      ActivityType
+  actorId   String
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  @@index([actorId])
+  @@index([createdAt])
 }

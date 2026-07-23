@@ -5,6 +5,7 @@ import type {
   Source,
   Environment,
   Resource,
+  ActivityType,
 } from '@generated/client';
 import type { LogLevel } from '@generated/client';
 
@@ -114,4 +115,13 @@ export class DeploymentStepExecutionError extends Error {
     super(message);
     this.name = 'DeploymentStepExecutionError';
   }
+}
+
+export interface ActivityLogFilter {
+  actorId?: string;
+  projectId?: string;
+  environmentId?: string;
+  domainId?: string;
+  resourceId?: string;
+  type?: ActivityType;
 }
