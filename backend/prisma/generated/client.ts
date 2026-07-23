@@ -89,3 +89,8 @@ export type Domain = Prisma.DomainModel
  * 
  */
 export type GitHubInstallation = Prisma.GitHubInstallationModel
+/**
+ * Model Activity
+ * 
+ */
+export type Activity = Prisma.ActivityModel

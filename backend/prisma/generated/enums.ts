@@ -79,3 +79,31 @@ export const DomainStatus = {
 } as const
 
 export type DomainStatus = (typeof DomainStatus)[keyof typeof DomainStatus]
+
+
+export const ActivityType = {
+  user_signed_up: 'user_signed_up',
+  user_signed_in: 'user_signed_in',
+  project_created: 'project_created',
+  project_updated: 'project_updated',
+  project_deleted: 'project_deleted',
+  environment_created: 'environment_created',
+  environment_updated: 'environment_updated',
+  environment_deleted: 'environment_deleted',
+  deployment_started: 'deployment_started',
+  deployment_completed: 'deployment_completed',
+  deployment_failed: 'deployment_failed',
+  deployment_rolled_back: 'deployment_rolled_back',
+  deployment_aborted: 'deployment_aborted',
+  variable_created: 'variable_created',
+  variable_updated: 'variable_updated',
+  variable_deleted: 'variable_deleted',
+  domain_added: 'domain_added',
+  domain_removed: 'domain_removed',
+  github_installation_added: 'github_installation_added',
+  github_installation_removed: 'github_installation_removed',
+  resource_provisioned: 'resource_provisioned',
+  resource_deleted: 'resource_deleted'
+} as const
+
+export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType]
