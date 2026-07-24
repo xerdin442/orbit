@@ -1,5 +1,5 @@
 import { CommandService } from './command.service';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 
 jest.mock('child_process', () => ({
@@ -65,17 +65,19 @@ describe('CommandService', () => {
 
   describe('gitClone', () => {
     it('spawns git with correct args', async () => {
-      const promise = service.gitClone('https://github.com/o/r', 'main', '/tmp/build');
+      const promise = service.gitClone(
+        'https://github.com/o/r',
+        'main',
+        '/tmp/build',
+      );
       mockChild.emit('close', 0);
       await promise;
 
-      expect(spawn).toHaveBeenCalledWith('git', [
-        'clone',
-        '--branch',
-        'main',
-        'https://github.com/o/r',
-        '/tmp/build',
-      ], { shell: false });
+      expect(spawn).toHaveBeenCalledWith(
+        'git',
+        ['clone', '--branch', 'main', 'https://github.com/o/r', '/tmp/build'],
+        { shell: false },
+      );
     });
   });
 
@@ -85,12 +87,11 @@ describe('CommandService', () => {
       mockChild.emit('close', 0);
       await promise;
 
-      expect(spawn).toHaveBeenCalledWith('git', [
-        '-C',
-        '/tmp/build',
-        'rev-parse',
-        'HEAD',
-      ], { shell: false });
+      expect(spawn).toHaveBeenCalledWith(
+        'git',
+        ['-C', '/tmp/build', 'rev-parse', 'HEAD'],
+        { shell: false },
+      );
     });
   });
 
@@ -100,12 +101,11 @@ describe('CommandService', () => {
       mockChild.emit('close', 0);
       await promise;
 
-      expect(spawn).toHaveBeenCalledWith('railpack', [
-        'build',
-        '/tmp/build',
-        '--tag',
-        'project-1:abc123',
-      ], { shell: false });
+      expect(spawn).toHaveBeenCalledWith(
+        'railpack',
+        ['build', '/tmp/build', '--tag', 'project-1:abc123'],
+        { shell: false },
+      );
     });
   });
 });
