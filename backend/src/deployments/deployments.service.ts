@@ -9,11 +9,18 @@ import {
   BuildStatus,
   LifecycleStatus,
   DeploymentTrigger,
+  ActivityType,
 } from '@generated/client';
+import { ResourcesService } from '@src/resources/resources.service';
+import { ActivityService } from '@src/activity/activity.service';
 
 @Injectable()
 export class DeploymentsService {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly activity: ActivityService,
+    private readonly resources: ResourcesService,
+  ) {}
 
   async createDeployment(environmentId: string, trigger: DeploymentTrigger) {
     const env = await this.db.environment.findUnique({
@@ -41,7 +48,7 @@ export class DeploymentsService {
       throw new ConflictException('A deployment is already in progress');
     }
 
-    return this.db.deployment.create({
+    const created = await this.db.deployment.create({
       data: {
         environmentId,
         trigger,
@@ -51,12 +58,22 @@ export class DeploymentsService {
         lifecycleStatus: LifecycleStatus.inactive,
       },
     });
+
+    await this.activity.log(
+      ActivityType.deployment_started,
+      env.project.ownerId,
+      { deploymentId: created.id, environmentId, trigger: trigger },
+    );
+
+    return created;
   }
 
   async findById(id: string) {
     const deployment = await this.db.deployment.findUnique({
       where: { id },
-      include: { environment: true },
+      include: {
+        environment: { include: { project: true } },
+      },
     });
 
     if (!deployment) {
@@ -85,7 +102,7 @@ export class DeploymentsService {
       );
     }
 
-    return await this.db.deployment.create({
+    const rolledDeployment = await this.db.deployment.create({
       data: {
         environmentId: deployment.environmentId,
         trigger: DeploymentTrigger.rollback,
@@ -96,6 +113,18 @@ export class DeploymentsService {
         lifecycleStatus: LifecycleStatus.inactive,
       },
     });
+
+    await this.activity.log(
+      ActivityType.deployment_rolled_back,
+      deployment.environment.project.ownerId,
+      {
+        deploymentId: rolledDeployment.id,
+        environmentId: deployment.environmentId,
+        trigger: DeploymentTrigger.rollback,
+      },
+    );
+
+    return rolledDeployment;
   }
 
   async updateBuildStatus(id: string, buildStatus: BuildStatus) {
@@ -132,10 +161,33 @@ export class DeploymentsService {
     });
   }
 
-  async abortDeployment(id: string) {
-    return this.db.deployment.update({
+  async abortDeployment(id: string, resourceIds?: string) {
+    const deployment = await this.db.deployment.update({
       where: { id },
       data: { buildStatus: BuildStatus.aborted },
+      include: {
+        environment: { include: { project: true } },
+      },
     });
+
+    const userId = deployment.environment.project.ownerId;
+
+    await this.activity.log(ActivityType.deployment_aborted, userId, {
+      deploymentId: id,
+      environmentId: deployment.environmentId,
+    });
+
+    if (resourceIds) {
+      const ids = resourceIds.trim().split(',');
+      for (const resourceId of ids) {
+        try {
+          await this.resources.delete(resourceId, userId);
+        } catch {
+          // resource already gone or never created
+        }
+      }
+    }
+
+    return deployment;
   }
 }

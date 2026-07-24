@@ -74,6 +74,11 @@ export interface LogEntry {
 export interface DeploymentJob {
   deployment: Deployment;
   skipImageBuild?: boolean;
+  resourceCount?: number;
+}
+
+export interface ResourceJob {
+  resourceId: string;
 }
 
 export interface DeploymentContext {
@@ -122,4 +127,9 @@ export interface ActivityLogFilter {
   domainId?: string;
   resourceId?: string;
   type?: ActivityType;
+}
+
+export interface ResourceDefaultKey {
+  key: string;
+  description: string;
 }
