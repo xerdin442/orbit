@@ -18,7 +18,7 @@ export class ProjectsService {
   async create(userId: string, dto: CreateProjectDto) {
     const defaultBranch = dto.defaultBranch ?? 'main';
 
-    const project = await this.db.$transaction(async (tx) => {
+    const environment = await this.db.$transaction(async (tx) => {
       const env = await tx.environment.create({
         data: {
           name: 'production',
@@ -53,14 +53,14 @@ export class ProjectsService {
         await tx.environmentVariable.createMany({ data: vars });
       }
 
-      return env.project;
+      return env;
     });
 
     await this.activity.log(ActivityType.project_created, userId, {
-      projectId: project.id,
+      projectId: environment.project.id,
     });
 
-    return project;
+    return environment;
   }
 
   async findAllByUser(userId: string) {
