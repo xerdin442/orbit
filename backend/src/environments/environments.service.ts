@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
+import type { DeploymentJob } from '@src/common/types';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
@@ -22,7 +23,8 @@ export class EnvironmentsService {
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
     private readonly activity: ActivityService,
-    @InjectQueue('deployments') private readonly deployQueue: Queue,
+    @InjectQueue('deployments')
+    private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
 
   private async verifyProjectOwnership(projectId: string, userId: string) {
@@ -198,6 +200,6 @@ export class EnvironmentsService {
       },
     });
 
-    await this.deployQueue.add({ deploymentId: deployment.id });
+    await this.deployQueue.add({ deployment, skipImageBuild: true });
   }
 }
