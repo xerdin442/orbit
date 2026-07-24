@@ -101,6 +101,8 @@ export class DeploymentProcessor {
 
     await this.deployments.updateContainerId(deploymentId, ctx.containerId);
 
+    await this.deployments.markCompleted(deploymentId);
+
     await this.logService.append(
       deploymentId,
       LogLevel.SUCCESS,
@@ -258,6 +260,7 @@ export class DeploymentProcessor {
     error: Error,
   ): Promise<void> {
     await this.deployments.markFailed(ctx.deployment.id);
+    await this.deployments.markCompleted(ctx.deployment.id);
 
     await this.activity.log(
       ActivityType.deployment_failed,

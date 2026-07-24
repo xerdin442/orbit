@@ -134,6 +134,13 @@ export class DeploymentsService {
     });
   }
 
+  async markCompleted(id: string) {
+    return this.db.deployment.update({
+      where: { id },
+      data: { completedAt: new Date() },
+    });
+  }
+
   async updateCommit(
     id: string,
     data: { commitSha: string; commitMessage: string; imageTag: string },
@@ -170,6 +177,8 @@ export class DeploymentsService {
       },
     });
 
+    await this.markCompleted(deployment.id);
+
     const userId = deployment.environment.project.ownerId;
 
     await this.activity.log(ActivityType.deployment_aborted, userId, {
@@ -187,7 +196,5 @@ export class DeploymentsService {
         }
       }
     }
-
-    return deployment;
   }
 }
