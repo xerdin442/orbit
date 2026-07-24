@@ -13,7 +13,11 @@ import { Observable, map } from 'rxjs';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
-import type { LogEntry, AuthenticatedRequest } from '@src/common/types';
+import type {
+  LogEntry,
+  AuthenticatedRequest,
+  DeploymentJob,
+} from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { ActivityType, DeploymentTrigger } from '@generated/client';
 
@@ -24,7 +28,8 @@ export class DeploymentsController {
     private readonly deployments: DeploymentsService,
     private readonly logService: LogService,
     private readonly activity: ActivityService,
-    @InjectQueue('deployments') private readonly deployQueue: Queue,
+    @InjectQueue('deployments')
+    private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
 
   @Post('environments/:environmentId/deploy')
@@ -37,7 +42,7 @@ export class DeploymentsController {
       DeploymentTrigger.manual,
     );
 
-    await this.deployQueue.add({ deploymentId: deployment.id });
+    await this.deployQueue.add({ deployment });
 
     await this.activity.log(ActivityType.deployment_started, req.user.id, {
       deploymentId: deployment.id,
@@ -57,7 +62,7 @@ export class DeploymentsController {
       DeploymentTrigger.redeploy,
     );
 
-    await this.deployQueue.add({ deploymentId: deployment.id });
+    await this.deployQueue.add({ deployment, skipImageBuild: true });
 
     await this.activity.log(ActivityType.deployment_started, req.user.id, {
       deploymentId: deployment.id,
@@ -72,7 +77,7 @@ export class DeploymentsController {
   async rollback(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const deployment = await this.deployments.findForRollback(id);
 
-    await this.deployQueue.add({ deploymentId: deployment.id });
+    await this.deployQueue.add({ deployment, skipImageBuild: true });
 
     await this.activity.log(ActivityType.deployment_rolled_back, req.user.id, {
       deploymentId: deployment.id,

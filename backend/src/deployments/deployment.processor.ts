@@ -3,6 +3,7 @@ import { Processor, Process } from '@nestjs/bull';
 import type { Job } from 'bull';
 import { Logger } from '@src/common/logger';
 import { ActivityType, LogLevel, BuildStatus } from '@generated/client';
+import type { Deployment } from '@generated/client';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { CommandService } from '@src/infrastructure/command.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
@@ -12,14 +13,14 @@ import { ActivityService } from '@src/activity/activity.service';
 import { DeploymentsService } from './deployments.service';
 import {
   DeploymentContext,
-  DeploymentJobData,
+  DeploymentJob,
   DeploymentStepName,
   DeploymentStepExecutionError,
+  DeploymentStep,
 } from '@src/common/types';
 import { CloneRepositoryStep } from './pipeline/clone-repository.step';
 import { ResolveCommitStep } from './pipeline/resolve-commit.step';
 import { BuildImageStep } from './pipeline/build-image.step';
-import { ProvisionRuntimeStep } from './pipeline/provision-runtime.step';
 import { CreateContainerStep } from './pipeline/create-container.step';
 import { StartContainerStep } from './pipeline/start-container.step';
 import { HealthCheckStep } from './pipeline/health-check.step';
@@ -42,17 +43,21 @@ export class DeploymentProcessor {
   ) {}
 
   @Process()
-  async handleDeploy(job: Job<DeploymentJobData>): Promise<void> {
-    const { deploymentId } = job.data;
+  async handleDeploy(job: Job<DeploymentJob>): Promise<void> {
+    const { deployment, skipImageBuild } = job.data;
+    const deploymentId = deployment.id;
 
-    const ctx = await this.buildContext(deploymentId);
+    const ctx = await this.buildContext(deployment);
 
-    const steps = this.buildNormalPipeline();
+    await this.loadVariables(ctx);
+    await this.provisionResources(ctx);
 
-    for (const step of steps) {
-      const deployment = await this.deployments.findById(deploymentId);
+    const pipeline = this.buildPipeline(skipImageBuild);
 
-      if (deployment.buildStatus === BuildStatus.aborted) {
+    for (const step of pipeline) {
+      const { buildStatus } = await this.deployments.findById(deploymentId);
+
+      if (buildStatus === BuildStatus.aborted) {
         await this.logService.append(
           deploymentId,
           LogLevel.INFO,
@@ -71,14 +76,8 @@ export class DeploymentProcessor {
         );
 
         await step.execute(ctx);
-
-        this.logger.info(`[${deploymentId}] ${step.name} completed`);
       } catch (error) {
         if (error instanceof DeploymentStepExecutionError) {
-          this.logger.error(
-            `[${deploymentId}] ${step.name} failed: ${error.message}`,
-          );
-
           await this.logService.append(
             deploymentId,
             LogLevel.ERROR,
@@ -117,8 +116,6 @@ export class DeploymentProcessor {
       `Congratulations! Your deployment is now live at ${ctx.domain}`,
     );
 
-    this.logger.info(`[${deploymentId}] Deployment completed`);
-
     await this.activity.log(
       ActivityType.deployment_completed,
       ctx.project.ownerId,
@@ -128,8 +125,9 @@ export class DeploymentProcessor {
     this.logService.complete(deploymentId);
   }
 
-  private async buildContext(deploymentId: string): Promise<DeploymentContext> {
-    const deployment = await this.deployments.findById(deploymentId);
+  private async buildContext(
+    deployment: Deployment,
+  ): Promise<DeploymentContext> {
     const env = await this.db.environment.findUnique({
       where: { id: deployment.environmentId },
       include: { project: { include: { source: true } } },
@@ -144,23 +142,17 @@ export class DeploymentProcessor {
       project: env.project,
       environment: env,
       workspace: '',
-      imageTag: '',
-      commitSha: '',
-      commitMessage: '',
+      imageTag: deployment.imageTag,
+      commitSha: deployment.commitSha,
+      commitMessage: deployment.commitMessage ?? '',
       containerId: '',
-      networkId: '',
       domain: '',
-      variables: {},
-      resources: [],
+      variables: [],
     };
   }
 
-  private buildNormalPipeline() {
-    return [
-      new ProvisionRuntimeStep(this.docker, this.db, this.logService),
-      new CloneRepositoryStep(this.command, this.logService),
-      new ResolveCommitStep(this.command, this.logService),
-      new BuildImageStep(this.command, this.logService),
+  private buildPipeline(skipImageBuild?: boolean): DeploymentStep[] {
+    const commonSteps: DeploymentStep[] = [
       new CreateContainerStep(this.docker, this.logService),
       new StartContainerStep(this.docker, this.logService),
       new HealthCheckStep(this.docker, this.logService),
@@ -173,6 +165,63 @@ export class DeploymentProcessor {
       new ActivateDeploymentStep(this.db),
       new CleanupStep(this.docker, this.caddy, this.db),
     ];
+
+    if (skipImageBuild) return commonSteps;
+
+    return [
+      new CloneRepositoryStep(this.command, this.logService),
+      new ResolveCommitStep(this.command, this.logService),
+      new BuildImageStep(this.command, this.logService),
+      ...commonSteps,
+    ];
+  }
+
+  private async loadVariables(ctx: DeploymentContext): Promise<void> {
+    const deploymentId = ctx.deployment.id;
+
+    await this.logService.append(
+      deploymentId,
+      LogLevel.INFO,
+      'Loading environment variables...',
+    );
+
+    const vars = await this.db.environmentVariable.findMany({
+      where: { environmentId: ctx.environment.id },
+    });
+
+    ctx.variables = vars.map((v) => `${v.key}=${v.value}`);
+
+    await this.logService.append(
+      deploymentId,
+      LogLevel.INFO,
+      `${ctx.variables.length} environment variables loaded`,
+    );
+  }
+
+  private async provisionResources(
+    ctx: DeploymentContext,
+    skipImageBuild?: boolean,
+  ): Promise<void> {
+    if (skipImageBuild) return;
+
+    await this.logService.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Provisioning resources...',
+    );
+
+    const resources = await this.db.resource.findMany({
+      where: { environmentId: ctx.environment.id, status: 'ready' },
+    });
+
+    for (const r of resources) {
+      const creds = r.credentials as Record<string, string> | null;
+      if (creds) {
+        for (const [key, value] of Object.entries(creds)) {
+          ctx.variables.push(`${key}=${value}`);
+        }
+      }
+    }
   }
 
   private async cleanupAborted(ctx: DeploymentContext): Promise<void> {
@@ -192,7 +241,6 @@ export class DeploymentProcessor {
 
   private statusForStep(stepName: DeploymentStepName): BuildStatus {
     const map: Record<DeploymentStepName, BuildStatus> = {
-      [DeploymentStepName.ProvisionRuntime]: BuildStatus.provisioning,
       [DeploymentStepName.CloneRepository]: BuildStatus.cloning,
       [DeploymentStepName.ResolveCommit]: BuildStatus.building,
       [DeploymentStepName.BuildImage]: BuildStatus.building,
