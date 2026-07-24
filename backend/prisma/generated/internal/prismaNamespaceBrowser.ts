@@ -140,6 +140,7 @@ export const DeploymentScalarFieldEnum = {
   buildStatus: 'buildStatus',
   lifecycleStatus: 'lifecycleStatus',
   createdAt: 'createdAt',
+  completedAt: 'completedAt',
   updatedAt: 'updatedAt',
   environmentId: 'environmentId'
 } as const
