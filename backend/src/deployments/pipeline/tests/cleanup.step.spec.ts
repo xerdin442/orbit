@@ -1,6 +1,5 @@
 import { CleanupStep } from '../cleanup.step';
 import { DockerService } from '@src/infrastructure/docker.service';
-import { CaddyService } from '@src/infrastructure/caddy.service';
 import { DbService } from '@src/db/db.service';
 import { DeploymentContext } from '@src/common/types';
 
@@ -16,19 +15,13 @@ describe('CleanupStep', () => {
   let docker: jest.Mocked<
     Pick<DockerService, 'stopContainer' | 'removeContainer'>
   >;
-  let caddy: jest.Mocked<Pick<CaddyService, 'removeRoute'>>;
   let db: jest.Mocked<Pick<DbService, 'deployment'>>;
 
   beforeEach(() => {
     docker = { stopContainer: jest.fn(), removeContainer: jest.fn() };
-    caddy = { removeRoute: jest.fn() };
     db = { deployment: { findMany: jest.fn() } };
 
-    step = new CleanupStep(
-      docker as DockerService,
-      caddy as CaddyService,
-      db as DbService,
-    );
+    step = new CleanupStep(docker as DockerService, db as DbService);
   });
 
   it('stops and removes old containers', async () => {

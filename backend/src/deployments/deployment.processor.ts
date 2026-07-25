@@ -60,7 +60,7 @@ export class DeploymentProcessor {
       try {
         await this.provisionResources(ctx, resourceCount);
       } catch (error) {
-        await this.handleError(ctx, error as Error);
+        return this.handleError(ctx, error as Error);
       }
     }
 
@@ -89,7 +89,8 @@ export class DeploymentProcessor {
 
         await step.execute(ctx);
       } catch (error) {
-        await this.handleError(ctx, error as Error);
+        if (step.name === DeploymentStepName.Cleanup) break;
+        return this.handleError(ctx, error as Error);
       }
     }
 
@@ -154,14 +155,14 @@ export class DeploymentProcessor {
       new CreateContainerStep(this.docker, this.logService),
       new StartContainerStep(this.docker, this.logService),
       new HealthCheckStep(this.docker, this.logService),
+      new ActivateDeploymentStep(this.db),
       new ConfigureProxyStep(
         this.caddy,
         this.db,
         this.logService,
         this.activity,
       ),
-      new ActivateDeploymentStep(this.db),
-      new CleanupStep(this.docker, this.caddy, this.db),
+      new CleanupStep(this.docker, this.db),
     ];
 
     if (skipImageBuild) return commonSteps;
