@@ -44,7 +44,6 @@ export class CaddyService {
 
   async reload() {
     await this.fetchCaddy('/load', 'POST');
-    this.logger.info('Caddy configuration reloaded');
   }
 
   private async fetchCaddy(path: string, method: string, body?: unknown) {
