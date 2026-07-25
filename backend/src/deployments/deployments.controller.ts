@@ -16,7 +16,7 @@ import { LogService } from '@src/infrastructure/log.service';
 import type { LogEntry, DeploymentJob } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { DeploymentTrigger } from '@generated/client';
-import { FilterDeploymentsDto } from './dto/deployment.dto';
+import { FilterDeploymentsDto, MarkedResourcesDto } from './dto/deployment.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -68,11 +68,8 @@ export class DeploymentsController {
   }
 
   @Post('deployments/:id/abort')
-  async abort(
-    @Param('id') id: string,
-    @Query('marked_resources') resourceIds?: string,
-  ) {
-    return this.deployments.abortDeployment(id, resourceIds);
+  async abort(@Param('id') id: string, @Query() query?: MarkedResourcesDto) {
+    return this.deployments.abortDeployment(id, query?.marked_resources);
   }
 
   @Get('deployments/:id')
