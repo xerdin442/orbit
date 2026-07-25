@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ResourcesService } from './resources.service';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
@@ -40,6 +41,7 @@ describe('ResourcesService', () => {
         { provide: DbService, useValue: db },
         { provide: DockerService, useValue: docker },
         { provide: ActivityService, useValue: activity },
+        { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
         { provide: 'BullQueue_resources', useValue: queue },
       ],
     }).compile();

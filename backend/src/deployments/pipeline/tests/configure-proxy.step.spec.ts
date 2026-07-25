@@ -8,11 +8,16 @@ import { DeploymentContext } from '@src/common/types';
 const mockCtx = (): DeploymentContext =>
   ({
     deployment: { id: 'dep-1' },
-    project: { name: 'my-app', id: 'proj-1', ownerId: 'user-1' },
-    environment: { id: 'env-1' },
+    project: {
+      name: 'my-app',
+      id: 'proj-1',
+      ownerId: 'user-1',
+      source: { defaultBranch: 'main' },
+    },
+    environment: { id: 'env-1', name: 'production', branch: 'main' },
     containerId: 'container-1',
     domain: '',
-  }) as DeploymentContext;
+  } as DeploymentContext);
 
 describe('ConfigureProxyStep', () => {
   let step: ConfigureProxyStep;
@@ -40,34 +45,40 @@ describe('ConfigureProxyStep', () => {
     );
   });
 
-  it('reuses existing domain', async () => {
+  it('reuses existing managed domain', async () => {
     db.domain.findFirst = jest
       .fn()
-      .mockResolvedValue({ hostname: 'my-app-a1b2c3d4.orbit.app' });
+      .mockResolvedValue({ hostname: 'my-app.192.168.1.55.sslip.io' } as any);
 
     const ctx = mockCtx();
     await step.execute(ctx);
 
-    expect(ctx.domain).toBe('my-app-a1b2c3d4.orbit.app');
+    expect(ctx.domain).toBe('my-app.192.168.1.55.sslip.io');
     expect(db.domain.create).not.toHaveBeenCalled();
     expect(caddy.addRoute).toHaveBeenCalledWith(
-      'my-app-a1b2c3d4.orbit.app',
+      'my-app.192.168.1.55.sslip.io',
       'container-1',
       3000,
     );
   });
 
-  it('creates new domain when none exists', async () => {
+  it('creates new managed hostname when none exists', async () => {
     db.domain.findFirst = jest.fn().mockResolvedValue(null);
     db.domain.create = jest
       .fn()
-      .mockResolvedValue({ id: 'd1', hostname: 'my-app-xxxxxxxx.orbit.app' });
+      .mockResolvedValue({ id: 'd1', hostname: 'my-app.192.168.1.55.sslip.io' } as any);
 
     const ctx = mockCtx();
     await step.execute(ctx);
 
-    expect(ctx.domain).toMatch(/^my-app-[a-f0-9]{8}\.orbit\.app$/);
-    expect(db.domain.create).toHaveBeenCalled();
+    expect(ctx.domain).toBe('my-app.192.168.1.55.sslip.io');
+    expect(db.domain.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        hostname: 'my-app.192.168.1.55.sslip.io',
+        type: 'managed',
+        status: 'active',
+      }),
+    });
     expect(activity.log).toHaveBeenCalled();
     expect(caddy.addRoute).toHaveBeenCalled();
   });
