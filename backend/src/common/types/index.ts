@@ -16,6 +16,18 @@ export interface JwtPayload {
   sub: string;
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
 export interface GitHubUser {
   id: number;
   login: string;
