@@ -19,6 +19,12 @@ export class ResponseInterceptor implements NestInterceptor {
           return data;
         }
 
+        if (typeof data === 'object' && data !== null) {
+          if ('data' in data && 'meta' in data) {
+            return data;
+          }
+        }
+
         return { data };
       }),
     );
