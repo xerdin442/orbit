@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
@@ -13,6 +14,7 @@ export class ProjectsService {
     private readonly encryption: EncryptionService,
     private readonly github: GitHubService,
     private readonly activity: ActivityService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
@@ -60,6 +62,8 @@ export class ProjectsService {
       projectId: environment.project.id,
     });
 
+    await this.invalidateCache();
+
     return environment;
   }
 
@@ -106,6 +110,8 @@ export class ProjectsService {
       projectId: id,
     });
 
+    await this.invalidateCache(id);
+
     return updated;
   }
 
@@ -123,11 +129,18 @@ export class ProjectsService {
     await this.activity.log(ActivityType.project_deleted, userId, {
       projectId: id,
     });
+
+    await this.invalidateCache(id);
   }
 
-  async findAvailableBranches(projectId: string) {
+  async findAvailableBranches(projectId: string, userId: string) {
     const source = await this.db.source.findUniqueOrThrow({
-      where: { projectId },
+      where: {
+        projectId,
+        project: {
+          ownerId: userId,
+        },
+      },
     });
 
     if (!source?.installationId) {
@@ -140,5 +153,14 @@ export class ProjectsService {
     );
 
     return branches.filter((b) => b.name !== source.defaultBranch);
+  }
+
+  private async invalidateCache(projectId?: string) {
+    await this.cache.del('/api/projects');
+
+    if (projectId) {
+      await this.cache.del(`/api/projects/${projectId}`);
+      await this.cache.del(`/api/projects/${projectId}/branches`);
+    }
   }
 }

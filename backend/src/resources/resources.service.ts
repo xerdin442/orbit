@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Queue } from 'bull';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
@@ -14,6 +15,7 @@ export class ResourcesService {
     private readonly db: DbService,
     private readonly docker: DockerService,
     private readonly activity: ActivityService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectQueue('resources') private readonly resourceQueue: Queue,
   ) {}
 
@@ -97,5 +99,7 @@ export class ResourcesService {
       environmentId: resource.environmentId,
       type: resource.type,
     });
+
+    await this.cache.del(`/api/resources/${id}`);
   }
 }

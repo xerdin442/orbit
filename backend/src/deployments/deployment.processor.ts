@@ -73,7 +73,7 @@ export class DeploymentProcessor {
         await this.logService.append(
           deploymentId,
           LogLevel.INFO,
-          'Deployment was aborted.',
+          'Deployment has been aborted.',
         );
 
         await this.cleanupAborted(ctx);
@@ -120,6 +120,12 @@ export class DeploymentProcessor {
   private async buildContext(
     deployment: Deployment,
   ): Promise<DeploymentContext> {
+    await this.logService.append(
+      deployment.id,
+      LogLevel.INFO,
+      `Preparing deployment context...`,
+    );
+
     const env = await this.db.environment.findUnique({
       where: { id: deployment.environmentId },
       include: { project: { include: { source: true } } },

@@ -53,7 +53,7 @@ export class ProjectsController {
   }
 
   @Get(':id/branches')
-  listBranches(@Param('id') id: string) {
-    return this.projects.findAvailableBranches(id);
+  listBranches(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.projects.findAvailableBranches(id, req.user.id);
   }
 }
