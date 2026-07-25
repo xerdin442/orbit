@@ -24,6 +24,8 @@ interface SecretsConfig {
   FRONTEND_URL: string;
   DOCKER_SOCKET: string;
   CADDY_ADMIN_URL: string;
+  INGRESS_HOST: string;
+  INGRESS_IP: string;
   POSTGRES_IMAGE_TAG: string;
   MYSQL_IMAGE_TAG: string;
   REDIS_IMAGE_TAG: string;
@@ -60,6 +62,8 @@ export const Secrets: SecretsConfig = {
   FRONTEND_URL: getString('FRONTEND_URL'),
   DOCKER_SOCKET: getString('DOCKER_SOCKET'),
   CADDY_ADMIN_URL: getString('CADDY_ADMIN_URL'),
+  INGRESS_HOST: getString('INGRESS_HOST'),
+  INGRESS_IP: getString('INGRESS_IP'),
   POSTGRES_IMAGE_TAG: getString('POSTGRES_IMAGE_TAG'),
   MYSQL_IMAGE_TAG: getString('MYSQL_IMAGE_TAG'),
   REDIS_IMAGE_TAG: getString('REDIS_IMAGE_TAG'),

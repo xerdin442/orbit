@@ -55,8 +55,14 @@ enum ResourceStatus {
 
 enum DomainStatus {
   pending
+  verifying
   active
-  error
+  failed
+}
+
+enum DomainType {
+  managed
+  custom
 }
 
 enum ActivityType {
@@ -217,8 +223,9 @@ model EnvironmentVariable {
 model Domain {
   id         String       @id @default(uuid())
   hostname   String       @unique
-  sslEnabled Boolean      @default(false)
+  type       DomainType   @default(managed)
   status     DomainStatus @default(pending)
+  verifiedAt DateTime?
 
   environmentId String
   environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)

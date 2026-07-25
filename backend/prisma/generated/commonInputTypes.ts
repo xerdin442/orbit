@@ -355,11 +355,28 @@ export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonNullableFilter<$PrismaModel>
 }
 
+export type EnumDomainTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.DomainType | Prisma.EnumDomainTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDomainTypeFilter<$PrismaModel> | $Enums.DomainType
+}
+
 export type EnumDomainStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.DomainStatus | Prisma.EnumDomainStatusFieldRefInput<$PrismaModel>
   in?: $Enums.DomainStatus[] | Prisma.ListEnumDomainStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.DomainStatus[] | Prisma.ListEnumDomainStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumDomainStatusFilter<$PrismaModel> | $Enums.DomainStatus
+}
+
+export type EnumDomainTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DomainType | Prisma.EnumDomainTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDomainTypeWithAggregatesFilter<$PrismaModel> | $Enums.DomainType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDomainTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDomainTypeFilter<$PrismaModel>
 }
 
 export type EnumDomainStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -716,11 +733,28 @@ export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
 }
 
+export type NestedEnumDomainTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.DomainType | Prisma.EnumDomainTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDomainTypeFilter<$PrismaModel> | $Enums.DomainType
+}
+
 export type NestedEnumDomainStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.DomainStatus | Prisma.EnumDomainStatusFieldRefInput<$PrismaModel>
   in?: $Enums.DomainStatus[] | Prisma.ListEnumDomainStatusFieldRefInput<$PrismaModel>
   notIn?: $Enums.DomainStatus[] | Prisma.ListEnumDomainStatusFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumDomainStatusFilter<$PrismaModel> | $Enums.DomainStatus
+}
+
+export type NestedEnumDomainTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.DomainType | Prisma.EnumDomainTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.DomainType[] | Prisma.ListEnumDomainTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumDomainTypeWithAggregatesFilter<$PrismaModel> | $Enums.DomainType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumDomainTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumDomainTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumDomainStatusWithAggregatesFilter<$PrismaModel = never> = {

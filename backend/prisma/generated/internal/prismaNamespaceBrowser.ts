@@ -193,8 +193,9 @@ export type EnvironmentVariableScalarFieldEnum = (typeof EnvironmentVariableScal
 export const DomainScalarFieldEnum = {
   id: 'id',
   hostname: 'hostname',
-  sslEnabled: 'sslEnabled',
+  type: 'type',
   status: 'status',
+  verifiedAt: 'verifiedAt',
   environmentId: 'environmentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

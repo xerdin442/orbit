@@ -73,11 +73,20 @@ export type ResourceStatus = (typeof ResourceStatus)[keyof typeof ResourceStatus
 
 export const DomainStatus = {
   pending: 'pending',
+  verifying: 'verifying',
   active: 'active',
-  error: 'error'
+  failed: 'failed'
 } as const
 
 export type DomainStatus = (typeof DomainStatus)[keyof typeof DomainStatus]
+
+
+export const DomainType = {
+  managed: 'managed',
+  custom: 'custom'
+} as const
+
+export type DomainType = (typeof DomainType)[keyof typeof DomainType]
 
 
 export const ActivityType = {

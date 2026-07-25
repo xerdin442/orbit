@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EnvironmentsService } from './environments.service';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
@@ -56,6 +57,7 @@ describe('EnvironmentsService', () => {
         { provide: DbService, useValue: db },
         { provide: EncryptionService, useValue: encryption },
         { provide: ActivityService, useValue: activity },
+        { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
         { provide: 'BullQueue_deployments', useValue: queue },
       ],
     }).compile();
