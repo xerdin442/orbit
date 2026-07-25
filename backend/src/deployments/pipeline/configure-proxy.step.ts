@@ -13,6 +13,7 @@ import {
   DeploymentStep,
   DeploymentContext,
   DeploymentStepName,
+  DeploymentStepExecutionError,
 } from '@src/common/types';
 
 export class ConfigureProxyStep implements DeploymentStep {
@@ -63,6 +64,12 @@ export class ConfigureProxyStep implements DeploymentStep {
       });
     }
 
-    await this.caddy.addRoute(ctx.domain, ctx.containerId, 3000);
+    try {
+      await this.caddy.syncEnvironment(ctx.environment.id);
+    } catch {
+      throw new DeploymentStepExecutionError(
+        'Failed to route traffic and configure proxy',
+      );
+    }
   }
 }

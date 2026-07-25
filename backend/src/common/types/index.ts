@@ -145,3 +145,9 @@ export interface ResourceDefaultKey {
   key: string;
   description: string;
 }
+
+export interface DnsInstructions {
+  recordType: 'A' | 'CNAME';
+  host: string;
+  value: string;
+}
