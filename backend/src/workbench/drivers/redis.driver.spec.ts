@@ -81,7 +81,7 @@ describe('RedisDriver', () => {
       .mockResolvedValueOnce('string')
       .mockResolvedValueOnce('bob');
 
-    const result = await driver.paginateData('user:*', { page: 1, limit: 100 });
+    const result = await driver.paginateData('user:*', { page: 1, limit: 50 });
 
     expect(result.rows).toEqual([
       { key: 'user:1', type: 'string', value: 'alice' },

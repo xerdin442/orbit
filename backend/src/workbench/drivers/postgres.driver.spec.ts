@@ -25,6 +25,7 @@ describe('PostgresDriver', () => {
     const driver = new PostgresDriver(credentials);
     await driver.connect();
 
+    mockQuery.mockReset();
     mockQuery.mockResolvedValue({
       rows: [{ datname: 'orbit' }, { datname: 'postgres' }],
       fields: [],
@@ -39,6 +40,7 @@ describe('PostgresDriver', () => {
     const driver = new PostgresDriver(credentials);
     await driver.connect();
 
+    mockQuery.mockReset();
     mockQuery.mockResolvedValue({
       rows: [
         { table_schema: 'public', table_name: 'users' },
@@ -59,6 +61,7 @@ describe('PostgresDriver', () => {
     const driver = new PostgresDriver(credentials);
     await driver.connect();
 
+    mockQuery.mockReset();
     mockQuery.mockResolvedValue({
       rows: [
         {
@@ -94,40 +97,48 @@ describe('PostgresDriver', () => {
     const driver = new PostgresDriver(credentials);
     await driver.connect();
 
-    mockQuery
-      .mockResolvedValueOnce({
-        rows: [
-          {
-            column_name: 'id',
-            data_type: 'integer',
-            is_nullable: 'NO',
-            column_default: null,
-          },
-          {
-            column_name: 'email',
-            data_type: 'character varying',
-            is_nullable: 'NO',
-            column_default: null,
-          },
-        ],
-        fields: [],
-      })
-      .mockResolvedValueOnce({
-        rows: [{ total: 250 }],
-        fields: [],
-      })
-      .mockResolvedValueOnce({
+    mockQuery.mockReset();
+    mockQuery.mockImplementation(async (query: string) => {
+      if (query.includes('information_schema.columns')) {
+        return {
+          rows: [
+            {
+              column_name: 'id',
+              data_type: 'integer',
+              is_nullable: 'NO',
+              column_default: null,
+            },
+            {
+              column_name: 'email',
+              data_type: 'character varying',
+              is_nullable: 'NO',
+              column_default: null,
+            },
+          ],
+          fields: [],
+        };
+      }
+
+      if (query.includes('COUNT(*)')) {
+        return {
+          rows: [{ total: 250 }],
+          fields: [],
+        };
+      }
+
+      return {
         rows: [{ id: 1, email: 'a@example.com' }],
         fields: [{ name: 'id' }, { name: 'email' }],
-      });
+      };
+    });
 
-    const result = await driver.paginateData('users', { page: 1, limit: 100 });
+    const result = await driver.paginateData('users', { page: 1, limit: 50 });
 
     expect(result.meta).toMatchObject({
       total: 250,
       page: 1,
-      limit: 100,
-      totalPages: 3,
+      limit: 50,
+      totalPages: 5,
       hasNextPage: true,
       hasPrevPage: false,
     });

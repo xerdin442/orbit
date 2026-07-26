@@ -99,3 +99,24 @@ export interface MongoIndex {
   key: Record<string, unknown>;
   name: string;
 }
+
+export type MongoFieldType =
+  | 'objectId'
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'date'
+  | 'object'
+  | 'array'
+  | 'null';
+
+export interface MongoFieldSchema extends TableColumn {
+  type: MongoFieldType;
+  fields?: MongoFieldSchema[];
+  arrayOf?: MongoFieldSchema;
+}
+
+export interface MongoCollectionInfo extends TableObject {
+  type: 'collection';
+  documentCount?: number;
+}

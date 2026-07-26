@@ -112,7 +112,7 @@ export class RedisDriver implements DatabaseDriver {
     name: string,
     options: PaginationOptions,
   ): Promise<PaginatedRows> {
-    const limit = Math.min(options.limit, 100);
+    const limit = Math.min(options.limit, 50);
     const offset = (options.page - 1) * limit;
 
     const keys: string[] = [];

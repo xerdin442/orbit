@@ -22,6 +22,7 @@ describe('MongoDriver', () => {
       findOne: jest.fn(),
       aggregate: jest.fn().mockReturnValue({ toArray: mockToArray }),
       countDocuments: jest.fn(),
+      estimatedDocumentCount: jest.fn(),
       indexes: jest.fn(),
     };
 
@@ -59,21 +60,34 @@ describe('MongoDriver', () => {
     expect(result).toEqual(['orbit', 'admin']);
   });
 
-  it('lists collections', async () => {
+  it('lists collections with document counts', async () => {
     const driver = new MongoDriver(credentials);
     await driver.connect();
 
     mockToArray.mockResolvedValue([{ name: 'users' }, { name: 'orders' }]);
+    mockCollection.estimatedDocumentCount
+      .mockResolvedValueOnce(150)
+      .mockResolvedValueOnce(42);
 
     const result = await driver.listTables();
 
     expect(result).toEqual([
-      { name: 'users', type: 'collection', schema: '' },
-      { name: 'orders', type: 'collection', schema: '' },
+      {
+        name: 'users',
+        type: 'collection',
+        schema: '',
+        documentCount: 150,
+      },
+      {
+        name: 'orders',
+        type: 'collection',
+        schema: '',
+        documentCount: 42,
+      },
     ]);
   });
 
-  it('describes a collection from sample document', async () => {
+  it('describes a flat collection', async () => {
     const driver = new MongoDriver(credentials);
     await driver.connect();
 
@@ -88,21 +102,62 @@ describe('MongoDriver', () => {
 
     const result = await driver.describeTable('users');
 
-    expect(result.columns).toContainEqual({
-      name: '_id',
-      type: 'string',
-      primaryKey: true,
+    expect(result.columns).toEqual([
+      { name: '_id', type: 'string', primaryKey: true },
+      { name: 'email', type: 'string', primaryKey: false },
+      { name: 'age', type: 'number', primaryKey: false },
+    ]);
+  });
+
+  it('describes a collection with nested documents and arrays', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockCollection.findOne.mockResolvedValue({
+      _id: '1',
+      name: 'Alice',
+      address: { street: '123 Main', city: 'NYC' },
+      tags: ['admin', 'user'],
     });
-    expect(result.columns).toContainEqual({
-      name: 'email',
-      type: 'string',
-      primaryKey: false,
-    });
-    expect(result.columns).toContainEqual({
-      name: 'age',
-      type: 'number',
-      primaryKey: false,
-    });
+    mockCollection.indexes.mockResolvedValue([
+      { key: { _id: 1 }, name: '_id_' },
+    ]);
+
+    const result = await driver.describeTable('users');
+
+    expect(result.columns).toEqual([
+      { name: '_id', type: 'string', primaryKey: true },
+      { name: 'name', type: 'string', primaryKey: false },
+      {
+        name: 'address',
+        type: 'object',
+        primaryKey: false,
+        fields: [
+          { name: 'street', type: 'string' },
+          { name: 'city', type: 'string' },
+        ],
+      },
+      {
+        name: 'tags',
+        type: 'array',
+        primaryKey: false,
+        arrayOf: { name: '', type: 'string' },
+      },
+    ]);
+  });
+
+  it('describes an empty collection', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockCollection.findOne.mockResolvedValue(null);
+    mockCollection.indexes.mockResolvedValue([]);
+
+    const result = await driver.describeTable('empty');
+
+    expect(result.columns).toEqual([
+      { name: '_id', type: 'objectId', primaryKey: true },
+    ]);
   });
 
   it('paginates collection data', async () => {
@@ -119,7 +174,7 @@ describe('MongoDriver', () => {
       { key: { _id: 1 }, name: '_id_' },
     ]);
 
-    const result = await driver.paginateData('users', { page: 1, limit: 100 });
+    const result = await driver.paginateData('users', { page: 1, limit: 50 });
 
     expect(result.meta.total).toBe(250);
     expect(result.rows).toEqual([{ _id: '1', email: 'a@example.com' }]);
@@ -132,7 +187,11 @@ describe('MongoDriver', () => {
     mockToArray.mockResolvedValue([{ _id: '1', email: 'a@example.com' }]);
 
     const result = await driver.execute(
-      JSON.stringify({ collection: 'users', operation: 'find', filter: {} }),
+      JSON.stringify({
+        collection: 'users',
+        operation: 'find',
+        filter: {},
+      }),
     );
 
     expect(result.rowCount).toBe(1);

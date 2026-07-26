@@ -1,6 +1,8 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import type {
   DatabaseDriver,
+  MongoCollectionInfo,
+  MongoFieldSchema,
   MongoIndex,
   MongoQueryCommand,
   PaginatedRows,
@@ -88,11 +90,25 @@ export class MongoDriver implements DatabaseDriver {
     const db = database ? this.client.db(database) : this.client.db();
     const collections = await db.listCollections().toArray();
 
-    return collections.map((col: { name: string }) => ({
-      name: col.name,
-      type: 'collection',
-      schema: database ?? '',
-    }));
+    const result: MongoCollectionInfo[] = [];
+
+    for (const col of collections) {
+      let documentCount: number | undefined;
+      try {
+        documentCount = await db.collection(col.name).estimatedDocumentCount();
+      } catch {
+        // skip if stats unavailable
+      }
+
+      result.push({
+        name: col.name,
+        type: 'collection',
+        schema: database ?? '',
+        documentCount,
+      });
+    }
+
+    return result;
   }
 
   async describeTable(
@@ -110,10 +126,10 @@ export class MongoDriver implements DatabaseDriver {
       )
       .flatMap((idx) => Object.keys(idx.key));
 
-    const columns = sample
+    const columns: MongoFieldSchema[] = sample
       ? Object.entries(sample).map(([key, value]) => ({
+          ...this.inferFieldSchema(value),
           name: key,
-          type: typeof value,
           primaryKey: primaryKeys.includes(key),
         }))
       : [{ name: '_id', type: 'objectId', primaryKey: true }];
@@ -126,7 +142,7 @@ export class MongoDriver implements DatabaseDriver {
     options: PaginationOptions,
   ): Promise<PaginatedRows> {
     const { columns } = await this.describeTable(name);
-    const limit = Math.min(options.limit, 100);
+    const limit = Math.min(options.limit, 50);
     const offset = (options.page - 1) * limit;
 
     const db = this.client.db();
@@ -156,17 +172,65 @@ export class MongoDriver implements DatabaseDriver {
     await this.client?.close();
   }
 
+  private inferFieldSchema(value: unknown): MongoFieldSchema {
+    if (value === null || value === undefined) {
+      return { name: '', type: 'null' };
+    }
+
+    if (value instanceof ObjectId) {
+      return { name: '', type: 'objectId' };
+    }
+
+    if (value instanceof Date) {
+      return { name: '', type: 'date' };
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return { name: '', type: 'array', arrayOf: { name: '', type: 'null' } };
+      }
+
+      return {
+        name: '',
+        type: 'array',
+        arrayOf: this.inferFieldSchema(value[0]),
+      };
+    }
+
+    if (typeof value === 'object') {
+      const fields = Object.entries(value as Record<string, unknown>).map(
+        ([key, val]) => {
+          const field = this.inferFieldSchema(val);
+          field.name = key;
+          return field;
+        },
+      );
+
+      return { name: '', type: 'object', fields };
+    }
+
+    return { name: '', type: typeof value as MongoFieldSchema['type'] };
+  }
+
   private inferColumns(rows: unknown[]): { name: string; type?: string }[] {
-    const keys = new Set<string>();
+    const keyMap = new Map<string, unknown>();
 
     for (const row of rows) {
       if (row && typeof row === 'object') {
-        for (const key of Object.keys(row)) {
-          keys.add(key);
+        for (const [key, value] of Object.entries(
+          row as Record<string, unknown>,
+        )) {
+          if (!keyMap.has(key)) {
+            keyMap.set(key, value);
+          }
         }
       }
     }
 
-    return Array.from(keys).map((name) => ({ name }));
+    return Array.from(keyMap.entries()).map(([name, value]) => {
+      const field = this.inferFieldSchema(value);
+      field.name = name;
+      return field;
+    });
   }
 }

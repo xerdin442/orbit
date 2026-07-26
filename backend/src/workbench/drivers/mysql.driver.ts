@@ -112,7 +112,7 @@ export class MysqlDriver implements DatabaseDriver {
     options: PaginationOptions,
   ): Promise<PaginatedRows> {
     const { columns } = await this.describeTable(name);
-    const limit = Math.min(options.limit, 100);
+    const limit = Math.min(options.limit, 50);
     const offset = (options.page - 1) * limit;
 
     const [schemaPart, tablePart] = name.includes('.')
