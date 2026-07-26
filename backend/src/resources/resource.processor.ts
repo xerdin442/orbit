@@ -232,18 +232,14 @@ export class ResourceProcessor {
         const container = await this.docker.inspectContainer(containerId);
         const state = container.State;
 
-        if (state.Status !== 'running') {
-          continue;
-        }
-
-        if (state.Health?.Status === 'healthy') {
+        if (state.Status === 'running' && state.Health?.Status === 'healthy') {
           return true;
         }
       } catch {
         // not ready yet
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 4500));
     }
 
     return false;

@@ -66,13 +66,6 @@ export const SQL_QUERY_WHITELIST: QueryWhitelist = {
   description: 'SELECT, SHOW, DESCRIBE, and EXPLAIN statements',
 };
 
-export const REDIS_QUERY_WHITELIST: QueryWhitelist = {
-  resourceType: 'redis',
-  pattern:
-    /^\s*(GET|HGET|HMGET|LRANGE|SMEMBERS|ZRANGE|ZRANGEBYSCORE|SCAN|KEYS|TYPE|TTL|INFO|DBSIZE|EXISTS|HLEN|LLEN|SCARD|ZCARD|HKEYS|HVALS|HGETALL|LRANGE|LINDEX|ZRANGE|ZREVRANGE|ZRANK|ZSCORE|MGET|SUBSTR|STRLEN)\b/i,
-  description: 'read-only Redis commands',
-};
-
 export const MONGO_QUERY_WHITELIST: QueryWhitelist = {
   resourceType: 'mongo',
   pattern:
