@@ -15,23 +15,16 @@ import type {
 } from '@src/common/types/workbench';
 import {
   MONGO_QUERY_WHITELIST,
-  REDIS_QUERY_WHITELIST,
   SQL_QUERY_WHITELIST,
 } from '@src/common/types/workbench';
-import {
-  PostgresDriver,
-  MysqlDriver,
-  RedisDriver,
-  MongoDriver,
-} from './drivers';
+import { PostgresDriver, MysqlDriver, MongoDriver } from './drivers';
 
 const DRIVER_MAP: Record<
-  ResourceType,
+  Exclude<ResourceType, 'redis'>,
   new (credentials: Record<string, string>) => DatabaseDriver
 > = {
   [ResourceType.postgres]: PostgresDriver,
   [ResourceType.mysql]: MysqlDriver,
-  [ResourceType.redis]: RedisDriver,
   [ResourceType.mongo]: MongoDriver,
 };
 
@@ -43,7 +36,7 @@ export class WorkbenchService {
     resourceId: string,
     userId: string,
   ): Promise<{ databases: DatabaseSchema[] }> {
-    const resource = await this.verifyOwnership(resourceId, userId);
+    const resource = await this.verifyOwnershipAndType(resourceId, userId);
     const driver = this.createDriver(
       resource.type,
       resource.credentials as Record<string, string>,
@@ -69,7 +62,7 @@ export class WorkbenchService {
     resourceId: string,
     userId: string,
   ): Promise<{ tables: TableObject[] }> {
-    const resource = await this.verifyOwnership(resourceId, userId);
+    const resource = await this.verifyOwnershipAndType(resourceId, userId);
     const driver = this.createDriver(
       resource.type,
       resource.credentials as Record<string, string>,
@@ -90,7 +83,7 @@ export class WorkbenchService {
     tableName: string,
     options: PaginationOptions,
   ): Promise<PaginatedRows> {
-    const resource = await this.verifyOwnership(resourceId, userId);
+    const resource = await this.verifyOwnershipAndType(resourceId, userId);
     const driver = this.createDriver(
       resource.type,
       resource.credentials as Record<string, string>,
@@ -109,7 +102,7 @@ export class WorkbenchService {
     userId: string,
     query: string,
   ): Promise<QueryResult> {
-    const resource = await this.verifyOwnership(resourceId, userId);
+    const resource = await this.verifyOwnershipAndType(resourceId, userId);
     this.enforceReadOnly(resource.type, query);
 
     const driver = this.createDriver(
@@ -153,7 +146,8 @@ export class WorkbenchService {
     type: ResourceType,
     credentials: Record<string, string>,
   ): DatabaseDriver {
-    const DriverClass = DRIVER_MAP[type];
+    const parsedType = type as Exclude<ResourceType, 'redis'>;
+    const DriverClass = DRIVER_MAP[parsedType];
 
     if (!DriverClass) {
       throw new BadRequestException(`Unsupported resource type: ${type}`);
@@ -177,8 +171,6 @@ export class WorkbenchService {
       case ResourceType.postgres:
       case ResourceType.mysql:
         return SQL_QUERY_WHITELIST;
-      case ResourceType.redis:
-        return REDIS_QUERY_WHITELIST;
       case ResourceType.mongo:
         return MONGO_QUERY_WHITELIST;
       default:
@@ -188,7 +180,7 @@ export class WorkbenchService {
     }
   }
 
-  private async verifyOwnership(resourceId: string, userId: string) {
+  private async verifyOwnershipAndType(resourceId: string, userId: string) {
     const resource = await this.db.resource.findUnique({
       where: {
         id: resourceId,
@@ -198,6 +190,10 @@ export class WorkbenchService {
 
     if (!resource) {
       throw new NotFoundException('Resource not found');
+    }
+
+    if (resource.type === ResourceType.redis) {
+      throw new BadRequestException('Redis is not supported for workbench');
     }
 
     return resource;

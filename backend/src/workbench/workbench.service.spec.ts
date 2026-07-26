@@ -5,7 +5,6 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import {
   PostgresDriver,
   MysqlDriver,
-  RedisDriver,
   MongoDriver,
 } from './drivers';
 
@@ -30,7 +29,6 @@ describe('WorkbenchService', () => {
 
     (PostgresDriver as jest.Mock).mockImplementation(() => mockDriver);
     (MysqlDriver as jest.Mock).mockImplementation(() => mockDriver);
-    (RedisDriver as jest.Mock).mockImplementation(() => mockDriver);
     (MongoDriver as jest.Mock).mockImplementation(() => mockDriver);
 
     db = {
@@ -130,28 +128,22 @@ describe('WorkbenchService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('allows read-only Redis commands', async () => {
-    db.resource.findUnique = jest
-      .fn()
-      .mockResolvedValue(mockResource(ResourceType.redis));
-    mockDriver.execute.mockResolvedValue({
-      columns: [],
-      rows: [],
-      rowCount: 0,
-    });
-
-    await service.executeQuery('r1', 'user-1', 'GET foo');
-
-    expect(mockDriver.execute).toHaveBeenCalledWith('GET foo');
-  });
-
-  it('rejects mutating Redis commands', async () => {
+  it('rejects redis resources for workbench', async () => {
     db.resource.findUnique = jest
       .fn()
       .mockResolvedValue(mockResource(ResourceType.redis));
 
+    await expect(service.getSchema('r1', 'user-1')).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(service.getTables('r1', 'user-1')).rejects.toThrow(
+      BadRequestException,
+    );
     await expect(
-      service.executeQuery('r1', 'user-1', 'DEL foo'),
+      service.getTableData('r1', 'user-1', 'users', { page: 1, limit: 50 }),
+    ).rejects.toThrow(BadRequestException);
+    await expect(
+      service.executeQuery('r1', 'user-1', 'GET foo'),
     ).rejects.toThrow(BadRequestException);
   });
 
