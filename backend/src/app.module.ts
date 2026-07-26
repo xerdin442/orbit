@@ -16,6 +16,7 @@ import { GitHubModule } from '@src/github/github.module';
 import { ActivityModule } from '@src/activity/activity.module';
 import { ResourcesModule } from '@src/resources/resources.module';
 import { DomainsModule } from '@src/domains/domains.module';
+import { WorkbenchModule } from '@src/workbench/workbench.module';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
 
@@ -51,6 +52,7 @@ import KeyvRedis from '@keyv/redis';
     ActivityModule,
     ResourcesModule,
     DomainsModule,
+    WorkbenchModule,
   ],
 
   providers: [

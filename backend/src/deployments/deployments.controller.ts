@@ -7,6 +7,8 @@ import {
   UseGuards,
   Sse,
   ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
@@ -68,6 +70,7 @@ export class DeploymentsController {
   }
 
   @Post('deployments/:id/abort')
+  @HttpCode(HttpStatus.OK)
   async abort(@Param('id') id: string, @Query() query?: MarkedResourcesDto) {
     return this.deployments.abortDeployment(id, query?.marked_resources);
   }
