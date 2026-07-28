@@ -2,11 +2,7 @@ import { WorkbenchService } from './workbench.service';
 import { DbService } from '@src/db/db.service';
 import { ResourceType } from '@generated/client';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import {
-  PostgresDriver,
-  MysqlDriver,
-  MongoDriver,
-} from './drivers';
+import { PostgresDriver, MysqlDriver, MongoDriver } from './drivers';
 
 jest.mock('./drivers');
 

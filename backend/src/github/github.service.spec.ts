@@ -39,8 +39,13 @@ describe('GitHubService', () => {
   });
 
   describe('getUpdateAccessUrl', () => {
-    it('returns settings URL with installationId', () => {
-      const url = service.getUpdateAccessUrl(12345);
+    it('returns settings URL with installationId after verifying ownership', async () => {
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue({
+        id: 'inst-1',
+        installationId: 12345,
+        userId: 'user-1',
+      });
+      const url = await service.getUpdateAccessUrl(12345, 'user-1');
       expect(url).toBe('https://github.com/settings/installations/12345');
     });
   });
