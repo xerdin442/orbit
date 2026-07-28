@@ -157,7 +157,7 @@ model Deployment {
   id              String            @id @default(uuid())
   commitSha       String
   commitMessage   String?
-  imageTag        String            @unique
+  imageTag        String?           @unique
   containerId     String?
   trigger         DeploymentTrigger @default(manual)
   buildStatus     BuildStatus       @default(pending)

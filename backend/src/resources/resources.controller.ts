@@ -14,12 +14,7 @@ import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { ParseResourceTypeArrayPipe } from '@src/common/pipes/resource-type-array.pipe';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { ResourceType } from '@generated/client';
-
-class CreateResourceDto {
-  type: ResourceType;
-  name: string;
-  credentials?: Record<string, string>;
-}
+import { CreateResourceDto } from './dto/resource.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -35,11 +30,13 @@ export class ResourcesController {
 
   @Post('environments/:environmentId/resources')
   create(
+    @Req() req: AuthenticatedRequest,
     @Param('environmentId') environmentId: string,
     @Body() dto: CreateResourceDto,
   ) {
     return this.resources.create(
       environmentId,
+      req.user.id,
       dto.type,
       dto.name,
       dto.credentials,
@@ -47,8 +44,8 @@ export class ResourcesController {
   }
 
   @Get('resources/:id')
-  findOne(@Param('id') id: string) {
-    return this.resources.findById(id);
+  findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.resources.findById(id, req.user.id);
   }
 
   @Delete('resources/:id')

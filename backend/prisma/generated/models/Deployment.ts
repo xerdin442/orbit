@@ -193,7 +193,7 @@ export type DeploymentGroupByOutputType = {
   id: string
   commitSha: string
   commitMessage: string | null
-  imageTag: string
+  imageTag: string | null
   containerId: string | null
   trigger: $Enums.DeploymentTrigger
   buildStatus: $Enums.BuildStatus
@@ -229,7 +229,7 @@ export type DeploymentWhereInput = {
   id?: Prisma.StringFilter<"Deployment"> | string
   commitSha?: Prisma.StringFilter<"Deployment"> | string
   commitMessage?: Prisma.StringNullableFilter<"Deployment"> | string | null
-  imageTag?: Prisma.StringFilter<"Deployment"> | string
+  imageTag?: Prisma.StringNullableFilter<"Deployment"> | string | null
   containerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFilter<"Deployment"> | $Enums.BuildStatus
@@ -246,7 +246,7 @@ export type DeploymentOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
   commitMessage?: Prisma.SortOrderInput | Prisma.SortOrder
-  imageTag?: Prisma.SortOrder
+  imageTag?: Prisma.SortOrderInput | Prisma.SortOrder
   containerId?: Prisma.SortOrderInput | Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
@@ -283,7 +283,7 @@ export type DeploymentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   commitSha?: Prisma.SortOrder
   commitMessage?: Prisma.SortOrderInput | Prisma.SortOrder
-  imageTag?: Prisma.SortOrder
+  imageTag?: Prisma.SortOrderInput | Prisma.SortOrder
   containerId?: Prisma.SortOrderInput | Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
@@ -304,7 +304,7 @@ export type DeploymentScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Deployment"> | string
   commitSha?: Prisma.StringWithAggregatesFilter<"Deployment"> | string
   commitMessage?: Prisma.StringNullableWithAggregatesFilter<"Deployment"> | string | null
-  imageTag?: Prisma.StringWithAggregatesFilter<"Deployment"> | string
+  imageTag?: Prisma.StringNullableWithAggregatesFilter<"Deployment"> | string | null
   containerId?: Prisma.StringNullableWithAggregatesFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerWithAggregatesFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusWithAggregatesFilter<"Deployment"> | $Enums.BuildStatus
@@ -319,7 +319,7 @@ export type DeploymentCreateInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -335,7 +335,7 @@ export type DeploymentUncheckedCreateInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -351,7 +351,7 @@ export type DeploymentUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -367,7 +367,7 @@ export type DeploymentUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -383,7 +383,7 @@ export type DeploymentCreateManyInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -398,7 +398,7 @@ export type DeploymentUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -412,7 +412,7 @@ export type DeploymentUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -559,7 +559,7 @@ export type DeploymentCreateWithoutEnvironmentInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -574,7 +574,7 @@ export type DeploymentUncheckedCreateWithoutEnvironmentInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -618,7 +618,7 @@ export type DeploymentScalarWhereInput = {
   id?: Prisma.StringFilter<"Deployment"> | string
   commitSha?: Prisma.StringFilter<"Deployment"> | string
   commitMessage?: Prisma.StringNullableFilter<"Deployment"> | string | null
-  imageTag?: Prisma.StringFilter<"Deployment"> | string
+  imageTag?: Prisma.StringNullableFilter<"Deployment"> | string | null
   containerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFilter<"Deployment"> | $Enums.BuildStatus
@@ -633,7 +633,7 @@ export type DeploymentCreateWithoutLogsInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -648,7 +648,7 @@ export type DeploymentUncheckedCreateWithoutLogsInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -679,7 +679,7 @@ export type DeploymentUpdateWithoutLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -694,7 +694,7 @@ export type DeploymentUncheckedUpdateWithoutLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -709,7 +709,7 @@ export type DeploymentCreateManyEnvironmentInput = {
   id?: string
   commitSha: string
   commitMessage?: string | null
-  imageTag: string
+  imageTag?: string | null
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
@@ -723,7 +723,7 @@ export type DeploymentUpdateWithoutEnvironmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -738,7 +738,7 @@ export type DeploymentUncheckedUpdateWithoutEnvironmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -753,7 +753,7 @@ export type DeploymentUncheckedUpdateManyWithoutEnvironmentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   commitSha?: Prisma.StringFieldUpdateOperationsInput | string
   commitMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  imageTag?: Prisma.StringFieldUpdateOperationsInput | string
+  imageTag?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
@@ -882,7 +882,7 @@ export type $DeploymentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     id: string
     commitSha: string
     commitMessage: string | null
-    imageTag: string
+    imageTag: string | null
     containerId: string | null
     trigger: $Enums.DeploymentTrigger
     buildStatus: $Enums.BuildStatus

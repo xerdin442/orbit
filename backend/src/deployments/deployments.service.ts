@@ -26,9 +26,13 @@ export class DeploymentsService {
     private readonly resources: ResourcesService,
   ) {}
 
-  async createDeployment(environmentId: string, trigger: DeploymentTrigger) {
-    const env = await this.db.environment.findUnique({
-      where: { id: environmentId },
+  async createDeployment(
+    environmentId: string,
+    userId: string,
+    trigger: DeploymentTrigger,
+  ) {
+    const env = await this.db.environment.findFirst({
+      where: { id: environmentId, project: { ownerId: userId } },
       include: {
         project: { include: { source: true } },
         variables: true,
@@ -56,7 +60,7 @@ export class DeploymentsService {
       data: {
         environmentId,
         trigger,
-        imageTag: '',
+        imageTag: null,
         commitSha: '',
         buildStatus: BuildStatus.pending,
         lifecycleStatus: LifecycleStatus.inactive,
@@ -72,9 +76,9 @@ export class DeploymentsService {
     return created;
   }
 
-  async findById(id: string) {
-    const deployment = await this.db.deployment.findUnique({
-      where: { id },
+  async findById(id: string, userId: string) {
+    const deployment = await this.db.deployment.findFirst({
+      where: { id, environment: { project: { ownerId: userId } } },
       include: {
         environment: { include: { project: true } },
       },
@@ -89,8 +93,11 @@ export class DeploymentsService {
 
   async findByEnvironment(
     environmentId: string,
+    userId: string,
     filters: FilterDeploymentsDto,
   ): Promise<PaginatedResult<Deployment>> {
+    await this.verifyEnvironmentOwnership(environmentId, userId);
+
     const page = Number(filters?.page ?? 1);
     const limit = Number(filters?.limit ?? 20);
 
@@ -120,9 +127,7 @@ export class DeploymentsService {
         take: limit,
         skip: (page - 1) * limit,
       }),
-      this.db.deployment.count({
-        where: { environmentId },
-      }),
+      this.db.deployment.count({ where }),
     ]);
 
     return {
@@ -138,8 +143,8 @@ export class DeploymentsService {
     };
   }
 
-  async findForRollback(deploymentId: string) {
-    const deployment = await this.findById(deploymentId);
+  async findForRollback(deploymentId: string, userId: string) {
+    const deployment = await this.findById(deploymentId, userId);
 
     if (
       deployment.lifecycleStatus !== LifecycleStatus.inactive &&
@@ -162,15 +167,11 @@ export class DeploymentsService {
       },
     });
 
-    await this.activity.log(
-      ActivityType.deployment_rolled_back,
-      deployment.environment.project.ownerId,
-      {
-        deploymentId: rolledDeployment.id,
-        environmentId: deployment.environmentId,
-        trigger: DeploymentTrigger.rollback,
-      },
-    );
+    await this.activity.log(ActivityType.deployment_rolled_back, userId, {
+      deploymentId: rolledDeployment.id,
+      environmentId: deployment.environmentId,
+      trigger: DeploymentTrigger.rollback,
+    });
 
     return rolledDeployment;
   }
@@ -191,7 +192,11 @@ export class DeploymentsService {
 
   async updateCommit(
     id: string,
-    data: { commitSha: string; commitMessage: string; imageTag: string },
+    data: {
+      commitSha: string;
+      commitMessage: string;
+      imageTag: string | null;
+    },
   ) {
     return this.db.deployment.update({
       where: { id },
@@ -216,18 +221,15 @@ export class DeploymentsService {
     });
   }
 
-  async abortDeployment(id: string, resourceIds?: string[]) {
-    const deployment = await this.db.deployment.update({
+  async abortDeployment(id: string, userId: string, resourceIds?: string[]) {
+    const deployment = await this.findById(id, userId);
+
+    await this.db.deployment.update({
       where: { id },
       data: { buildStatus: BuildStatus.aborted },
-      include: {
-        environment: { include: { project: true } },
-      },
     });
 
     await this.markCompleted(deployment.id);
-
-    const userId = deployment.environment.project.ownerId;
 
     await this.activity.log(ActivityType.deployment_aborted, userId, {
       deploymentId: id,
@@ -242,6 +244,19 @@ export class DeploymentsService {
           // resource already gone or never created
         }
       }
+    }
+  }
+
+  private async verifyEnvironmentOwnership(
+    environmentId: string,
+    userId: string,
+  ) {
+    const env = await this.db.environment.findFirst({
+      where: { id: environmentId, project: { ownerId: userId } },
+    });
+
+    if (!env) {
+      throw new NotFoundException('Environment not found');
     }
   }
 }

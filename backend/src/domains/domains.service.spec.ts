@@ -13,15 +13,14 @@ describe('DomainsService', () => {
 
   beforeEach(async () => {
     db = {
-      environment: { findUnique: jest.fn() },
+      environment: { findFirst: jest.fn() },
       domain: {
         findFirst: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
-        findUnique: jest.fn(),
         delete: jest.fn(),
       },
-    };
+    } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'domain'>>;
     activity = { log: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -38,14 +37,14 @@ describe('DomainsService', () => {
 
   describe('addCustomDomain', () => {
     it('throws if environment not found', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue(null);
+      db.environment.findFirst = jest.fn().mockResolvedValue(null);
       await expect(
         service.addCustomDomain('env-1', 'api.example.com', 'user-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws if domain already registered', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest
         .fn()
         .mockResolvedValue({ hostname: 'api.example.com' });
@@ -56,7 +55,7 @@ describe('DomainsService', () => {
     });
 
     it('creates custom domain and returns DNS instructions for subdomain', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest.fn().mockResolvedValue(null);
       db.domain.create = jest.fn().mockResolvedValue({
         id: 'd1',
@@ -88,7 +87,7 @@ describe('DomainsService', () => {
     });
 
     it('returns A record for apex domain', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest.fn().mockResolvedValue(null);
       db.domain.create = jest.fn().mockResolvedValue({
         id: 'd1',
@@ -113,14 +112,14 @@ describe('DomainsService', () => {
 
   describe('deleteDomain', () => {
     it('throws if not found', async () => {
-      db.domain.findUnique = jest.fn().mockResolvedValue(null);
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
       await expect(service.deleteDomain('d1', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('throws if managed hostname', async () => {
-      db.domain.findUnique = jest.fn().mockResolvedValue({
+      db.domain.findFirst = jest.fn().mockResolvedValue({
         id: 'd1',
         type: DomainType.managed,
       });
@@ -130,7 +129,7 @@ describe('DomainsService', () => {
     });
 
     it('deletes custom domain', async () => {
-      db.domain.findUnique = jest.fn().mockResolvedValue({
+      db.domain.findFirst = jest.fn().mockResolvedValue({
         id: 'd1',
         type: DomainType.custom,
         hostname: 'api.example.com',
@@ -146,8 +145,9 @@ describe('DomainsService', () => {
 
   describe('findByEnvironment', () => {
     it('queries domains for environment', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findMany = jest.fn().mockResolvedValue([]);
-      await service.findByEnvironment('env-1');
+      await service.findByEnvironment('env-1', 'user-1');
       expect(db.domain.findMany).toHaveBeenCalledWith({
         where: { environmentId: 'env-1' },
         orderBy: { createdAt: 'asc' },

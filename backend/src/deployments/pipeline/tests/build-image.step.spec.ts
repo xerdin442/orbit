@@ -10,7 +10,7 @@ const mockCtx = (): DeploymentContext =>
     project: { id: 'proj-1' },
     workspace: '/tmp/build',
     commitSha: 'abc123',
-    imageTag: '',
+    imageTag: null,
   }) as DeploymentContext;
 
 describe('BuildImageStep', () => {

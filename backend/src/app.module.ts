@@ -17,6 +17,7 @@ import { ActivityModule } from '@src/activity/activity.module';
 import { ResourcesModule } from '@src/resources/resources.module';
 import { DomainsModule } from '@src/domains/domains.module';
 import { WorkbenchModule } from '@src/workbench/workbench.module';
+import { CleanupModule } from '@src/cleanup/cleanup.module';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
 
@@ -53,6 +54,7 @@ import KeyvRedis from '@keyv/redis';
     ResourcesModule,
     DomainsModule,
     WorkbenchModule,
+    CleanupModule,
   ],
 
   providers: [

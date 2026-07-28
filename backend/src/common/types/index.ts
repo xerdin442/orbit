@@ -93,12 +93,20 @@ export interface ResourceJob {
   resourceId: string;
 }
 
+export interface CleanupJob {
+  projectId?: string;
+  environmentId?: string;
+  deploymentContainerIds: string[];
+  resourceContainers: { containerId?: string; volumeId?: string }[];
+  networkName?: string;
+}
+
 export interface DeploymentContext {
   deployment: Deployment;
   project: Project & { source: Source | null };
   environment: Environment;
   workspace: string;
-  imageTag: string;
+  imageTag: string | null;
   commitSha: string;
   commitMessage: string;
   containerId: string;

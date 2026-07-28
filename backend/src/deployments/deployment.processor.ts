@@ -69,7 +69,10 @@ export class DeploymentProcessor {
     const pipeline = this.buildPipeline(skipImageBuild);
 
     for (const step of pipeline) {
-      const { buildStatus } = await this.deployments.findById(deploymentId);
+      const { buildStatus } = await this.deployments.findById(
+        deploymentId,
+        ctx.project.ownerId,
+      );
 
       if (buildStatus === BuildStatus.aborted) {
         await this.logService.append(
@@ -283,10 +286,17 @@ export class DeploymentProcessor {
         LogLevel.ERROR,
         error.message,
       );
-
       this.logService.complete(ctx.deployment.id);
+
       return;
     }
+
+    await this.logService.append(
+      ctx.deployment.id,
+      LogLevel.ERROR,
+      'Internal server error',
+    );
+    this.logService.complete(ctx.deployment.id);
 
     this.logger.error(
       `System error for deployment ${ctx.deployment.id}: ${error instanceof Error ? error.message : String(error)}`,

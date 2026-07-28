@@ -5,6 +5,7 @@ import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { GitHubService } from '@src/github/github.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { CleanupService } from '@src/cleanup/cleanup.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('ProjectsService', () => {
@@ -12,14 +13,22 @@ describe('ProjectsService', () => {
   let db: jest.Mocked<
     Pick<
       DbService,
-      'project' | 'environment' | 'environmentVariable' | '$transaction'
+      | 'project'
+      | 'source'
+      | 'environment'
+      | 'environmentVariable'
+      | 'gitHubInstallation'
+      | '$transaction'
     >
   >;
   let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt'>>;
   let github: jest.Mocked<
-    Pick<GitHubService, 'listBranches' | 'parseOwnerRepo'>
+    Pick<GitHubService, 'listRepositories' | 'listBranches'>
   >;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
+  let cleanup: jest.Mocked<
+    Pick<CleanupService, 'enqueueProjectCleanup' | 'enqueueEnvironmentCleanup'>
+  >;
 
   beforeEach(async () => {
     db = {
@@ -31,6 +40,7 @@ describe('ProjectsService', () => {
         findUnique: jest.fn(),
       },
       source: { findUniqueOrThrow: jest.fn() },
+      gitHubInstallation: { findFirst: jest.fn() },
       environment: { create: jest.fn() },
       environmentVariable: { createMany: jest.fn() },
       $transaction: jest.fn(),
@@ -41,13 +51,18 @@ describe('ProjectsService', () => {
         | 'source'
         | 'environment'
         | 'environmentVariable'
+        | 'gitHubInstallation'
         | '$transaction'
       >
     >;
 
     encryption = { encrypt: jest.fn((v) => `encrypted_${v}`) };
-    github = { listBranches: jest.fn(), parseOwnerRepo: jest.fn() };
+    github = { listRepositories: jest.fn(), listBranches: jest.fn() };
     activity = { log: jest.fn() };
+    cleanup = {
+      enqueueProjectCleanup: jest.fn(),
+      enqueueEnvironmentCleanup: jest.fn(),
+    };
 
     (db.$transaction as jest.Mock).mockImplementation((cb: Function) => cb(db));
 
@@ -58,6 +73,7 @@ describe('ProjectsService', () => {
         { provide: EncryptionService, useValue: encryption },
         { provide: GitHubService, useValue: github },
         { provide: ActivityService, useValue: activity },
+        { provide: CleanupService, useValue: cleanup },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
       ],
     }).compile();
@@ -121,12 +137,13 @@ describe('ProjectsService', () => {
       );
     });
 
-    it('deletes and logs activity', async () => {
+    it('enqueues cleanup and deletes', async () => {
       db.project.findFirst.mockResolvedValue({
         id: 'proj-1',
         ownerId: 'user-1',
       });
       await service.delete('proj-1', 'user-1');
+      expect(cleanup.enqueueProjectCleanup).toHaveBeenCalledWith('proj-1');
       expect(db.project.delete).toHaveBeenCalledWith({
         where: { id: 'proj-1' },
       });
@@ -141,7 +158,7 @@ describe('ProjectsService', () => {
         repositoryUrl: 'https://github.com/o/r',
         defaultBranch: 'main',
       });
-      const result = await service.findAvailableBranches('proj-1');
+      const result = await service.findAvailableBranches('proj-1', 'user-1');
       expect(result).toEqual([]);
     });
   });

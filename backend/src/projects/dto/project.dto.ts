@@ -26,8 +26,8 @@ export class CreateProjectDto {
   repositoryUrl: string;
 
   @IsString()
-  @IsOptional()
-  defaultBranch?: string;
+  @IsNotEmpty()
+  defaultBranch: string;
 
   @IsBoolean()
   @IsOptional()

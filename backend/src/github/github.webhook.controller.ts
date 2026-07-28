@@ -107,7 +107,7 @@ export class GitHubWebhookController {
         data: {
           environmentId: env.id,
           trigger: DeploymentTrigger.webhook,
-          imageTag: '',
+          imageTag: null,
           commitSha: '',
           buildStatus: BuildStatus.pending,
           lifecycleStatus: LifecycleStatus.inactive,
