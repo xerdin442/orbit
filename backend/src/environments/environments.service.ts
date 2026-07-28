@@ -238,9 +238,9 @@ export class EnvironmentsService {
       data: {
         environmentId,
         trigger: DeploymentTrigger.redeploy,
-        imageTag: activeDeployment.imageTag,
-        commitSha: activeDeployment.commitSha ?? '',
-        commitMessage: activeDeployment.commitMessage,
+        imageTag: activeDeployment?.imageTag ?? null,
+        commitSha: activeDeployment?.commitSha ?? '',
+        commitMessage: activeDeployment?.commitMessage ?? null,
         buildStatus: BuildStatus.pending,
         lifecycleStatus: LifecycleStatus.inactive,
       },
@@ -248,7 +248,7 @@ export class EnvironmentsService {
 
     await this.deployQueue.add({
       deployment,
-      skipImageBuild: !!activeDeployment.imageTag,
+      skipImageBuild: !!activeDeployment?.imageTag,
     });
   }
 }

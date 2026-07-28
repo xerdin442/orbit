@@ -29,6 +29,7 @@ describe('EnvironmentsService', () => {
       environment: {
         create: jest.fn(),
         findUnique: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
         findMany: jest.fn(),
@@ -154,9 +155,9 @@ describe('EnvironmentsService', () => {
         ownerId: 'user-1',
       });
       db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
-      db.environment.findUnique.mockResolvedValue({
+      db.environment.findUniqueOrThrow.mockResolvedValue({
         id: 'env-1',
-        deployments: [],
+        deployments: [{ imageTag: 'project-proj-1:abc', commitSha: 'abc', commitMessage: 'init' }],
       });
       db.deployment.create.mockResolvedValue({ id: 'dep-1' });
 

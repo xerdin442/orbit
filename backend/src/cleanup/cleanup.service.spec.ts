@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CleanupService } from './cleanup.service';
 import { CleanupProcessor } from './cleanup.processor';
 import { DbService } from '@src/db/db.service';
+import { DockerService } from '@src/infrastructure/docker.service';
 import type { Queue, Job } from 'bull';
 import type { CleanupJob } from '@src/common/types';
 
@@ -114,6 +115,8 @@ describe('CleanupProcessor', () => {
     expect(docker.stopContainer).toHaveBeenCalledWith('res-c1');
     expect(docker.removeContainer).toHaveBeenCalledWith('res-c1');
     expect(docker.removeVolume).toHaveBeenCalledWith('res-v1');
-    expect(docker.removeNetwork).toHaveBeenCalledWith('project-proj-1-network');
+    expect(docker.removeNetwork).toHaveBeenCalledWith(
+      'project-proj-1-network',
+    );
   });
 });
