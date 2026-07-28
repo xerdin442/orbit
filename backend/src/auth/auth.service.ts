@@ -1,30 +1,48 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '@src/users/users.service';
 import { Secrets } from '@src/common/secrets';
+import { REDIS_CLIENT } from '@src/common/cache';
 import { ActivityService } from '@src/activity/activity.service';
 import { ActivityType } from '@generated/client';
 import type { GitHubTokenResponse, GitHubUser } from '@src/common/types';
+import { createHash, randomUUID } from 'crypto';
+import type { RedisClientType } from 'redis';
 
 @Injectable()
 export class AuthService {
+  private readonly STATE_TTL_SECONDS = 600;
+
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,
     private readonly activity: ActivityService,
+    @Inject(REDIS_CLIENT) private readonly redis: RedisClientType,
   ) {}
 
-  getGitHubOAuthUrl(): string {
+  async getGitHubOAuthUrl(redirectUri?: string): Promise<{ url: string }> {
     const params = new URLSearchParams({
       client_id: Secrets.GITHUB_CLIENT_ID,
       redirect_uri: Secrets.GITHUB_REDIRECT_URI,
       scope: 'read:user',
     });
 
-    return `https://github.com/login/oauth/authorize?${params.toString()}`;
+    if (redirectUri) {
+      this.validateRedirectUri(redirectUri);
+      const state = randomUUID();
+      const stateKey = this.getStateKey(state);
+      await this.redis.set(stateKey, redirectUri, {
+        expiration: { type: 'EX', value: this.STATE_TTL_SECONDS },
+      });
+      params.set('state', state);
+    }
+
+    return {
+      url: `https://github.com/login/oauth/authorize?${params.toString()}`,
+    };
   }
 
-  async handleGitHubCallback(code: string): Promise<string> {
+  async handleGitHubCallback(code: string, state?: string): Promise<string> {
     const gitHubToken = await this.exchangeCodeForToken(code);
     const gitHubUser = await this.fetchGitHubUser(gitHubToken);
 
@@ -47,7 +65,49 @@ export class AuthService {
       });
     }
 
-    return this.jwt.sign({ sub: user.id });
+    const jwt = this.jwt.sign({ sub: user.id });
+
+    if (state) {
+      const stateKey = this.getStateKey(state);
+      const customRedirectUri = await this.redis.get(stateKey);
+
+      if (customRedirectUri) {
+        await this.redis.del(stateKey);
+        return `${customRedirectUri}?source=github_redirect&token=${jwt}`;
+      }
+    }
+
+    return `${Secrets.FRONTEND_URL}?source=github_redirect&token=${jwt}`;
+  }
+
+  async getAuthenticatedUser(userId: string) {
+    const user = await this.users.findById(userId);
+
+    return {
+      id: user.id,
+      githubUsername: user.githubUsername,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+    };
+  }
+
+  private validateRedirectUri(uri: string) {
+    if (
+      uri.startsWith('http://localhost:') ||
+      uri.startsWith('https://localhost:')
+    ) {
+      return;
+    }
+
+    if (uri === Secrets.FRONTEND_URL) {
+      return;
+    }
+
+    throw new UnauthorizedException('Invalid redirect uri');
+  }
+
+  private getStateKey(state: string): string {
+    return `oauth:state:${createHash('sha256').update(state).digest('hex')}`;
   }
 
   private async exchangeCodeForToken(code: string): Promise<string> {

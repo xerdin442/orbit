@@ -67,6 +67,15 @@ export class EnvironmentsService {
     return env;
   }
 
+  async findAllByProject(projectId: string, userId: string) {
+    await this.verifyProjectOwnership(projectId, userId);
+
+    return this.db.environment.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   async update(envId: string, userId: string, dto: UpdateEnvironmentDto) {
     await this.findById(envId, userId);
 
@@ -203,6 +212,7 @@ export class EnvironmentsService {
     envId: string,
     variableChange = false,
   ) {
+    await this.cache.del(`/api/projects/${projectId}/environments`);
     await this.cache.del(`/api/projects/${projectId}/environments/${envId}`);
 
     if (variableChange) {

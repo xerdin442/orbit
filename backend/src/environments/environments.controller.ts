@@ -32,6 +32,14 @@ export class EnvironmentsController {
     return this.environments.create(projectId, req.user.id, dto);
   }
 
+  @Get()
+  findAll(
+    @Req() req: AuthenticatedRequest,
+    @Param('projectId') projectId: string,
+  ) {
+    return this.environments.findAllByProject(projectId, req.user.id);
+  }
+
   @Get(':id')
   findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.environments.findById(id, req.user.id);
