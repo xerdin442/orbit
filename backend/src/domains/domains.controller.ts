@@ -28,8 +28,8 @@ export class DomainsController {
   }
 
   @Get('environments/:id/domains')
-  listDomains(@Param('id') id: string) {
-    return this.domains.findByEnvironment(id);
+  listDomains(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.domains.findByEnvironment(id, req.user.id);
   }
 
   @Delete('domains/:id')

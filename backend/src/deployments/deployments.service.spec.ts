@@ -22,14 +22,13 @@ describe('DeploymentsService', () => {
 
   beforeEach(async () => {
     db = {
-      environment: { findUnique: jest.fn() },
+      environment: { findFirst: jest.fn() },
       deployment: {
         create: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
         findFirst: jest.fn(),
+        findMany: jest.fn(),
         update: jest.fn(),
-        updateMany: jest.fn(),
+        count: jest.fn(),
       },
     } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'deployment'>>;
 
@@ -50,23 +49,23 @@ describe('DeploymentsService', () => {
 
   describe('createDeployment', () => {
     it('throws if environment not found', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue(null);
+      db.environment.findFirst = jest.fn().mockResolvedValue(null);
       await expect(
-        service.createDeployment('env-1', DeploymentTrigger.manual),
+        service.createDeployment('env-1', 'user-1', DeploymentTrigger.manual),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws if active deployment exists', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.deployment.findFirst = jest.fn().mockResolvedValue({ id: 'dep-1' });
 
       await expect(
-        service.createDeployment('env-1', DeploymentTrigger.manual),
+        service.createDeployment('env-1', 'user-1', DeploymentTrigger.manual),
       ).rejects.toThrow(ConflictException);
     });
 
     it('creates deployment with pending status', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue({
+      db.environment.findFirst = jest.fn().mockResolvedValue({
         id: 'env-1',
         project: { ownerId: 'user-1' },
       });
@@ -75,6 +74,7 @@ describe('DeploymentsService', () => {
 
       const result = await service.createDeployment(
         'env-1',
+        'user-1',
         DeploymentTrigger.manual,
       );
       expect(result.id).toBe('dep-1');
@@ -84,8 +84,8 @@ describe('DeploymentsService', () => {
 
   describe('findById', () => {
     it('throws when not found', async () => {
-      db.deployment.findUnique = jest.fn().mockResolvedValue(null);
-      await expect(service.findById('dep-1')).rejects.toThrow(
+      db.deployment.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(service.findById('dep-1', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -93,19 +93,19 @@ describe('DeploymentsService', () => {
 
   describe('findForRollback', () => {
     it('throws if not found', async () => {
-      db.deployment.findUnique = jest.fn().mockResolvedValue(null);
-      await expect(service.findForRollback('dep-1')).rejects.toThrow(
+      db.deployment.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(service.findForRollback('dep-1', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
     });
 
     it('throws if deployment is not ready/inactive', async () => {
-      db.deployment.findUnique = jest.fn().mockResolvedValue({
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
         id: 'dep-1',
         lifecycleStatus: LifecycleStatus.active,
         buildStatus: BuildStatus.deploying,
       });
-      await expect(service.findForRollback('dep-1')).rejects.toThrow(
+      await expect(service.findForRollback('dep-1', 'user-1')).rejects.toThrow(
         BadRequestException,
       );
     });

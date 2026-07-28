@@ -19,14 +19,14 @@ describe('ResourcesService', () => {
 
   beforeEach(async () => {
     db = {
-      environment: { findUnique: jest.fn() },
+      environment: { findFirst: jest.fn() },
       resource: {
         create: jest.fn(),
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         delete: jest.fn(),
       },
-    };
+    } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'resource'>>;
     docker = {
       stopContainer: jest.fn(),
       removeContainer: jest.fn(),
@@ -68,22 +68,23 @@ describe('ResourcesService', () => {
 
   describe('create', () => {
     it('throws if environment not found', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue(null);
+      db.environment.findFirst = jest.fn().mockResolvedValue(null);
       await expect(
-        service.create('env-1', ResourceType.redis, 'my-redis', {
+        service.create('env-1', 'user-1', ResourceType.redis, 'my-redis', {
           REDIS_URL: '',
         }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('creates resource and enqueues job', async () => {
-      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.resource.create = jest
         .fn()
         .mockResolvedValue({ id: 'res-1', type: ResourceType.redis });
 
       const result = await service.create(
         'env-1',
+        'user-1',
         ResourceType.redis,
         'my-redis',
         { REDIS_URL: '' },
@@ -103,8 +104,8 @@ describe('ResourcesService', () => {
 
   describe('findById', () => {
     it('throws when not found', async () => {
-      db.resource.findUnique = jest.fn().mockResolvedValue(null);
-      await expect(service.findById('res-1')).rejects.toThrow(
+      db.resource.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(service.findById('res-1', 'user-1')).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -112,10 +113,11 @@ describe('ResourcesService', () => {
 
   describe('delete', () => {
     it('cleans up Docker resources and deletes', async () => {
-      db.resource.findUnique = jest.fn().mockResolvedValue({
+      db.resource.findFirst = jest.fn().mockResolvedValue({
         id: 'res-1',
         containerId: 'c1',
         volumeId: 'v1',
+        environment: { project: { ownerId: 'user-1' } },
       });
 
       await service.delete('res-1', 'user-1');

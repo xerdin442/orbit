@@ -40,22 +40,31 @@ export class GitHubController {
 
   @Get(':installationId/repositories')
   listRepositories(
+    @Req() req: AuthenticatedRequest,
     @Param('installationId', ParseIntPipe) installationId: number,
   ) {
-    return this.github.listRepositories(installationId);
+    return this.github.listRepositories(installationId, req.user.id);
   }
 
   @Get(':installationId/update-access')
-  updateAccess(@Param('installationId', ParseIntPipe) installationId: number) {
-    return { url: this.github.getUpdateAccessUrl(installationId) };
+  async updateAccess(
+    @Req() req: AuthenticatedRequest,
+    @Param('installationId', ParseIntPipe) installationId: number,
+  ) {
+    const url = await this.github.getUpdateAccessUrl(
+      installationId,
+      req.user.id,
+    );
+    return { url };
   }
 
   @Get('branches')
   listBranches(
+    @Req() req: AuthenticatedRequest,
     @Query('installationId', ParseIntPipe) installationId: number,
     @Query('repo') repoFullName: string,
   ) {
     const url = `https://github.com/${repoFullName}`;
-    return this.github.listBranches(installationId, url);
+    return this.github.listBranches(installationId, url, req.user.id);
   }
 }

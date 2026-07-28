@@ -24,13 +24,7 @@ export class DomainsService {
     hostname: string,
     userId: string,
   ) {
-    const env = await this.db.environment.findUnique({
-      where: { id: environmentId },
-    });
-
-    if (!env) {
-      throw new NotFoundException('Environment not found');
-    }
+    await this.verifyEnvironmentOwnership(environmentId, userId);
 
     const existing = await this.db.domain.findFirst({
       where: { hostname },
@@ -60,7 +54,9 @@ export class DomainsService {
     return this.getDnsInstructions(hostname);
   }
 
-  async findByEnvironment(environmentId: string) {
+  async findByEnvironment(environmentId: string, userId: string) {
+    await this.verifyEnvironmentOwnership(environmentId, userId);
+
     return this.db.domain.findMany({
       where: { environmentId },
       orderBy: { createdAt: 'asc' },
@@ -68,8 +64,8 @@ export class DomainsService {
   }
 
   async deleteDomain(id: string, userId: string) {
-    const domain = await this.db.domain.findUnique({
-      where: { id },
+    const domain = await this.db.domain.findFirst({
+      where: { id, environment: { project: { ownerId: userId } } },
     });
 
     if (!domain) {
@@ -108,6 +104,19 @@ export class DomainsService {
       host: parts[0],
       value: Secrets.INGRESS_HOST,
     };
+  }
+
+  private async verifyEnvironmentOwnership(
+    environmentId: string,
+    userId: string,
+  ) {
+    const env = await this.db.environment.findFirst({
+      where: { id: environmentId, project: { ownerId: userId } },
+    });
+
+    if (!env) {
+      throw new NotFoundException('Environment not found');
+    }
   }
 
   private async invalidateCache(envId: string) {

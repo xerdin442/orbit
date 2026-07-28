@@ -11,11 +11,15 @@ describe('JwtAuthGuard', () => {
     guard = new JwtAuthGuard(jwt as JwtService);
   });
 
-  const mockContext = (header?: string): ExecutionContext =>
+  const mockContext = (
+    header?: string,
+    query?: Record<string, string>,
+  ): ExecutionContext =>
     ({
       switchToHttp: () => ({
         getRequest: () => ({
           headers: { authorization: header },
+          query: query ?? {},
         }),
       }),
     }) as unknown as ExecutionContext;
@@ -47,6 +51,26 @@ describe('JwtAuthGuard', () => {
 
     const req: Record<string, unknown> = {
       headers: { authorization: 'Bearer valid-token' },
+      query: {},
+    };
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => req,
+      }),
+    } as unknown as ExecutionContext;
+
+    const result = guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(req.user).toEqual({ id: 'user-1' });
+  });
+
+  it('accepts token from query parameter for SSE support', () => {
+    jwt.verify.mockReturnValue({ sub: 'user-1' });
+
+    const req: Record<string, unknown> = {
+      headers: {},
+      query: { token: 'valid-token' },
     };
     const ctx = {
       switchToHttp: () => ({

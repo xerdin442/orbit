@@ -6,6 +6,7 @@ import type { DeploymentJob } from '@src/common/types';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { CleanupService } from '@src/cleanup/cleanup.service';
 import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
@@ -24,6 +25,7 @@ export class EnvironmentsService {
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
     private readonly activity: ActivityService,
+    private readonly cleanup: CleanupService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectQueue('deployments')
     private readonly deployQueue: Queue<DeploymentJob>,
@@ -85,6 +87,8 @@ export class EnvironmentsService {
 
   async delete(envId: string, userId: string) {
     const env = await this.findById(envId, userId);
+
+    await this.cleanup.enqueueEnvironmentCleanup(envId);
 
     await this.db.environment.delete({ where: { id: envId } });
 
@@ -160,7 +164,7 @@ export class EnvironmentsService {
     await this.invalidateEnvCache(projectId, envId, true);
 
     await this.activity.log(ActivityType.variable_updated, userId, {
-      projectId: projectId,
+      projectId,
       environmentId: envId,
       key: existing.key,
     });
@@ -188,7 +192,7 @@ export class EnvironmentsService {
     await this.invalidateEnvCache(projectId, envId, true);
 
     await this.activity.log(ActivityType.variable_deleted, userId, {
-      projectId: projectId,
+      projectId,
       environmentId: envId,
       key: existing.key,
     });
@@ -221,17 +225,30 @@ export class EnvironmentsService {
   }
 
   private async triggerRedeploy(environmentId: string) {
+    const env = await this.db.environment.findUniqueOrThrow({
+      where: { id: environmentId },
+      include: {
+        deployments: { where: { lifecycleStatus: LifecycleStatus.active } },
+      },
+    });
+
+    const activeDeployment = env.deployments[0];
+
     const deployment = await this.db.deployment.create({
       data: {
         environmentId,
         trigger: DeploymentTrigger.redeploy,
-        imageTag: '',
-        commitSha: '',
+        imageTag: activeDeployment.imageTag,
+        commitSha: activeDeployment.commitSha ?? '',
+        commitMessage: activeDeployment.commitMessage,
         buildStatus: BuildStatus.pending,
         lifecycleStatus: LifecycleStatus.inactive,
       },
     });
 
-    await this.deployQueue.add({ deployment, skipImageBuild: true });
+    await this.deployQueue.add({
+      deployment,
+      skipImageBuild: !!activeDeployment.imageTag,
+    });
   }
 }

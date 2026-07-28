@@ -33,12 +33,13 @@ export class ResourcesService {
 
   async create(
     environmentId: string,
+    userId: string,
     type: ResourceType,
     name: string,
     credentials?: Record<string, string>,
   ) {
-    const env = await this.db.environment.findUnique({
-      where: { id: environmentId },
+    const env = await this.db.environment.findFirst({
+      where: { id: environmentId, project: { ownerId: userId } },
     });
 
     if (!env) {
@@ -51,7 +52,7 @@ export class ResourcesService {
         name,
         status: ResourceStatus.provisioning,
         environmentId,
-        credentials: credentials ?? {},
+        credentials,
       },
     });
 
@@ -60,9 +61,10 @@ export class ResourcesService {
     return resource;
   }
 
-  async findById(id: string) {
-    const resource = await this.db.resource.findUnique({
-      where: { id },
+  async findById(id: string, userId: string) {
+    const resource = await this.db.resource.findFirst({
+      where: { id, environment: { project: { ownerId: userId } } },
+      include: { environment: { include: { project: true } } },
     });
 
     if (!resource) {
@@ -73,7 +75,7 @@ export class ResourcesService {
   }
 
   async delete(id: string, userId: string) {
-    const resource = await this.findById(id);
+    const resource = await this.findById(id, userId);
 
     if (resource.containerId) {
       try {

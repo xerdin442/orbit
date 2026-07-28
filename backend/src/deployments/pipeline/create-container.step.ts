@@ -6,6 +6,7 @@ import {
   DeploymentStep,
   DeploymentContext,
   DeploymentStepName,
+  DeploymentStepExecutionError,
 } from '@src/common/types';
 
 export class CreateContainerStep implements DeploymentStep {
@@ -22,6 +23,12 @@ export class CreateContainerStep implements DeploymentStep {
       LogLevel.INFO,
       'Creating container...',
     );
+
+    if (!ctx.imageTag) {
+      throw new DeploymentStepExecutionError(
+        'No image tag available for container creation',
+      );
+    }
 
     const network = await this.docker.getOrCreateProjectNetwork(ctx.project.id);
 
