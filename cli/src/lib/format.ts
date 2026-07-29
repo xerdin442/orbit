@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import chalk from "chalk";
 
 const STATUS_COLORS: Record<string, typeof chalk.red> = {
   ready: chalk.green,
@@ -20,7 +20,7 @@ export function shortSha(sha: string): string {
 }
 
 export function formatDuration(start: Date, end?: Date | null): string {
-  const ms = ((end ?? new Date()).getTime() - new Date(start).getTime());
+  const ms = (end ?? new Date()).getTime() - new Date(start).getTime();
   const seconds = Math.floor(ms / 1000);
 
   if (seconds < 60) return `${seconds}s`;
@@ -35,20 +35,23 @@ export function formatTimestamp(date: Date | string): string {
 
 export function printTable(headers: string[], rows: string[][]): void {
   const colWidths = headers.map((h, i) => {
-    const maxData = rows.reduce((max, row) => Math.max(max, (row[i] ?? '').length), 0);
+    const maxData = rows.reduce(
+      (max, row) => Math.max(max, (row[i] ?? "").length),
+      0,
+    );
     return Math.max(h.length, maxData);
   });
 
   const headerLine = headers
     .map((h, i) => chalk.bold(h.padEnd(colWidths[i]!)))
-    .join('  ');
+    .join("  ");
 
   console.log(headerLine);
 
   for (const row of rows) {
     const line = row
-      .map((cell, i) => (cell ?? '').padEnd(colWidths[i]!))
-      .join('  ');
+      .map((cell, i) => (cell ?? "").padEnd(colWidths[i]!))
+      .join("  ");
     console.log(line);
   }
 }
@@ -66,5 +69,5 @@ export function warn(msg: string): void {
 }
 
 export function info(msg: string): void {
-  console.log(chalk.blue(`ℹ ${msg}`));
+  console.log(chalk.blue(`${msg}`));
 }

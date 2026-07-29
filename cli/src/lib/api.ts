@@ -1,5 +1,5 @@
-import { getApiUrl, getToken } from './config.js';
-import { error } from './format.js';
+import { ensureAuth, getApiUrl } from "./config.js";
+import { error } from "./format.js";
 
 interface ApiError {
   error?: { message?: string };
@@ -12,7 +12,7 @@ export class OrbitApiError extends Error {
     public status: number,
   ) {
     super(message);
-    this.name = 'OrbitApiError';
+    this.name = "OrbitApiError";
   }
 }
 
@@ -21,17 +21,13 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const baseUrl = getApiUrl();
-  const token = getToken();
-  const url = `${baseUrl}${path}`;
+  const token = ensureAuth();
+  const url = `${getApiUrl()}${path}`;
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const response = await fetch(url, {
     method,
@@ -40,17 +36,27 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    error('Not authenticated. Run `orbit auth login`.');
+    error("Not authenticated. Run `orbit auth login`.");
     process.exit(1);
   }
 
   if (!response.ok) {
-    const json = await response.json().catch(() => ({})) as ApiError;
+    const json = (await response.json().catch(() => ({}))) as ApiError;
     const message = json.error?.message ?? json.message ?? response.statusText;
     throw new OrbitApiError(message, response.status);
   }
 
-  return response.json() as Promise<T>;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const json = (await response.json()) as Record<string, unknown>;
+
+  if (json && "data" in json && !("meta" in json)) {
+    return json.data as T;
+  }
+
+  return json as T;
 }
 
 type ApiClient = {
@@ -61,8 +67,8 @@ type ApiClient = {
 };
 
 export const api: ApiClient = {
-  get: <T>(path: string) => request<T>('GET', path),
-  post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
-  del: <T>(path: string) => request<T>('DELETE', path),
+  get: <T>(path: string) => request<T>("GET", path),
+  post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
+  patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
+  del: <T>(path: string) => request<T>("DELETE", path),
 };

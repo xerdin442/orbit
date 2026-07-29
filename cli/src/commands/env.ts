@@ -1,9 +1,9 @@
-import type { Command } from 'commander';
-import inquirer from 'inquirer';
-import fs from 'fs-extra';
-import { api } from '../lib/api.js';
-import { getContext, getToken } from '../lib/config.js';
-import { success, error, warn, printTable } from '../lib/format.js';
+import type { Command } from "commander";
+import inquirer from "inquirer";
+import fs from "fs-extra";
+import { api } from "../lib/api.js";
+import { ensureContext } from "../lib/config.js";
+import { success, error, warn, printTable } from "../lib/format.js";
 
 interface EnvVariable {
   id: string;
@@ -13,12 +13,12 @@ interface EnvVariable {
 
 export function registerEnvCommands(program: Command) {
   const env = program
-    .command('env')
-    .description('Manage environment variables');
+    .command("env")
+    .description("Manage environment variables");
 
   env
-    .command('ls')
-    .description('List environment variables')
+    .command("ls")
+    .description("List environment variables")
     .action(async () => {
       const ctx = ensureContext();
 
@@ -28,26 +28,26 @@ export function registerEnvCommands(program: Command) {
         );
 
         if (vars.length === 0) {
-          console.log('No environment variables set.');
+          console.log("No environment variables set.");
           return;
         }
 
-        const headers = ['Key', 'Value'];
+        const headers = ["Key", "Value"];
         const rows = vars.map((v) => [
           v.key,
-          v.value.length > 40 ? v.value.slice(0, 40) + '...' : v.value,
+          v.value.length > 40 ? v.value.slice(0, 40) + "..." : v.value,
         ]);
 
         printTable(headers, rows);
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Failed to list variables');
+        error(err instanceof Error ? err.message : "Failed to list variables");
         process.exit(1);
       }
     });
 
   env
-    .command('set <key> <value>')
-    .description('Set an environment variable')
+    .command("set <key> <value>")
+    .description("Set an environment variable")
     .action(async (key: string, value: string) => {
       const ctx = ensureContext();
 
@@ -71,14 +71,14 @@ export function registerEnvCommands(program: Command) {
 
         success(`Variable "${key}" set. Redeploy triggered.`);
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Failed to set variable');
+        error(err instanceof Error ? err.message : "Failed to set variable");
         process.exit(1);
       }
     });
 
   env
-    .command('rm <key>')
-    .description('Delete an environment variable')
+    .command("rm <key>")
+    .description("Delete an environment variable")
     .action(async (key: string) => {
       const ctx = ensureContext();
 
@@ -95,8 +95,8 @@ export function registerEnvCommands(program: Command) {
 
         const { confirm } = await inquirer.prompt<{ confirm: boolean }>([
           {
-            type: 'confirm',
-            name: 'confirm',
+            type: "confirm",
+            name: "confirm",
             message: `Delete "${key}"? This will trigger a redeploy.`,
             default: false,
           },
@@ -110,27 +110,29 @@ export function registerEnvCommands(program: Command) {
 
         success(`Variable "${key}" deleted. Redeploy triggered.`);
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Failed to delete variable');
+        error(err instanceof Error ? err.message : "Failed to delete variable");
         process.exit(1);
       }
     });
 
   env
-    .command('import <file>')
-    .description('Import environment variables from a .env file')
+    .command("import <file>")
+    .description("Import environment variables from a .env file")
     .action(async (filePath: string) => {
       const ctx = ensureContext();
 
       try {
-        const content = await fs.readFile(filePath, 'utf-8');
+        const content = await fs.readFile(filePath, "utf-8");
         const vars = parseEnvFile(content);
 
         if (vars.length === 0) {
-          error('No variables found in file.');
+          error("No variables found in file.");
           process.exit(1);
         }
 
-        warn(`Importing ${vars.length} variables. This will trigger a redeploy.`);
+        warn(
+          `Importing ${vars.length} variables. This will trigger a redeploy.`,
+        );
 
         const existing = await api.get<EnvVariable[]>(
           `/projects/${ctx.projectId}/environments/${ctx.environmentId}/variables`,
@@ -152,9 +154,9 @@ export function registerEnvCommands(program: Command) {
           process.stdout.write(`  ${key} ✔\n`);
         }
 
-        success('Import complete. Redeploy triggered.');
+        success("Import complete. Redeploy triggered.");
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Import failed');
+        error(err instanceof Error ? err.message : "Import failed");
         process.exit(1);
       }
     });
@@ -163,11 +165,11 @@ export function registerEnvCommands(program: Command) {
 function parseEnvFile(content: string): { key: string; value: string }[] {
   const vars: { key: string; value: string }[] = [];
 
-  for (const line of content.split('\n')) {
+  for (const line of content.split("\n")) {
     const trimmed = line.trim();
-    if (trimmed === '' || trimmed.startsWith('#')) continue;
+    if (trimmed === "" || trimmed.startsWith("#")) continue;
 
-    const eqIdx = trimmed.indexOf('=');
+    const eqIdx = trimmed.indexOf("=");
     if (eqIdx === -1) continue;
 
     const key = trimmed.slice(0, eqIdx).trim();
@@ -186,20 +188,4 @@ function parseEnvFile(content: string): { key: string; value: string }[] {
   }
 
   return vars;
-}
-
-function ensureContext() {
-  const token = getToken();
-  if (!token) {
-    error('Not authenticated. Run `orbit auth login` first.');
-    process.exit(1);
-  }
-
-  const ctx = getContext();
-  if (!ctx) {
-    error('No linked environment. Run `orbit link` first.');
-    process.exit(1);
-  }
-
-  return ctx;
 }

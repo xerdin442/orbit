@@ -1,9 +1,9 @@
-import type { Command } from 'commander';
-import inquirer from 'inquirer';
-import ora from 'ora';
-import { api } from '../lib/api.js';
-import { setContext, getToken } from '../lib/config.js';
-import { success, error } from '../lib/format.js';
+import type { Command } from "commander";
+import inquirer from "inquirer";
+import ora from "ora";
+import { api } from "../lib/api.js";
+import { setContext, ensureAuth } from "../lib/config.js";
+import { success, error } from "../lib/format.js";
 
 interface Installation {
   id: string;
@@ -21,58 +21,70 @@ interface Branch {
   name: string;
 }
 
-interface DeployResponse {
+interface CreatedProject {
+  environmentId: string;
+  project: {
+    id: string;
+    name: string;
+    source: {
+      repositoryUrl: string;
+      defaultBranch: string;
+    } | null;
+  };
+}
+
+interface Environment {
   id: string;
+  name: string;
+}
+
+interface DeployResult {
+  deploymentId: string;
+  status: string;
 }
 
 export function registerInitCommand(program: Command) {
   program
-    .command('init')
-    .description('Create a new project and deploy')
+    .command("init")
+    .description("Create a new project and deploy")
     .action(async () => {
-      const token = getToken();
-      if (!token) {
-        error('Not authenticated. Run `orbit auth login` first.');
-        process.exit(1);
-      }
+      ensureAuth();
 
       try {
         const installations = await api.get<Installation[]>(
-          '/github/installations',
+          "/github/installations",
         );
 
         if (installations.length === 0) {
           error(
-            'No GitHub installations found. Install the Orbit GitHub App first.',
+            "No GitHub installations found. Install the Orbit GitHub App first.",
           );
           process.exit(1);
         }
 
-        const { installationId } = await inquirer.prompt<{
-          installationId: string;
-        }>([
+        const { inst } = await inquirer.prompt<{ inst: Installation }>([
           {
-            type: 'list',
-            name: 'installationId',
-            message: 'Select a GitHub installation:',
-            choices: installations.map((inst) => ({
-              name: inst.accountLogin,
-              value: inst.id,
+            type: "list",
+            name: "inst",
+            message: "Select a GitHub installation:",
+            choices: installations.map((i) => ({
+              name: i.accountLogin,
+              value: i,
             })),
           },
         ]);
 
-        const spinner = ora('Fetching repositories...').start();
+        const spinner = ora("Fetching repositories...").start();
         const repos = await api.get<Repository[]>(
-          `/github/${installationId}/repositories`,
+          `/github/${inst.installationId}/repositories`,
         );
         spinner.stop();
 
         const { repo } = await inquirer.prompt<{ repo: string }>([
           {
-            type: 'list',
-            name: 'repo',
-            message: 'Select a repository:',
+            type: "list",
+            name: "repo",
+            message: "Select a repository:",
             choices: repos.map((r) => ({
               name: r.full_name,
               value: r.full_name,
@@ -80,55 +92,56 @@ export function registerInitCommand(program: Command) {
           },
         ]);
 
-        spinner.start('Fetching branches...');
+        spinner.start("Fetching branches...");
         const branches = await api.get<Branch[]>(
-          `/github/branches?installationId=${installationId}&repo=${encodeURIComponent(repo)}`,
+          `/github/branches?installationId=${inst.installationId}&repo=${encodeURIComponent(repo)}`,
         );
         spinner.stop();
 
         const { branch } = await inquirer.prompt<{ branch: string }>([
           {
-            type: 'list',
-            name: 'branch',
-            message: 'Select the default branch:',
+            type: "list",
+            name: "branch",
+            message: "Select the default branch:",
             choices: branches.map((b) => b.name),
-            default: 'main',
           },
         ]);
 
-        const repoName = repo.split('/')[1] ?? 'my-app';
+        const repoName = repo.split("/")[1] ?? "my-app";
 
         const { name } = await inquirer.prompt<{ name: string }>([
           {
-            type: 'input',
-            name: 'name',
-            message: 'Project name:',
-            default: repoName.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+            type: "input",
+            name: "name",
+            message: "Project name:",
+            default: repoName.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
             validate: (input: string) =>
-              input.length >= 1 ? true : 'Project name is required',
+              input.length >= 1 ? true : "Project name is required",
           },
         ]);
 
-        spinner.start('Creating project...');
-        const project = await api.post<{
-          id: string;
-          environments: { id: string; name: string }[];
-        }>('/projects', {
+        spinner.start("Creating project...");
+        const created = await api.post<CreatedProject>("/projects", {
           name,
           repositoryUrl: `https://github.com/${repo}`,
           defaultBranch: branch,
-          installationId,
+          installationId: inst.installationId,
         });
         spinner.stop();
 
-        const envId = project.environments[0]?.id;
+        const projectId = created.project.id;
+        const environments = await api.get<Environment[]>(
+          `/projects/${projectId}/environments`,
+        );
+
+        const envId = environments[0]?.id;
         if (!envId) {
-          error('Failed to create environment.');
+          error("Failed to find created environment.");
           process.exit(1);
         }
 
         setContext({
-          projectId: project.id,
+          projectId,
           environmentId: envId,
           projectName: name,
         });
@@ -137,26 +150,26 @@ export function registerInitCommand(program: Command) {
 
         const { deploy } = await inquirer.prompt<{ deploy: boolean }>([
           {
-            type: 'confirm',
-            name: 'deploy',
-            message: 'Deploy now?',
+            type: "confirm",
+            name: "deploy",
+            message: "Deploy now?",
             default: true,
           },
         ]);
 
         if (deploy) {
-          spinner.start('Triggering deployment...');
-          const dep = await api.post<DeployResponse>(
+          spinner.start("Triggering deployment...");
+          const dep = await api.post<DeployResult>(
             `/environments/${envId}/deploy?resource_count=0`,
           );
           spinner.stop();
 
           success(
-            `Deployment triggered (${dep.id}). Run \`orbit logs\` to follow.`,
+            `Deployment triggered (${dep.deploymentId}). Run \`orbit logs\` to follow.`,
           );
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Initialization failed');
+        error(err instanceof Error ? err.message : "Initialization failed");
         process.exit(1);
       }
     });
