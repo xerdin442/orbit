@@ -1,13 +1,13 @@
-import type { Command } from 'commander';
-import { api } from '../lib/api.js';
-import { getContext, getToken } from '../lib/config.js';
+import type { Command } from "commander";
+import { api } from "../lib/api.js";
+import { ensureAuth, ensureContext } from "../lib/config.js";
 import {
   error,
   success,
   statusBadge,
   shortSha,
   formatTimestamp,
-} from '../lib/format.js';
+} from "../lib/format.js";
 
 interface Project {
   id: string;
@@ -23,46 +23,37 @@ interface Environment {
 interface Deployment {
   id: string;
   buildStatus: string;
-  commitSha?: string;
+  commitSha: string;
   createdAt: string;
+}
+
+interface PaginatedDeployments {
+  data: Deployment[];
 }
 
 interface Domain {
   hostname: string;
 }
 
-interface DeployResponse {
-  id: string;
+interface DeployResult {
+  deploymentId: string;
+  status: string;
 }
 
 export function registerInfoCommand(program: Command) {
   program
-    .command('info')
-    .description('Show current project and environment status')
+    .command("info")
+    .description("Show current project and environment status")
     .action(async () => {
-      const token = getToken();
-      if (!token) {
-        error('Not authenticated. Run `orbit auth login` first.');
-        process.exit(1);
-      }
-
-      const ctx = getContext();
-      if (!ctx) {
-        error('No linked environment. Run `orbit link` first.');
-        process.exit(1);
-      }
+      const ctx = ensureContext();
 
       try {
-        const project = await api.get<Project>(
-          `/projects/${ctx.projectId}`,
-        );
+        const project = await api.get<Project>(`/projects/${ctx.projectId}`);
         const env = await api.get<Environment>(
           `/projects/${ctx.projectId}/environments/${ctx.environmentId}`,
         );
 
-        const deps = await api.get<{
-          data: Deployment[];
-        }>(
+        const deps = await api.get<PaginatedDeployments>(
           `/environments/${ctx.environmentId}/deployments?limit=1`,
         );
         const latest = deps.data[0];
@@ -78,7 +69,7 @@ export function registerInfoCommand(program: Command) {
             console.log(`Commit:      ${shortSha(latest.commitSha)}`);
           }
         } else {
-          console.log('Status:      not deployed');
+          console.log("Status:      not deployed");
         }
 
         try {
@@ -86,9 +77,7 @@ export function registerInfoCommand(program: Command) {
             `/environments/${ctx.environmentId}/domains`,
           );
           if (domains.length > 0) {
-            console.log(
-              `URLs:`,
-            );
+            console.log("URLs:");
             for (const d of domains) {
               console.log(`             https://${d.hostname}`);
             }
@@ -97,7 +86,7 @@ export function registerInfoCommand(program: Command) {
           // domains fetch is optional
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Info failed');
+        error(err instanceof Error ? err.message : "Info failed");
         process.exit(1);
       }
     });
@@ -105,45 +94,39 @@ export function registerInfoCommand(program: Command) {
 
 export function registerRedeployCommand(program: Command) {
   program
-    .command('redeploy [deployment-id]')
-    .description('Redeploy using the same image (skips build)')
-    .option('-f, --follow', 'Stream logs')
+    .command("redeploy [deployment-id]")
+    .description("Redeploy using the same image (skips build)")
+    .option("-f, --follow", "Stream logs")
     .action(async (deploymentId?: string, options?: { follow?: boolean }) => {
-      const token = getToken();
-      if (!token) {
-        error('Not authenticated. Run `orbit auth login` first.');
-        process.exit(1);
-      }
-
-      const ctx = getContext();
+      ensureAuth();
 
       try {
-        if (!deploymentId && ctx) {
-          const deps = await api.get<{
-            data: Deployment[];
-          }>(
+        if (!deploymentId) {
+          const ctx = ensureContext();
+
+          const deps = await api.get<PaginatedDeployments>(
             `/environments/${ctx.environmentId}/deployments?limit=1`,
           );
           deploymentId = deps.data[0]?.id;
         }
 
         if (!deploymentId) {
-          error('No deployment to redeploy.');
+          error("No deployment to redeploy.");
           process.exit(1);
         }
 
-        const result = await api.post<DeployResponse>(
+        const result = await api.post<DeployResult>(
           `/deployments/${deploymentId}/redeploy`,
         );
 
-        success(`Redeploy triggered: ${result.id}`);
+        success(`Redeploy triggered: ${result.deploymentId}`);
 
         if (options?.follow) {
-          const { streamLogs } = await import('./logs.js');
-          await streamLogs(result.id);
+          const { streamLogs } = await import("./logs.js");
+          await streamLogs(result.deploymentId);
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Redeploy failed');
+        error(err instanceof Error ? err.message : "Redeploy failed");
         process.exit(1);
       }
     });
@@ -151,55 +134,45 @@ export function registerRedeployCommand(program: Command) {
 
 export function registerRollbackCommand(program: Command) {
   program
-    .command('rollback [deployment-id]')
-    .description('Rollback to a previous deployment')
-    .option('-f, --follow', 'Stream logs')
+    .command("rollback [deployment-id]")
+    .description("Rollback to a previous deployment")
+    .option("-f, --follow", "Stream logs")
     .action(async (deploymentId?: string, options?: { follow?: boolean }) => {
-      const token = getToken();
-      if (!token) {
-        error('Not authenticated. Run `orbit auth login` first.');
-        process.exit(1);
-      }
-
-      const ctx = getContext();
+      ensureAuth();
 
       try {
-        if (!deploymentId && ctx) {
-          const deps = await api.get<{
-            data: Deployment[];
-          }>(
+        if (!deploymentId) {
+          const ctx = ensureContext();
+
+          const deps = await api.get<PaginatedDeployments>(
             `/environments/${ctx.environmentId}/deployments?limit=10`,
           );
 
-          const active = deps.data.find(
-            (d) => d.buildStatus === 'ready' || d.buildStatus === 'active',
-          );
-
-          if (!active || deps.data.length < 2) {
-            error('No previous deployment to rollback to.');
+          if (!deps.data[0] || deps.data.length < 2) {
+            error("No previous deployment to rollback to.");
             process.exit(1);
           }
 
-          deploymentId = deps.data[1]?.id;
+          deploymentId = deps.data[1]!.id;
         }
 
         if (!deploymentId) {
-          error('No deployment specified for rollback.');
+          error("No deployment specified for rollback.");
           process.exit(1);
         }
 
-        const result = await api.post<DeployResponse>(
+        const result = await api.post<DeployResult>(
           `/deployments/${deploymentId}/rollback`,
         );
 
-        success(`Rollback triggered: ${result.id}`);
+        success(`Rollback triggered: ${result.deploymentId}`);
 
         if (options?.follow) {
-          const { streamLogs } = await import('./logs.js');
-          await streamLogs(result.id);
+          const { streamLogs } = await import("./logs.js");
+          await streamLogs(result.deploymentId);
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Rollback failed');
+        error(err instanceof Error ? err.message : "Rollback failed");
         process.exit(1);
       }
     });
