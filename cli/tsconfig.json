@@ -2,22 +2,21 @@
   "compilerOptions": {
     "module": "nodenext",
     "target": "esnext",
-    "types": [
-      "node"
-    ],
-    "lib": [
-      "esnext"
-    ],
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node"],
+    "lib": ["esnext"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
     "strict": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
-    "skipLibCheck": true,
-  }
+    "skipLibCheck": true
+  },
+  "include": ["src"]
 }
