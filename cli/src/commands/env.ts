@@ -180,7 +180,7 @@ export function registerEnvCommands(program: Command) {
     });
 }
 
-function parseEnvFile(content: string): { key: string; value: string }[] {
+export function parseEnvFile(content: string): { key: string; value: string }[] {
   const vars: { key: string; value: string }[] = [];
 
   for (const line of content.split("\n")) {

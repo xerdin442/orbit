@@ -1,9 +1,11 @@
 import type { Command } from "commander";
 import inquirer from "inquirer";
 import ora from "ora";
+import fs from "fs-extra";
 import { api } from "../lib/api.js";
 import { setContext, ensureAuth } from "../lib/config.js";
 import { success, error } from "../lib/format.js";
+import { parseEnvFile } from "./env.js";
 
 interface Installation {
   id: string;
@@ -116,9 +118,36 @@ export function registerInitCommand(program: Command) {
             message: "Project name:",
             default: repoName.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
             validate: (input: string) =>
-              input.length >= 1 ? true : "Project name is required",
+              input.length >= 3
+                ? true
+                : "Project name must be at least 3 characters",
           },
         ]);
+
+        const { envPath } = await inquirer.prompt<{ envPath: string }>([
+          {
+            type: "input",
+            name: "envPath",
+            message: "Path to .env file (optional):",
+            default: "",
+          },
+        ]);
+
+        let envVars: Record<string, string> | undefined;
+
+        if (envPath) {
+          try {
+            const content = await fs.readFile(envPath, "utf-8");
+            const parsed = parseEnvFile(content);
+            if (parsed.length > 0) {
+              envVars = Object.fromEntries(parsed.map((v) => [v.key, v.value]));
+              success(`Parsed ${parsed.length} variables from ${envPath}`);
+            }
+          } catch {
+            error(`Could not read file: ${envPath}`);
+            process.exit(1);
+          }
+        }
 
         spinner.start("Creating project...");
         const created = await api.post<CreatedProject>("/projects", {
@@ -126,23 +155,13 @@ export function registerInitCommand(program: Command) {
           repositoryUrl: `https://github.com/${repo}`,
           defaultBranch: branch,
           installationId: inst.installationId,
+          ...(envVars ? { envVars } : {}),
         });
         spinner.stop();
 
-        const projectId = created.project.id;
-        const environments = await api.get<Environment[]>(
-          `/projects/${projectId}/environments`,
-        );
-
-        const envId = environments[0]?.id;
-        if (!envId) {
-          error("Failed to find created environment.");
-          process.exit(1);
-        }
-
         setContext({
-          projectId,
-          environmentId: envId,
+          projectId: created.project.id,
+          environmentId: created.environmentId,
           projectName: name,
         });
 
@@ -159,13 +178,13 @@ export function registerInitCommand(program: Command) {
 
         if (deploy) {
           spinner.start("Triggering deployment...");
-          const dep = await api.post<DeployResult>(
-            `/environments/${envId}/deploy?resource_count=0`,
+          const result = await api.post<DeployResult>(
+            `/environments/${created.environmentId}/deploy?resource_count=0`,
           );
           spinner.stop();
 
           success(
-            `Deployment triggered (${dep.deploymentId}). Run \`orbit logs\` to follow.`,
+            `Deployment triggered (${result.deploymentId}). Run \`orbit logs\` to follow.`,
           );
         }
       } catch (err) {

@@ -1,0 +1,11 @@
+export { registerAuthCommands } from "./auth.js";
+export { registerInitCommand } from "./init.js";
+export { registerLinkCommand } from "./link.js";
+export { registerDeployCommand } from "./deploy.js";
+export { registerLogsCommand } from "./logs.js";
+export { registerListCommand } from "./list.js";
+export { registerEnvCommands } from "./env.js";
+export { registerDomainCommands } from "./domains.js";
+export { registerInfoCommand } from "./info.js";
+export { registerRedeployCommand } from "./redeploy.js";
+export { registerRollbackCommand } from "./rollback.js";

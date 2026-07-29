@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { registerAuthCommands } from "./commands/auth.js";
-import { registerInitCommand } from "./commands/init.js";
-import { registerLinkCommand } from "./commands/link.js";
-import { registerDeployCommand } from "./commands/deploy.js";
-import { registerLogsCommand } from "./commands/logs.js";
-import { registerListCommand } from "./commands/list.js";
-import { registerEnvCommands } from "./commands/env.js";
-import { registerDomainCommands } from "./commands/domains.js";
 import {
+  registerAuthCommands,
+  registerInitCommand,
+  registerLinkCommand,
+  registerDeployCommand,
+  registerLogsCommand,
+  registerListCommand,
+  registerEnvCommands,
+  registerDomainCommands,
   registerInfoCommand,
   registerRedeployCommand,
   registerRollbackCommand,
-} from "./commands/info.js";
+} from "./commands/index.js";
 import { setApiUrl } from "./lib/config.js";
 
 const program = new Command();
