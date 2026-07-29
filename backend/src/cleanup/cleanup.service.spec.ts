@@ -115,8 +115,6 @@ describe('CleanupProcessor', () => {
     expect(docker.stopContainer).toHaveBeenCalledWith('res-c1');
     expect(docker.removeContainer).toHaveBeenCalledWith('res-c1');
     expect(docker.removeVolume).toHaveBeenCalledWith('res-v1');
-    expect(docker.removeNetwork).toHaveBeenCalledWith(
-      'project-proj-1-network',
-    );
+    expect(docker.removeNetwork).toHaveBeenCalledWith('project-proj-1-network');
   });
 });
