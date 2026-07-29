@@ -130,31 +130,49 @@ export function registerEnvCommands(program: Command) {
           process.exit(1);
         }
 
-        warn(
-          `Importing ${vars.length} variables. This will trigger a redeploy.`,
-        );
+        warn(`Importing ${vars.length} variables...`);
 
-        const existing = await api.get<EnvVariable[]>(
-          `/projects/${ctx.projectId}/environments/${ctx.environmentId}/variables`,
-        );
+        const basePath = `/projects/${ctx.projectId}/environments/${ctx.environmentId}/variables`;
+        const existing = await api.get<EnvVariable[]>(basePath);
+
+        const toPatch: { id: string; key: string; value: string }[] = [];
+        const toCreate: { key: string; value: string }[] = [];
 
         for (const { key, value } of vars) {
           const existingVar = existing.find((v) => v.key === key);
           if (existingVar) {
-            await api.patch(
-              `/projects/${ctx.projectId}/environments/variables/${existingVar.id}`,
-              { value },
-            );
+            toPatch.push({ id: existingVar.id, key, value });
           } else {
-            await api.post(
-              `/projects/${ctx.projectId}/environments/${ctx.environmentId}/variables`,
-              { key, value },
-            );
+            toCreate.push({ key, value });
           }
-          process.stdout.write(`  ${key} ✔\n`);
         }
 
-        success("Import complete. Redeploy triggered.");
+        if (toCreate.length > 0) {
+          await api.post(`${basePath}/bulk?skip_redeploy=true`, {
+            variables: toCreate,
+          });
+          for (const { key } of toCreate) {
+            process.stdout.write(`  ${key} ✔ (new)\n`);
+          }
+        }
+
+        for (const { id, key, value } of toPatch) {
+          await api.patch(
+            `/projects/${ctx.projectId}/environments/variables/${id}?skip_redeploy=true`,
+            { value },
+          );
+          process.stdout.write(`  ${key} ✔ (updated)\n`);
+        }
+
+        const result = await api.post<{ deploymentId: string }>(
+          `/environments/${ctx.environmentId}/deploy?resource_count=0`,
+        );
+
+        success(
+          `Import complete. Deployment triggered: ${result.deploymentId}`,
+        );
+
+        console.log(`\nRun \`orbit logs ${result.deploymentId}\` to follow.`);
       } catch (err) {
         error(err instanceof Error ? err.message : "Import failed");
         process.exit(1);
