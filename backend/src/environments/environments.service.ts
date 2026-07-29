@@ -11,7 +11,11 @@ import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
 } from './dto/environment.dto';
-import { CreateVariableDto, UpdateVariableDto } from './dto/variable.dto';
+import {
+  CreateVariableDto,
+  UpdateVariableDto,
+  BulkCreateVariablesDto,
+} from './dto/variable.dto';
 import {
   ActivityType,
   BuildStatus,
@@ -122,7 +126,12 @@ export class EnvironmentsService {
     }));
   }
 
-  async createVariable(envId: string, userId: string, dto: CreateVariableDto) {
+  async createVariable(
+    envId: string,
+    userId: string,
+    dto: CreateVariableDto,
+    skipRedeploy = false,
+  ) {
     const env = await this.findById(envId, userId);
 
     const encrypted = this.encryption.encrypt(dto.value);
@@ -135,7 +144,9 @@ export class EnvironmentsService {
       },
     });
 
-    await this.triggerRedeploy(envId);
+    if (!skipRedeploy) {
+      await this.triggerRedeploy(envId);
+    }
 
     await this.invalidateEnvCache(env.projectId, envId, true);
 
@@ -148,7 +159,43 @@ export class EnvironmentsService {
     return created;
   }
 
-  async updateVariable(varId: string, userId: string, dto: UpdateVariableDto) {
+  async bulkCreateVariables(
+    envId: string,
+    userId: string,
+    dto: BulkCreateVariablesDto,
+    skipRedeploy = false,
+  ) {
+    const env = await this.findById(envId, userId);
+
+    const data = dto.variables.map((v) => ({
+      key: v.key,
+      value: this.encryption.encrypt(v.value),
+      environmentId: envId,
+    }));
+
+    const result = await this.db.environmentVariable.createMany({ data });
+
+    if (!skipRedeploy) {
+      await this.triggerRedeploy(envId);
+    }
+
+    await this.invalidateEnvCache(env.projectId, envId, true);
+
+    await this.activity.log(ActivityType.variable_created, userId, {
+      projectId: env.projectId,
+      environmentId: envId,
+      keys: dto.variables.map((v) => v.key).join(','),
+    });
+
+    return { count: result.count };
+  }
+
+  async updateVariable(
+    varId: string,
+    userId: string,
+    dto: UpdateVariableDto,
+    skipRedeploy = false,
+  ) {
     const existing = await this.db.environmentVariable.findUnique({
       where: { id: varId },
     });
@@ -168,7 +215,9 @@ export class EnvironmentsService {
     const projectId = updated.environment.projectId;
     const envId = updated.environment.id;
 
-    await this.triggerRedeploy(envId);
+    if (!skipRedeploy) {
+      await this.triggerRedeploy(envId);
+    }
 
     await this.invalidateEnvCache(projectId, envId, true);
 
@@ -181,7 +230,7 @@ export class EnvironmentsService {
     return updated;
   }
 
-  async deleteVariable(varId: string, userId: string) {
+  async deleteVariable(varId: string, userId: string, skipRedeploy = false) {
     const existing = await this.db.environmentVariable.findUnique({
       where: { id: varId },
       include: { environment: true },
@@ -196,7 +245,9 @@ export class EnvironmentsService {
 
     await this.db.environmentVariable.delete({ where: { id: varId } });
 
-    await this.triggerRedeploy(envId);
+    if (!skipRedeploy) {
+      await this.triggerRedeploy(envId);
+    }
 
     await this.invalidateEnvCache(projectId, envId, true);
 
