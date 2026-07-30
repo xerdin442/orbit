@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { api } from "../lib/api.js";
-import { ensureAuth, ensureContext } from "../lib/config.js";
+import { ensureContext } from "../lib/config.js";
 import { error, success } from "../lib/format.js";
 import { streamLogs } from "./logs.js";
 
@@ -23,12 +23,10 @@ export function registerRedeployCommand(program: Command) {
     .description("Redeploy using the same image (skips build)")
     .option("-f, --follow", "Stream logs")
     .action(async (deploymentId?: string, options?: { follow?: boolean }) => {
-      const token = ensureAuth();
+      const { ctx, token } = ensureContext();
 
       try {
         if (!deploymentId) {
-          const ctx = ensureContext();
-
           const deps = await api.get<PaginatedDeployments>(
             `/environments/${ctx.environmentId}/deployments?limit=1`,
           );

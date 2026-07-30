@@ -26,7 +26,7 @@ export function registerDomainCommands(program: Command) {
     .command("ls")
     .description("List domains")
     .action(async () => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const result = await api.get<Domain[]>(
@@ -52,7 +52,7 @@ export function registerDomainCommands(program: Command) {
     .command("add <hostname>")
     .description("Add a custom domain")
     .action(async (hostname: string) => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const dns = await api.post<DnsInstructions>(
@@ -60,9 +60,7 @@ export function registerDomainCommands(program: Command) {
           { hostname },
         );
 
-        success(
-          `Domain "${hostname}" added. Configure this DNS record in your provider:`,
-        );
+        success(`Domain "${hostname}" added. Configure this DNS record:`);
         console.log(`  Type:  ${dns.recordType}`);
         console.log(`  Host:  ${dns.host}`);
         console.log(`  Value: ${dns.value}`);
@@ -76,13 +74,13 @@ export function registerDomainCommands(program: Command) {
     .command("rm <hostname>")
     .description("Remove a custom domain")
     .action(async (hostname: string) => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
-        const all = await api.get<Domain[]>(
+        const id = await api.get<Domain[]>(
           `/environments/${ctx.environmentId}/domains`,
         );
-        const domain = all.find(
+        const domain = id.find(
           (d) => d.hostname === hostname && d.type === "custom",
         );
 
