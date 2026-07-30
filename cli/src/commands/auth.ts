@@ -32,7 +32,7 @@ export function registerAuthCommands(program: Command) {
       try {
         const token = await startAuthServer();
         setToken(token);
-        success("Logged in successfully.");
+        success("✔ Logged in successfully.");
       } catch (err) {
         error(err instanceof Error ? err.message : "Login failed");
         process.exit(1);
