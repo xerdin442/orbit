@@ -19,6 +19,7 @@ import { ResourcesModule } from '@src/resources/resources.module';
 import { DomainsModule } from '@src/domains/domains.module';
 import { WorkbenchModule } from '@src/workbench/workbench.module';
 import { CleanupModule } from '@src/cleanup/cleanup.module';
+import { SlackModule } from '@src/slack/slack.module';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import KeyvRedis from '@keyv/redis';
 
@@ -56,6 +57,7 @@ import KeyvRedis from '@keyv/redis';
     DomainsModule,
     WorkbenchModule,
     CleanupModule,
+    SlackModule,
   ],
 
   providers: [

@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { SlackBoltService } from './slack/slack-bolt.service';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -29,6 +30,9 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
+
+  const slackBolt = app.get(SlackBoltService);
+  app.use('/slack/events', slackBolt.receiver.router);
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }

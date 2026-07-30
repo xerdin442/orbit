@@ -407,6 +407,7 @@ export const ModelName = {
   EnvironmentVariable: 'EnvironmentVariable',
   Domain: 'Domain',
   GitHubInstallation: 'GitHubInstallation',
+  SlackInstallation: 'SlackInstallation',
   Activity: 'Activity'
 } as const
 
@@ -423,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "project" | "source" | "environment" | "deployment" | "deploymentLog" | "resource" | "environmentVariable" | "domain" | "gitHubInstallation" | "activity"
+    modelProps: "user" | "project" | "source" | "environment" | "deployment" | "deploymentLog" | "resource" | "environmentVariable" | "domain" | "gitHubInstallation" | "slackInstallation" | "activity"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1167,6 +1168,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SlackInstallation: {
+      payload: Prisma.$SlackInstallationPayload<ExtArgs>
+      fields: Prisma.SlackInstallationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SlackInstallationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SlackInstallationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>
+        }
+        findFirst: {
+          args: Prisma.SlackInstallationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SlackInstallationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>
+        }
+        findMany: {
+          args: Prisma.SlackInstallationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>[]
+        }
+        create: {
+          args: Prisma.SlackInstallationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>
+        }
+        createMany: {
+          args: Prisma.SlackInstallationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SlackInstallationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>[]
+        }
+        delete: {
+          args: Prisma.SlackInstallationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>
+        }
+        update: {
+          args: Prisma.SlackInstallationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>
+        }
+        deleteMany: {
+          args: Prisma.SlackInstallationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SlackInstallationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SlackInstallationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>[]
+        }
+        upsert: {
+          args: Prisma.SlackInstallationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SlackInstallationPayload>
+        }
+        aggregate: {
+          args: Prisma.SlackInstallationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSlackInstallation>
+        }
+        groupBy: {
+          args: Prisma.SlackInstallationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SlackInstallationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SlackInstallationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SlackInstallationCountAggregateOutputType> | number
+        }
+      }
+    }
     Activity: {
       payload: Prisma.$ActivityPayload<ExtArgs>
       fields: Prisma.ActivityFieldRefs
@@ -1417,6 +1492,27 @@ export const GitHubInstallationScalarFieldEnum = {
 export type GitHubInstallationScalarFieldEnum = (typeof GitHubInstallationScalarFieldEnum)[keyof typeof GitHubInstallationScalarFieldEnum]
 
 
+export const SlackInstallationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  teamId: 'teamId',
+  teamName: 'teamName',
+  enterpriseId: 'enterpriseId',
+  botUserId: 'botUserId',
+  botId: 'botId',
+  appId: 'appId',
+  scopes: 'scopes',
+  botToken: 'botToken',
+  installerSlackUserId: 'installerSlackUserId',
+  raw: 'raw',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SlackInstallationScalarFieldEnum = (typeof SlackInstallationScalarFieldEnum)[keyof typeof SlackInstallationScalarFieldEnum]
+
+
 export const ActivityScalarFieldEnum = {
   id: 'id',
   type: 'type',
@@ -1442,6 +1538,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -1838,6 +1941,7 @@ export type GlobalOmitConfig = {
   environmentVariable?: Prisma.EnvironmentVariableOmit
   domain?: Prisma.DomainOmit
   gitHubInstallation?: Prisma.GitHubInstallationOmit
+  slackInstallation?: Prisma.SlackInstallationOmit
   activity?: Prisma.ActivityOmit
 }
 
