@@ -7,10 +7,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
-import type { Queue } from 'bull';
+import type { Queue } from 'bullmq';
 import { DbService } from '@src/db/db.service';
 import { Secrets } from '@src/common/secrets';
 import { ActivityService } from '@src/activity/activity.service';
@@ -114,7 +114,7 @@ export class GitHubWebhookController {
         },
       });
 
-      await this.deployQueue.add({ deployment });
+      await this.deployQueue.add('webhook', { deployment });
     }
   }
 

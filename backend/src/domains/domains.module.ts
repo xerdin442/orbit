@@ -1,6 +1,6 @@
 import { Module, OnModuleInit } from '@nestjs/common';
-import { BullModule, InjectQueue } from '@nestjs/bull';
-import type { Queue } from 'bull';
+import { BullModule, InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { DomainsService } from './domains.service';
 import { DomainsController } from './domains.controller';
 import { DomainVerificationProcessor } from './domain-verification.processor';
@@ -15,6 +15,7 @@ export class DomainsModule implements OnModuleInit {
 
   async onModuleInit() {
     await this.domainQueue.add(
+      'verify',
       {},
       {
         repeat: { every: 60_000 },
