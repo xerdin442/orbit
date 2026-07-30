@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { GitHubService } from './github.service';
 import { GitHubController } from './github.controller';
 import { GitHubWebhookController } from './github.webhook.controller';

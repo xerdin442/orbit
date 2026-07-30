@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { CleanupService } from './cleanup.service';
 import { CleanupProcessor } from './cleanup.processor';
 import { InfrastructureModule } from '@src/infrastructure/infrastructure.module';

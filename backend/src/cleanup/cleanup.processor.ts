@@ -1,17 +1,18 @@
-import { Processor, Process } from '@nestjs/bull';
-import type { Job } from 'bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import type { Job } from 'bullmq';
 import { Logger } from '@src/common/logger';
 import { DockerService } from '@src/infrastructure/docker.service';
 import type { CleanupJob } from '@src/common/types';
 
 @Processor('cleanup')
-export class CleanupProcessor {
+export class CleanupProcessor extends WorkerHost {
   private readonly logger = Logger(CleanupProcessor.name);
 
-  constructor(private readonly docker: DockerService) {}
+  constructor(private readonly docker: DockerService) {
+    super();
+  }
 
-  @Process()
-  async handleCleanup(job: Job<CleanupJob>): Promise<void> {
+  async process(job: Job<CleanupJob>): Promise<void> {
     const {
       projectId,
       environmentId,

@@ -6,7 +6,8 @@ import { DockerService } from '@src/infrastructure/docker.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { NotFoundException } from '@nestjs/common';
 import { ResourceType, ResourceStatus } from '@generated/client';
-import type { Queue } from 'bull';
+import type { Queue } from 'bullmq';
+import { getQueueToken } from '@nestjs/bullmq';
 
 describe('ResourcesService', () => {
   let service: ResourcesService;
@@ -42,7 +43,7 @@ describe('ResourcesService', () => {
         { provide: DockerService, useValue: docker },
         { provide: ActivityService, useValue: activity },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
-        { provide: 'BullQueue_resources', useValue: queue },
+        { provide: getQueueToken('resources'), useValue: queue },
       ],
     }).compile();
 
@@ -98,7 +99,9 @@ describe('ResourcesService', () => {
           credentials: { REDIS_URL: '' },
         }),
       });
-      expect(queue.add).toHaveBeenCalledWith({ resourceId: 'res-1' });
+      expect(queue.add).toHaveBeenCalledWith('provision', {
+        resourceId: 'res-1',
+      });
     });
   });
 

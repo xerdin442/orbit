@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Queue } from 'bull';
+import type { Queue } from 'bullmq';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { ActivityService } from '@src/activity/activity.service';
@@ -56,7 +56,7 @@ export class ResourcesService {
       },
     });
 
-    await this.resourceQueue.add({ resourceId: resource.id });
+    await this.resourceQueue.add('provision', { resourceId: resource.id });
 
     return resource;
   }

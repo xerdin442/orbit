@@ -1,4 +1,4 @@
-import { Processor, Process } from '@nestjs/bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { resolve4, resolveCname } from 'dns';
 import { promisify } from 'util';
 import { Logger } from '@src/common/logger';
@@ -13,17 +13,18 @@ const dnsResolveCname = promisify(resolveCname);
 const FAILURE_TIMEOUT_MS = 30 * 60 * 1000;
 
 @Processor('domains')
-export class DomainVerificationProcessor {
+export class DomainVerificationProcessor extends WorkerHost {
   private readonly logger = Logger(DomainVerificationProcessor.name);
 
   constructor(
     private readonly db: DbService,
     private readonly caddy: CaddyService,
     private readonly activity: ActivityService,
-  ) {}
+  ) {
+    super();
+  }
 
-  @Process()
-  async verifyDomains(): Promise<void> {
+  async process(): Promise<void> {
     const domains = await this.db.domain.findMany({
       where: {
         status: { in: [DomainStatus.pending, DomainStatus.verifying] },

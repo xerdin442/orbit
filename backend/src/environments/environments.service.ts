@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Queue } from 'bull';
+import type { Queue } from 'bullmq';
 import type { DeploymentJob } from '@src/common/types';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
@@ -307,7 +307,7 @@ export class EnvironmentsService {
       },
     });
 
-    await this.deployQueue.add({
+    await this.deployQueue.add('redeploy', {
       deployment,
       skipImageBuild: !!activeDeployment?.imageTag,
     });

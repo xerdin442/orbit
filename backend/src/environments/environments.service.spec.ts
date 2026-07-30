@@ -6,7 +6,8 @@ import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { CleanupService } from '@src/cleanup/cleanup.service';
 import { NotFoundException } from '@nestjs/common';
-import type { Queue } from 'bull';
+import type { Queue } from 'bullmq';
+import { getQueueToken } from '@nestjs/bullmq';
 
 describe('EnvironmentsService', () => {
   let service: EnvironmentsService;
@@ -69,7 +70,7 @@ describe('EnvironmentsService', () => {
         { provide: ActivityService, useValue: activity },
         { provide: CleanupService, useValue: cleanup },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
-        { provide: 'BullQueue_deployments', useValue: queue },
+        { provide: getQueueToken('deployments'), useValue: queue },
       ],
     }).compile();
 
@@ -248,9 +249,9 @@ describe('EnvironmentsService', () => {
       });
       expect(queue.add).toHaveBeenCalled();
       expect(activity.log).toHaveBeenCalledWith(
-        expect.stringContaining("variable_created"),
-        "user-1",
-        expect.objectContaining({ keys: "KEY_A,KEY_B" }),
+        expect.stringContaining('variable_created'),
+        'user-1',
+        expect.objectContaining({ keys: 'KEY_A,KEY_B' }),
       );
       expect(result).toEqual({ count: 2 });
     });

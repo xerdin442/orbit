@@ -11,8 +11,8 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import type { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { Observable, map } from 'rxjs';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
@@ -48,7 +48,7 @@ export class DeploymentsController {
       DeploymentTrigger.manual,
     );
 
-    await this.deployQueue.add({ deployment, resourceCount });
+    await this.deployQueue.add('deploy', { deployment, resourceCount });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
@@ -63,7 +63,7 @@ export class DeploymentsController {
       DeploymentTrigger.redeploy,
     );
 
-    await this.deployQueue.add({ deployment });
+    await this.deployQueue.add('redeploy', { deployment });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
@@ -72,7 +72,10 @@ export class DeploymentsController {
   async rollback(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const deployment = await this.deployments.findForRollback(id, req.user.id);
 
-    await this.deployQueue.add({ deployment, skipImageBuild: true });
+    await this.deployQueue.add('rollback', {
+      deployment,
+      skipImageBuild: true,
+    });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }

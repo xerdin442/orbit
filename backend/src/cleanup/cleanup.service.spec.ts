@@ -3,7 +3,8 @@ import { CleanupService } from './cleanup.service';
 import { CleanupProcessor } from './cleanup.processor';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
-import type { Queue, Job } from 'bull';
+import type { Queue, Job } from 'bullmq';
+import { getQueueToken } from '@nestjs/bullmq';
 import type { CleanupJob } from '@src/common/types';
 
 describe('CleanupService', () => {
@@ -24,7 +25,7 @@ describe('CleanupService', () => {
       providers: [
         CleanupService,
         { provide: DbService, useValue: db },
-        { provide: 'BullQueue_cleanup', useValue: queue },
+        { provide: getQueueToken('cleanup'), useValue: queue },
       ],
     }).compile();
 
@@ -43,7 +44,7 @@ describe('CleanupService', () => {
 
       await service.enqueueProjectCleanup('proj-1');
 
-      expect(queue.add).toHaveBeenCalledWith({
+      expect(queue.add).toHaveBeenCalledWith('project-cleanup', {
         projectId: 'proj-1',
         deploymentContainerIds: ['dep-c1'],
         resourceContainers: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
@@ -62,7 +63,7 @@ describe('CleanupService', () => {
 
       await service.enqueueEnvironmentCleanup('env-1');
 
-      expect(queue.add).toHaveBeenCalledWith({
+      expect(queue.add).toHaveBeenCalledWith('environment-cleanup', {
         environmentId: 'env-1',
         deploymentContainerIds: ['dep-c1'],
         resourceContainers: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
@@ -108,7 +109,7 @@ describe('CleanupProcessor', () => {
       },
     } as Job<CleanupJob>;
 
-    await processor.handleCleanup(job);
+    await processor.process(job);
 
     expect(docker.stopContainer).toHaveBeenCalledWith('dep-c1');
     expect(docker.removeContainer).toHaveBeenCalledWith('dep-c1');
