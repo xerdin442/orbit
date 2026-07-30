@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import ora from "ora";
 import { api } from "../lib/api.js";
-import { ensureAuth, ensureContext } from "../lib/config.js";
+import { ensureContext } from "../lib/config.js";
 import { success, error, warn } from "../lib/format.js";
 import { streamLogs } from "./logs.js";
 
@@ -16,8 +16,7 @@ export function registerDeployCommand(program: Command) {
     .description("Trigger a deployment for the linked environment")
     .option("-f, --follow", "Stream logs after triggering deployment")
     .action(async (options: { follow?: boolean }) => {
-      const token = ensureAuth();
-      const ctx = ensureContext();
+      const { ctx, token } = ensureContext();
 
       try {
         const spinner = ora("Triggering deployment...").start();

@@ -30,7 +30,7 @@ export function registerListCommand(program: Command) {
     .description("List recent deployments")
     .option("--limit <n>", "Number of deployments", "10")
     .action(async (options: { limit: string }) => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const result = await api.get<PaginatedDeployments>(

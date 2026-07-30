@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
 import { api } from "../lib/api.js";
-import { getApiUrl, ensureAuth, ensureContext } from "../lib/config.js";
+import { getApiUrl, ensureContext } from "../lib/config.js";
 import { error } from "../lib/format.js";
 
 interface Deployment {
@@ -29,12 +29,10 @@ export function registerLogsCommand(program: Command) {
     .command("logs [deployment-id]")
     .description("Stream or view deployment logs")
     .action(async (deploymentId?: string) => {
-      const token = ensureAuth();
+      const { ctx, token } = ensureContext();
 
       try {
         if (!deploymentId) {
-          const ctx = ensureContext();
-
           const deps = await api.get<PaginatedDeployments>(
             `/environments/${ctx.environmentId}/deployments?limit=1`,
           );

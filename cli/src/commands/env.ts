@@ -20,7 +20,7 @@ export function registerEnvCommands(program: Command) {
     .command("ls")
     .description("List environment variables")
     .action(async () => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const vars = await api.get<EnvVariable[]>(
@@ -49,7 +49,7 @@ export function registerEnvCommands(program: Command) {
     .command("set <key> <value>")
     .description("Set an environment variable")
     .action(async (key: string, value: string) => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const existing = await api.get<EnvVariable[]>(
@@ -80,7 +80,7 @@ export function registerEnvCommands(program: Command) {
     .command("rm <key>")
     .description("Delete an environment variable")
     .action(async (key: string) => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const existing = await api.get<EnvVariable[]>(
@@ -119,7 +119,7 @@ export function registerEnvCommands(program: Command) {
     .command("import <file>")
     .description("Import environment variables from a .env file")
     .action(async (filePath: string) => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const content = await fs.readFile(filePath, "utf-8");
@@ -180,7 +180,9 @@ export function registerEnvCommands(program: Command) {
     });
 }
 
-export function parseEnvFile(content: string): { key: string; value: string }[] {
+export function parseEnvFile(
+  content: string,
+): { key: string; value: string }[] {
   const vars: { key: string; value: string }[] = [];
 
   for (const line of content.split("\n")) {

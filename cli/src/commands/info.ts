@@ -40,7 +40,7 @@ export function registerInfoCommand(program: Command) {
     .command("info")
     .description("Show current project and environment status")
     .action(async () => {
-      const ctx = ensureContext();
+      const { ctx } = ensureContext();
 
       try {
         const [project, env, deps, domains] = await Promise.all([
