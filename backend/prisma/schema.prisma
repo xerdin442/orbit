@@ -266,7 +266,8 @@ model SlackInstallation {
   appId                String?
   scopes               String[]
   botToken             String
-  installerSlackUserId String?
+  installerSlackUserId String
+  authorizedSlackUserIds String[]
   raw                  Json
   isActive             Boolean  @default(true)
   createdAt            DateTime @default(now())

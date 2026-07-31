@@ -1,4 +1,4 @@
-import { MongoClient, ObjectId } from 'mongodb';
+import { Document, MongoClient, ObjectId } from 'mongodb';
 import type {
   DatabaseDriver,
   MongoCollectionInfo,
@@ -53,7 +53,9 @@ export class MongoDriver implements DatabaseDriver {
         result = await collection.findOne(command.filter ?? {});
         break;
       case 'aggregate':
-        result = await collection.aggregate(command.pipeline ?? []).toArray();
+        result = await collection
+          .aggregate((command.pipeline as Document[]) ?? [])
+          .toArray();
         break;
       case 'count':
       case 'countDocuments':

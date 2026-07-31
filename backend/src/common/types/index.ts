@@ -87,6 +87,12 @@ export interface DeploymentJob {
   deployment: Deployment;
   skipImageBuild?: boolean;
   resourceCount?: number;
+  slackMetadata?: {
+    teamId: string;
+    channelId: string;
+    userId: string;
+    messageTs: string;
+  };
 }
 
 export interface ResourceJob {
