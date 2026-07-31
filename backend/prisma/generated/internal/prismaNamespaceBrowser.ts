@@ -220,7 +220,6 @@ export type GitHubInstallationScalarFieldEnum = (typeof GitHubInstallationScalar
 
 export const SlackInstallationScalarFieldEnum = {
   id: 'id',
-  userId: 'userId',
   teamId: 'teamId',
   teamName: 'teamName',
   enterpriseId: 'enterpriseId',
@@ -230,10 +229,12 @@ export const SlackInstallationScalarFieldEnum = {
   scopes: 'scopes',
   botToken: 'botToken',
   installerSlackUserId: 'installerSlackUserId',
+  authorizedSlackUserIds: 'authorizedSlackUserIds',
   raw: 'raw',
   isActive: 'isActive',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  userId: 'userId'
 } as const
 
 export type SlackInstallationScalarFieldEnum = (typeof SlackInstallationScalarFieldEnum)[keyof typeof SlackInstallationScalarFieldEnum]
