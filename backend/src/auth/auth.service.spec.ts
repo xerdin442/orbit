@@ -77,7 +77,7 @@ describe('AuthService', () => {
 
       expect(url).toContain('state=');
       expect(redis.set).toHaveBeenCalledWith(
-        expect.stringMatching(/^oauth:state:/),
+        expect.stringMatching(/^github:oauth:state:/),
         'http://localhost:9090/callback',
         { expiration: { type: 'EX', value: 600 } },
       );
@@ -155,7 +155,7 @@ describe('AuthService', () => {
       );
 
       expect(redis.get).toHaveBeenCalledWith(
-        expect.stringMatching(/^oauth:state:/),
+        expect.stringMatching(/^github:oauth:state:/),
       );
       expect(redis.del).toHaveBeenCalled();
       expect(result).toBe(
