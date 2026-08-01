@@ -121,6 +121,9 @@ describe('DeploymentProcessor', () => {
   let activity: {
     log: jest.Mock;
   };
+  let eventEmitter: {
+    emit: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -154,8 +157,8 @@ describe('DeploymentProcessor', () => {
     activity = {
       log: jest.fn().mockResolvedValue(undefined),
     };
-    const slackApi = {
-      enqueue: jest.fn().mockResolvedValue(undefined),
+    eventEmitter = {
+      emit: jest.fn(),
     };
 
     processor = new DeploymentProcessor(
@@ -166,7 +169,7 @@ describe('DeploymentProcessor', () => {
       logService as any,
       deployments as any,
       activity as any,
-      slackApi as any,
+      eventEmitter as any,
     );
 
     // default: every step succeeds

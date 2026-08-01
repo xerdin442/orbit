@@ -1505,6 +1505,7 @@ export const SlackInstallationScalarFieldEnum = {
   installerSlackUserId: 'installerSlackUserId',
   authorizedSlackUserIds: 'authorizedSlackUserIds',
   raw: 'raw',
+  isEnterpriseInstall: 'isEnterpriseInstall',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',

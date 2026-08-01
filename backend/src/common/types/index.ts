@@ -5,6 +5,7 @@ import type {
   Source,
   Environment,
   ActivityType,
+  Prisma,
 } from '@generated/client';
 import type { LogLevel } from '@generated/client';
 
@@ -92,6 +93,7 @@ export interface DeploymentJob {
     channelId: string;
     userId: string;
     messageTs: string;
+    startedAt: string;
   };
 }
 
@@ -170,4 +172,19 @@ export interface DnsInstructions {
   recordType: 'A' | 'CNAME';
   host: string;
   value: string;
+}
+
+export interface SlackInstallationData {
+  userId: string;
+  teamId: string;
+  teamName?: string | null;
+  enterpriseId?: string | null;
+  botToken: string;
+  botUserId?: string | null;
+  botId?: string | null;
+  appId?: string | null;
+  scopes: string[];
+  installerSlackUserId: string;
+  isEnterpriseInstall: boolean;
+  raw?: Prisma.InputJsonValue;
 }

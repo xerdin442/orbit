@@ -25,6 +25,20 @@ describe('SlackInstallationStore', () => {
     metadata: 'user-platform-1',
   };
 
+  const mockInstallationData = {
+    userId: 'user-platform-1',
+    teamId: 'T123',
+    teamName: 'Test Team',
+    enterpriseId: null,
+    botToken: 'xoxb-secret-token',
+    botUserId: 'U789',
+    botId: 'B789',
+    appId: 'A000',
+    scopes: ['chat:write', 'app_mentions:read'],
+    installerSlackUserId: 'U456',
+    isEnterpriseInstall: false,
+  };
+
   beforeEach(() => {
     db = {
       slackInstallation: {
@@ -69,7 +83,7 @@ describe('SlackInstallationStore', () => {
     it('throws when metadata (userId) is missing', async () => {
       const install = { ...mockInstallation, metadata: undefined };
 
-      await expect(store.storeInstallation(install)).rejects.toThrow(
+      await expect(store.storeInstallation(install as any)).rejects.toThrow(
         'userId is required',
       );
     });
@@ -80,8 +94,32 @@ describe('SlackInstallationStore', () => {
         bot: undefined,
       };
 
-      await expect(store.storeInstallation(install)).rejects.toThrow(
+      await expect(store.storeInstallation(install as any)).rejects.toThrow(
         'bot token is required',
+      );
+    });
+  });
+
+  describe('storeInstallationData', () => {
+    it('upserts structured installation data with encrypted token', async () => {
+      await store.storeInstallationData(mockInstallationData);
+
+      expect(encryption.encrypt).toHaveBeenCalledWith('xoxb-secret-token');
+      expect(db.slackInstallation.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { teamId: 'T123' },
+          create: expect.objectContaining({
+            userId: 'user-platform-1',
+            teamId: 'T123',
+            teamName: 'Test Team',
+            botToken: 'encrypted:xoxb-secret-token',
+            installerSlackUserId: 'U456',
+            isActive: true,
+          }),
+          update: expect.objectContaining({
+            teamName: 'Test Team',
+          }),
+        }),
       );
     });
   });
@@ -95,14 +133,20 @@ describe('SlackInstallationStore', () => {
 
     const storedRecord = {
       id: 'inst-1',
-      raw: mockInstallation,
+      teamId: 'T123',
+      teamName: 'Test Team',
+      enterpriseId: null,
       botToken: 'encrypted:xoxb-secret-token',
+      botUserId: 'U789',
+      botId: 'B789',
+      appId: 'A000',
+      scopes: ['chat:write', 'app_mentions:read'],
+      installerSlackUserId: 'U456',
+      isEnterpriseInstall: false,
     };
 
-    it('returns installation with decrypted token', async () => {
-      db.slackInstallation.findFirst.mockResolvedValue(
-        storedRecord as unknown as ReturnType<typeof db.slackInstallation.findFirst>,
-      );
+    it('reconstructs installation from database columns with decrypted token', async () => {
+      db.slackInstallation.findFirst.mockResolvedValue(storedRecord);
 
       const result = await store.fetchInstallation(query);
 
@@ -113,6 +157,15 @@ describe('SlackInstallationStore', () => {
         'encrypted:xoxb-secret-token',
       );
       expect(result.bot?.token).toBe('xoxb-secret-token');
+      expect(result.team?.id).toBe('T123');
+      expect(result.team?.name).toBe('Test Team');
+      expect(result.user?.id).toBe('U456');
+      expect(result.bot?.id).toBe('B789');
+      expect(result.bot?.userId).toBe('U789');
+      expect(result.appId).toBe('A000');
+      expect(result.tokenType).toBe('bot');
+      expect(result.isEnterpriseInstall).toBe(false);
+      expect(result.authVersion).toBe('v2');
     });
 
     it('throws when installation not found', async () => {
@@ -130,9 +183,12 @@ describe('SlackInstallationStore', () => {
         isEnterpriseInstall: true,
       };
 
-      db.slackInstallation.findFirst.mockResolvedValue(
-        storedRecord as unknown as ReturnType<typeof db.slackInstallation.findFirst>,
-      );
+      const enterpriseRecord = {
+        ...storedRecord,
+        enterpriseId: 'E123',
+      };
+
+      db.slackInstallation.findFirst.mockResolvedValue(enterpriseRecord);
 
       await store.fetchInstallation(enterpriseQuery);
 
@@ -152,7 +208,7 @@ describe('SlackInstallationStore', () => {
     it('soft-deletes by setting isActive to false', async () => {
       db.slackInstallation.findFirst.mockResolvedValue({
         id: 'inst-1',
-      } as unknown as ReturnType<typeof db.slackInstallation.findFirst>);
+      });
 
       await store.deleteInstallation(query);
 

@@ -107,7 +107,7 @@ export class AuthService {
   }
 
   private getStateKey(state: string): string {
-    return `oauth:state:${createHash('sha256').update(state).digest('hex')}`;
+    return `github:oauth:state:${createHash('sha256').update(state).digest('hex')}`;
   }
 
   private async exchangeCodeForToken(code: string): Promise<string> {

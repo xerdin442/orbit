@@ -5,11 +5,9 @@ import {
   Req,
   UseGuards,
   Inject,
-  Logger,
   Redirect,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { Installation } from '@slack/bolt';
+import { createHash, randomUUID } from 'crypto';
 import { WebClient } from '@slack/web-api';
 import type { RedisClientType } from 'redis';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
@@ -18,14 +16,14 @@ import { ActivityService } from '@src/activity/activity.service';
 import { REDIS_CLIENT } from '@src/common/cache';
 import { Secrets } from '@src/common/secrets';
 import { ActivityType } from '@generated/client';
+import type { Prisma } from '@generated/client';
 import type { AuthenticatedRequest } from '@src/common/types';
-
-const STATE_TTL_SECONDS = 600;
-const STATE_PREFIX = 'slack:oauth:state:';
+import { Logger } from '@src/common/logger';
 
 @Controller('slack')
 export class SlackInstallController {
-  private readonly logger = new Logger(SlackInstallController.name);
+  private readonly STATE_TTL_SECONDS = 600;
+  private readonly logger = Logger(SlackInstallController.name);
 
   constructor(
     private readonly installationStore: SlackInstallationStore,
@@ -38,10 +36,10 @@ export class SlackInstallController {
   @UseGuards(JwtAuthGuard)
   async install(@Req() req: AuthenticatedRequest) {
     const state = randomUUID();
-    const stateKey = `${STATE_PREFIX}${state}`;
+    const stateKey = this.getStateKey(state);
 
     await this.redis.set(stateKey, req.user.id, {
-      expiration: { type: 'EX', value: STATE_TTL_SECONDS },
+      expiration: { type: 'EX', value: this.STATE_TTL_SECONDS },
     });
 
     const url = new URL('https://slack.com/oauth/v2/authorize');
@@ -72,7 +70,7 @@ export class SlackInstallController {
       return { url: failureUrl };
     }
 
-    const stateKey = `${STATE_PREFIX}${state}`;
+    const stateKey = this.getStateKey(state);
     const userId = await this.redis.get(stateKey);
 
     if (!userId) {
@@ -92,50 +90,39 @@ export class SlackInstallController {
       });
 
       if (!oauth.ok) {
-        throw new Error(`OAuth failed: ${oauth.error}`);
+        this.logger.error(`OAuth failed: ${oauth.error}`);
+        return { url: failureUrl };
       }
 
-      const installation: Record<string, unknown> = {
-        team: oauth.team,
-        enterprise: oauth.enterprise ?? undefined,
-        user: {
-          token: oauth.authed_user?.access_token,
-          refreshToken: oauth.authed_user?.refresh_token,
-          expiresAt: oauth.authed_user?.expires_in
-            ? Date.now() + oauth.authed_user.expires_in * 1000
-            : undefined,
-          scopes: oauth.authed_user?.scope?.split(','),
-          id: oauth.authed_user?.id ?? '',
-        },
-        bot: oauth.bot_user_id
-          ? {
-              token: oauth.access_token!,
-              refreshToken: oauth.refresh_token,
-              expiresAt: oauth.expires_in
-                ? Date.now() + oauth.expires_in * 1000
-                : undefined,
-              scopes: oauth.scope?.split(',') ?? [],
-              id: oauth.bot_user_id,
-              userId: oauth.bot_user_id,
-            }
-          : undefined,
-        appId: oauth.app_id,
-        tokenType: 'bot' as const,
-        isEnterpriseInstall: oauth.is_enterprise_install ?? false,
-        authVersion: 'v2' as const,
-        metadata: userId,
-        incomingWebhook: oauth.incoming_webhook,
-      };
+      const teamId = oauth.team?.id;
+      const botToken = oauth.access_token;
+      const botUserId = oauth.bot_user_id;
+      const installerSlackUserId = oauth.authed_user?.id;
 
-      await this.installationStore.storeInstallation(
-        installation as unknown as Installation,
-      );
+      if (!teamId || !botToken || !botUserId || !installerSlackUserId) {
+        this.logger.error('Missing required Slack OAuth fields');
+        return { url: failureUrl };
+      }
+
+      await this.installationStore.storeInstallationData({
+        userId,
+        teamId,
+        teamName: oauth.team?.name ?? null,
+        enterpriseId: oauth.enterprise?.id ?? null,
+        botToken,
+        botUserId,
+        botId: botUserId,
+        appId: oauth.app_id ?? null,
+        scopes: oauth.scope?.split(',') ?? [],
+        installerSlackUserId,
+        isEnterpriseInstall: oauth.is_enterprise_install ?? false,
+        raw: oauth as unknown as Prisma.InputJsonValue,
+      });
 
       await this.activity.log(ActivityType.slack_installation_added, userId, {
         teamId: oauth.team?.id,
         enterpriseId: oauth.enterprise?.id,
       });
-
       return {
         url: `${Secrets.FRONTEND_URL}/settings?slack_install=connected`,
       };
@@ -145,5 +132,9 @@ export class SlackInstallController {
       );
       return { url: failureUrl };
     }
+  }
+
+  private getStateKey(state: string): string {
+    return `slack:oauth:state:${createHash('sha256').update(state).digest('hex')}`;
   }
 }

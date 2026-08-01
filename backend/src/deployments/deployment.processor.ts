@@ -1,5 +1,6 @@
 import { rm } from 'fs/promises';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Job } from 'bullmq';
 import { Logger } from '@src/common/logger';
 import {
@@ -16,8 +17,11 @@ import { DbService } from '@src/db/db.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { DeploymentsService } from './deployments.service';
-import { SlackApiService } from '@src/slack/slack-api.service';
-import { buildDeploymentStatusBlocks } from '@src/slack/blocks/deployment-status.blocks';
+import {
+  DeploymentStatusChangedEvent,
+  DeploymentCompletedEvent,
+  DeploymentTerminatedEvent,
+} from '@src/slack/events/deployment.events';
 import {
   DeploymentContext,
   DeploymentJob,
@@ -49,7 +53,7 @@ export class DeploymentProcessor extends WorkerHost {
     private readonly logService: LogService,
     private readonly deployments: DeploymentsService,
     private readonly activity: ActivityService,
-    private readonly slackApi: SlackApiService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     super();
   }
@@ -90,20 +94,34 @@ export class DeploymentProcessor extends WorkerHost {
         await this.cleanupAborted(ctx);
         this.logService.complete(deploymentId);
 
-        await this.notifySlackCard(
-          slackMetadata,
-          ctx.project.name,
-          ctx.environment.name,
-          'failed',
+        this.eventEmitter.emit(
+          'deployment.terminated',
+          new DeploymentTerminatedEvent(
+            ctx.deployment,
+            ctx.project,
+            ctx.environment,
+            slackMetadata,
+          ),
         );
         return;
       }
 
       try {
-        await this.deployments.updateBuildStatus(
-          deploymentId,
-          this.statusForStep(step.name),
-        );
+        const nextStatus = this.statusForStep(step.name);
+        await this.deployments.updateBuildStatus(deploymentId, nextStatus);
+
+        if (nextStatus !== BuildStatus.ready) {
+          this.eventEmitter.emit(
+            'deployment.status.changed',
+            new DeploymentStatusChangedEvent(
+              ctx.deployment,
+              ctx.project,
+              ctx.environment,
+              nextStatus,
+              slackMetadata,
+            ),
+          );
+        }
 
         await step.execute(ctx);
       } catch (error) {
@@ -136,14 +154,15 @@ export class DeploymentProcessor extends WorkerHost {
       { deploymentId, environmentId: ctx.environment.id },
     );
 
-    await this.notifySlackCard(
-      slackMetadata,
-      ctx.project.name,
-      ctx.environment.name,
-      'success',
-      ctx.domain,
-      ctx.commitSha,
-      ctx.commitMessage,
+    this.eventEmitter.emit(
+      'deployment.completed',
+      new DeploymentCompletedEvent(
+        ctx.deployment,
+        ctx.project,
+        ctx.environment,
+        ctx.domain,
+        slackMetadata,
+      ),
     );
   }
 
@@ -313,11 +332,14 @@ export class DeploymentProcessor extends WorkerHost {
       );
       this.logService.complete(ctx.deployment.id);
 
-      await this.notifySlackCard(
-        slackMetadata,
-        ctx.project.name,
-        ctx.environment.name,
-        'failed',
+      this.eventEmitter.emit(
+        'deployment.terminated',
+        new DeploymentTerminatedEvent(
+          ctx.deployment,
+          ctx.project,
+          ctx.environment,
+          slackMetadata,
+        ),
       );
       return;
     }
@@ -329,51 +351,20 @@ export class DeploymentProcessor extends WorkerHost {
     );
     this.logService.complete(ctx.deployment.id);
 
-    await this.notifySlackCard(
-      slackMetadata,
-      ctx.project.name,
-      ctx.environment.name,
-      'failed',
+    this.eventEmitter.emit(
+      'deployment.terminated',
+      new DeploymentTerminatedEvent(
+        ctx.deployment,
+        ctx.project,
+        ctx.environment,
+        slackMetadata,
+      ),
     );
 
     this.logger.error(
       `System error for deployment ${ctx.deployment.id}: ${error instanceof Error ? error.message : String(error)}`,
     );
     throw error;
-  }
-
-  private async notifySlackCard(
-    metadata: DeploymentJob['slackMetadata'],
-    project: string,
-    environment: string,
-    status: 'success' | 'failed',
-    url?: string,
-    commitSha?: string,
-    commitMessage?: string,
-  ): Promise<void> {
-    if (!metadata?.messageTs) return;
-
-    try {
-      const blocks = buildDeploymentStatusBlocks({
-        project,
-        environment,
-        status,
-        url,
-        commitSha,
-        commitMessage,
-      });
-
-      await this.slackApi.enqueue(metadata.teamId, 'chat.update', {
-        channel: metadata.channelId,
-        ts: metadata.messageTs,
-        blocks,
-        text: `${status === 'success' ? 'Deployed' : 'Failed'}: ${project} (${environment})`,
-      });
-    } catch (err) {
-      this.logger.warn(
-        `Failed to update Slack status card: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
   }
 
   private statusForStep(stepName: DeploymentStepName): BuildStatus {
