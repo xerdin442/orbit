@@ -33,6 +33,11 @@ jest.mock('@src/common/secrets', () => ({
     RATE_LIMITING_PER_SECOND: 100,
     RATE_LIMITING_PER_MINUTE: 1000,
     PAYSTACK_SECRET_KEY: 'sk_test_placeholder',
+    SLACK_CLIENT_ID: 'test-slack-client-id',
+    SLACK_CLIENT_SECRET: 'test-slack-client-secret',
+    SLACK_SIGNING_SECRET: 'test-slack-signing-secret',
+    SLACK_REDIRECT_URI: 'http://localhost:3000/api/slack/callback',
+    SLACK_BOT_SCOPES: 'commands,chat:write',
   },
 }));
 

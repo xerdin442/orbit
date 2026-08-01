@@ -8,6 +8,8 @@ import type { SlackApiJob } from '@src/common/types';
 
 @Injectable()
 export class SlackApiService {
+  private readonly clients = new Map<string, WebClient>();
+
   constructor(
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
@@ -19,17 +21,12 @@ export class SlackApiService {
     method: string,
     args: Record<string, unknown> = {},
   ) {
-    const installation = await this.db.slackInstallation.findFirst({
-      where: { teamId, isActive: true },
-    });
-
-    if (!installation) {
-      throw new Error(`No active Slack installation for team ${teamId}`);
-    }
-
-    const botToken = this.encryption.decrypt(installation.botToken);
-    const client = new WebClient(botToken);
+    const client = await this.resolveClient(teamId);
     return client.apiCall(method, args);
+  }
+
+  invalidateClient(teamId: string): void {
+    this.clients.delete(teamId);
   }
 
   async enqueue(
@@ -47,5 +44,23 @@ export class SlackApiService {
         removeOnFail: 5000,
       },
     );
+  }
+
+  private async resolveClient(teamId: string): Promise<WebClient> {
+    const cached = this.clients.get(teamId);
+    if (cached) return cached;
+
+    const installation = await this.db.slackInstallation.findFirst({
+      where: { teamId, isActive: true },
+    });
+
+    if (!installation) {
+      throw new Error(`No active Slack installation for team ${teamId}`);
+    }
+
+    const botToken = this.encryption.decrypt(installation.botToken);
+    const client = new WebClient(botToken);
+    this.clients.set(teamId, client);
+    return client;
   }
 }

@@ -21,11 +21,13 @@ import { WorkbenchModule } from '@src/workbench/workbench.module';
 import { CleanupModule } from '@src/cleanup/cleanup.module';
 import { SlackModule } from '@src/slack/slack.module';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import KeyvRedis from '@keyv/redis';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot({ maxListeners: 20 }),
     BullModule.forRoot({
       connection: {
         host: Secrets.REDIS_HOST,
