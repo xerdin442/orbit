@@ -41,8 +41,7 @@ describe('buildDeploymentStatusBlocks', () => {
 
     const context = blocks.find((b) => b.type === 'context');
     expect(context).toBeDefined();
-    expect((context as any).elements[0].text).toContain('`abcdef1`');
-    expect((context as any).elements[0].text).toContain('Initial commit');
+    expect((context as any).elements[0].text).toBe(':twisted_rightwards_arrows: `abcdef1` Initial commit');
   });
 
   it('renders triggered by and started at context', () => {
@@ -57,9 +56,11 @@ describe('buildDeploymentStatusBlocks', () => {
 
     const context = blocks.find((b) => b.type === 'context');
     expect(context).toBeDefined();
-    const text = (context as any).elements[0].text;
-    expect(text).toContain('Triggered by <@U123>');
-    expect(text).toContain('Started');
+    const texts = (context as any).elements.map((e: any) => e.text);
+    expect(texts[0]).toContain(':bust_in_silhouette:');
+    expect(texts[0]).toContain('Triggered by <@U123>');
+    expect(texts[1]).toContain(':calendar:');
+    expect(texts[1]).toContain('Started');
   });
 
   it('renders duration when completedAt and startedAt are provided', () => {
@@ -74,7 +75,7 @@ describe('buildDeploymentStatusBlocks', () => {
 
     const context = blocks.find((b) => b.type === 'context');
     expect(context).toBeDefined();
-    expect((context as any).elements[0].text).toContain('Duration: 1m 30s');
+    expect((context as any).elements[1].text).toBe(':stopwatch: *Duration:* 1m 30s');
   });
 
   it('renders an Open Deployment button when url is provided', () => {
