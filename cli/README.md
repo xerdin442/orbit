@@ -200,11 +200,11 @@ orbit env import .env
 Output:
 
 ```bash
-⚠ Importing 3 variables.
-  DATABASE_URL ✔ (updated)
-  REDIS_URL ✔ (new)
-  SECRET_KEY ✔ (new)
-  Import complete. Deployment triggered: dep-abc123
+Importing 3 variables...
+DATABASE_URL ✔ (updated)
+REDIS_URL ✔ (new)
+SECRET_KEY ✔ (new)
+Import complete. Deployment triggered: dep-abc123
 
 Run `orbit logs dep-abc123` to follow.
 ```
