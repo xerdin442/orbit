@@ -25,6 +25,7 @@ describe('ResourcesService', () => {
         create: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn(),
+        update: jest.fn(),
         delete: jest.fn(),
       },
     } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'resource'>>;
@@ -132,6 +133,48 @@ describe('ResourcesService', () => {
         where: { id: 'res-1' },
       });
       expect(activity.log).toHaveBeenCalled();
+    });
+  });
+
+  describe('clearData', () => {
+    it('throws if resource not found', async () => {
+      db.resource.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(service.clearData('res-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws if resource is already provisioning', async () => {
+      db.resource.findFirst = jest.fn().mockResolvedValue({
+        id: 'res-1',
+        status: ResourceStatus.provisioning,
+        environment: { project: { ownerId: 'user-1' } },
+      });
+      await expect(service.clearData('res-1', 'user-1')).rejects.toThrow(
+        'Resource is already being provisioned',
+      );
+    });
+
+    it('sets status to provisioning and enqueues clear-data job', async () => {
+      db.resource.findFirst = jest.fn().mockResolvedValue({
+        id: 'res-1',
+        status: ResourceStatus.ready,
+        environment: { project: { ownerId: 'user-1' } },
+      });
+
+      const result = await service.clearData('res-1', 'user-1');
+
+      expect(db.resource.update).toHaveBeenCalledWith({
+        where: { id: 'res-1' },
+        data: { status: ResourceStatus.provisioning },
+      });
+      expect(queue.add).toHaveBeenCalledWith('clear-data', {
+        resourceId: 'res-1',
+      });
+      expect(result).toEqual({
+        resourceId: 'res-1',
+        status: ResourceStatus.provisioning,
+      });
     });
   });
 });

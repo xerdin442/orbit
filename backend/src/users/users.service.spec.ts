@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { UnauthorizedException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { DbService } from '@src/db/db.service';
 
@@ -41,14 +42,37 @@ describe('UsersService', () => {
   });
 
   describe('findById', () => {
-    it('delegates to db.user.findUnique', async () => {
-      const mockUser = { id: 'abc', githubUserId: 12345 };
+    it('delegates to db.user.findUnique with slackInstallation include', async () => {
+      const mockUser = {
+        id: 'abc',
+        githubUserId: 12345,
+        slackInstallation: null,
+      };
       db.user.findUnique.mockResolvedValue(mockUser);
 
-      await service.findById('abc');
+      const result = await service.findById('abc');
+      expect(result).toBe(mockUser);
       expect(db.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'abc' },
+        include: {
+          slackInstallation: {
+            select: {
+              teamId: true,
+              teamName: true,
+              installerSlackUserId: true,
+              isActive: true,
+              createdAt: true,
+            },
+          },
+        },
       });
+    });
+
+    it('throws UnauthorizedException when user not found', async () => {
+      db.user.findUnique.mockResolvedValue(null);
+      await expect(service.findById('abc')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

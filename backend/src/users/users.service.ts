@@ -10,7 +10,20 @@ export class UsersService {
   }
 
   async findById(id: string) {
-    const user = await this.db.user.findUnique({ where: { id } });
+    const user = await this.db.user.findUnique({
+      where: { id },
+      include: {
+        slackInstallation: {
+          select: {
+            teamId: true,
+            teamName: true,
+            installerSlackUserId: true,
+            isActive: true,
+            createdAt: true,
+          },
+        },
+      },
+    });
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
