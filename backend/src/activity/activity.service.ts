@@ -23,11 +23,9 @@ export class ActivityService {
   }
 
   async findLogs(options: ActivityLogFilter) {
-    const where: Prisma.ActivityWhereInput = {};
-
-    if (options.actorId) {
-      where.actorId = options.actorId;
-    }
+    const where: Prisma.ActivityWhereInput = {
+      actorId: options.actorId,
+    };
 
     if (options.type) {
       where.type = this.resolveTypeFilter(options.type);
