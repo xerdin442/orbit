@@ -116,7 +116,8 @@ export const ActivityType = {
   resource_deleted: 'resource_deleted',
   slack_installation_added: 'slack_installation_added',
   slack_installation_removed: 'slack_installation_removed',
-  slack_token_revoked: 'slack_token_revoked'
+  slack_token_revoked: 'slack_token_revoked',
+  resource_data_cleared: 'resource_data_cleared'
 } as const
 
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType]

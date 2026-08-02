@@ -48,6 +48,11 @@ export class ResourcesController {
     return this.resources.findById(id, req.user.id);
   }
 
+  @Post('resources/:id/clear')
+  clearData(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.resources.clearData(id, req.user.id);
+  }
+
   @Delete('resources/:id')
   delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.resources.delete(id, req.user.id);

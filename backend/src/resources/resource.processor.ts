@@ -45,14 +45,14 @@ export class ResourceProcessor extends WorkerHost {
   async process(job: Job<ResourceJob>): Promise<void> {
     const { resourceId } = job.data;
 
-    const resource = await this.db.resource.findUnique({
+    if (job.name === 'clear-data') {
+      return this.clearData(resourceId);
+    }
+
+    const resource = await this.db.resource.findUniqueOrThrow({
       where: { id: resourceId },
       include: { environment: true },
     });
-
-    if (!resource) {
-      throw new Error(`Resource not found: ${resourceId}`);
-    }
 
     try {
       const volumeName = `resource-${resourceId}-data`;
@@ -222,6 +222,81 @@ export class ResourceProcessor extends WorkerHost {
         return `redis://:${password}@${host}:${port}`;
       case ResourceType.mongo:
         return `mongodb://orbit:${password}@${host}:${port}/orbit`;
+    }
+  }
+
+  private async clearData(resourceId: string): Promise<void> {
+    const resource = await this.db.resource.findUniqueOrThrow({
+      where: { id: resourceId },
+      include: { environment: true },
+    });
+
+    const containerId = resource.containerId;
+    const oldVolumeId = resource.volumeId;
+
+    try {
+      if (containerId) {
+        try {
+          await this.docker.stopContainer(containerId);
+        } catch {
+          // container already stopped
+        }
+      }
+
+      if (oldVolumeId) {
+        try {
+          await this.docker.removeVolume(oldVolumeId);
+        } catch {
+          // volume already gone
+        }
+      }
+
+      const volumeName = `resource-${resourceId}-data`;
+      const volume = await this.docker.createVolume(volumeName);
+
+      await this.db.resource.update({
+        where: { id: resourceId },
+        data: { volumeId: volume.Name },
+      });
+
+      if (containerId) {
+        await this.docker.startContainer(containerId);
+
+        const healthy = await this.waitForHealth(containerId);
+
+        if (!healthy) {
+          throw new Error('Resource health check failed');
+        }
+      }
+
+      await this.db.resource.update({
+        where: { id: resourceId },
+        data: { status: ResourceStatus.ready },
+      });
+
+      const env = await this.db.environment.findUniqueOrThrow({
+        where: { id: resource.environmentId },
+        include: { project: true },
+      });
+
+      await this.activity.log(
+        ActivityType.resource_data_cleared,
+        env.project.ownerId,
+        {
+          resourceId,
+          type: resource.type,
+          environmentId: resource.environmentId,
+        },
+      );
+    } catch (error) {
+      this.logger.error(
+        `Resource data clear failed: ${resourceId} - ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      await this.db.resource.update({
+        where: { id: resourceId },
+        data: { status: ResourceStatus.failed },
+      });
     }
   }
 

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Queue } from 'bullmq';
@@ -103,5 +108,22 @@ export class ResourcesService {
     });
 
     await this.cache.del(`/api/resources/${id}`);
+  }
+
+  async clearData(id: string, userId: string) {
+    const resource = await this.findById(id, userId);
+
+    if (resource.status === ResourceStatus.provisioning) {
+      throw new ConflictException('Resource is already being provisioned');
+    }
+
+    await this.db.resource.update({
+      where: { id },
+      data: { status: ResourceStatus.provisioning },
+    });
+
+    await this.resourceQueue.add('clear-data', { resourceId: id });
+
+    return { resourceId: id, status: ResourceStatus.provisioning };
   }
 }
