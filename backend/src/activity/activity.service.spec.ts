@@ -50,10 +50,10 @@ describe('ActivityService', () => {
     });
   });
 
-  describe('findAll', () => {
+  describe('findLogs', () => {
     it('queries with no filters when no options', async () => {
       db.activity.findMany.mockResolvedValue([]);
-      await service.findAll();
+      await service.findLogs();
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {},
         orderBy: { createdAt: 'desc' },
@@ -61,23 +61,39 @@ describe('ActivityService', () => {
     });
 
     it('filters by actorId', async () => {
-      await service.findAll({ actorId: 'user-1' });
+      await service.findLogs({ actorId: 'user-1' });
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: { actorId: 'user-1' },
         orderBy: { createdAt: 'desc' },
       });
     });
 
-    it('filters by type', async () => {
-      await service.findAll({ type: ActivityType.project_created });
+    it('filters by exact type', async () => {
+      await service.findLogs({ type: 'project_created' });
       expect(db.activity.findMany).toHaveBeenCalledWith({
-        where: { type: ActivityType.project_created },
+        where: { type: { equals: 'project_created' } },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('filters by wildcard type pattern', async () => {
+      await service.findLogs({ type: 'slack_*' });
+      expect(db.activity.findMany).toHaveBeenCalledWith({
+        where: { type: { startsWith: 'slack_' } },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('filters by wildcard type pattern with nested prefix', async () => {
+      await service.findLogs({ type: 'github_*' });
+      expect(db.activity.findMany).toHaveBeenCalledWith({
+        where: { type: { startsWith: 'github_' } },
         orderBy: { createdAt: 'desc' },
       });
     });
 
     it('filters by projectId via metadata path', async () => {
-      await service.findAll({ projectId: 'proj-1' });
+      await service.findLogs({ projectId: 'proj-1' });
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {
           metadata: { path: ['projectId'], equals: 'proj-1' },
@@ -87,7 +103,7 @@ describe('ActivityService', () => {
     });
 
     it('filters by deploymentId', async () => {
-      await service.findAll({ deploymentId: 'dep-1' });
+      await service.findLogs({ deploymentId: 'dep-1' });
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {
           metadata: { path: ['deploymentId'], equals: 'dep-1' },
@@ -95,13 +111,19 @@ describe('ActivityService', () => {
         orderBy: { createdAt: 'desc' },
       });
     });
-  });
 
-  describe('findByType', () => {
-    it('queries by type', async () => {
-      await service.findByType(ActivityType.project_deleted);
+    it('filters by multiple criteria', async () => {
+      await service.findLogs({
+        actorId: 'user-1',
+        type: 'deployment_*',
+        projectId: 'proj-1',
+      });
       expect(db.activity.findMany).toHaveBeenCalledWith({
-        where: { type: ActivityType.project_deleted },
+        where: {
+          actorId: 'user-1',
+          type: { startsWith: 'deployment_' },
+          metadata: { path: ['projectId'], equals: 'proj-1' },
+        },
         orderBy: { createdAt: 'desc' },
       });
     });

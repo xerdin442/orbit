@@ -4,7 +4,6 @@ import type {
   Project,
   Source,
   Environment,
-  ActivityType,
   Prisma,
 } from '@generated/client';
 import type { LogLevel } from '@generated/client';
@@ -154,13 +153,13 @@ export class DeploymentStepExecutionError extends Error {
 }
 
 export interface ActivityLogFilter {
-  actorId?: string;
+  actorId: string;
   projectId?: string;
   environmentId?: string;
   deploymentId?: string;
   domainId?: string;
   resourceId?: string;
-  type?: ActivityType;
+  type?: string;
 }
 
 export interface ResourceDefaultKey {
