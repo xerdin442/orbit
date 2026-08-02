@@ -22,40 +22,40 @@ export class ActivityService {
     });
   }
 
-  async findAll(options?: ActivityLogFilter) {
+  async findLogs(options: ActivityLogFilter) {
     const where: Prisma.ActivityWhereInput = {};
 
-    if (options?.actorId) {
+    if (options.actorId) {
       where.actorId = options.actorId;
     }
 
-    if (options?.type) {
-      where.type = options.type;
+    if (options.type) {
+      where.type = this.resolveTypeFilter(options.type);
     }
 
-    if (options?.projectId) {
+    if (options.projectId) {
       where.metadata = { path: ['projectId'], equals: options.projectId };
     }
 
-    if (options?.environmentId) {
+    if (options.environmentId) {
       where.metadata = {
         path: ['environmentId'],
         equals: options.environmentId,
       };
     }
 
-    if (options?.domainId) {
+    if (options.domainId) {
       where.metadata = { path: ['domainId'], equals: options.domainId };
     }
 
-    if (options?.deploymentId) {
+    if (options.deploymentId) {
       where.metadata = {
         path: ['deploymentId'],
         equals: options.deploymentId,
       };
     }
 
-    if (options?.resourceId) {
+    if (options.resourceId) {
       where.metadata = { path: ['resourceId'], equals: options.resourceId };
     }
 
@@ -65,10 +65,13 @@ export class ActivityService {
     });
   }
 
-  async findByType(type: ActivityType) {
-    return this.db.activity.findMany({
-      where: { type },
-      orderBy: { createdAt: 'desc' },
-    });
+  private resolveTypeFilter(pattern: string): Prisma.EnumActivityTypeFilter {
+    if (pattern.endsWith('_*')) {
+      return {
+        startsWith: pattern.slice(0, -1),
+      } as Prisma.EnumActivityTypeFilter;
+    }
+
+    return { equals: pattern as ActivityType };
   }
 }
