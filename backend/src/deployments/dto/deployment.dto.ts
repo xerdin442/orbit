@@ -1,6 +1,5 @@
 import { BuildStatus, DeploymentTrigger } from '@generated/client';
 import { PaginationDto } from '@src/common/dto/pagination.dto';
-import { Transform } from 'class-transformer';
 import { IsOptional, IsEnum, IsArray, IsString } from 'class-validator';
 
 export class FilterDeploymentsDto extends PaginationDto {
@@ -13,9 +12,9 @@ export class FilterDeploymentsDto extends PaginationDto {
   status?: BuildStatus;
 }
 
-export class MarkedResourcesDto {
-  @Transform(({ value }: { value: string }) => value.split(','))
+export class AbortDeploymentDto {
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  marked_resources: string[];
+  marked_resources?: string[];
 }
