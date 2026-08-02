@@ -90,6 +90,7 @@ enum ActivityType {
   github_webhook_event
   resource_provisioned
   resource_deleted
+  resource_data_cleared
   slack_installation_added
   slack_installation_removed
   slack_token_revoked
