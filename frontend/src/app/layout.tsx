@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
+import "@/lib/fontawesome";
 import { Providers } from "@/components/providers";
+import { AuthCallback } from "@/components/auth-callback";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -15,7 +18,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Orbit",
-  description: "Deployment made easy!",
+  description: "A better way to ship software.",
 };
 
 export default function RootLayout({
@@ -29,7 +32,11 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
+        <Providers>
+          <Suspense>
+            <AuthCallback>{children}</AuthCallback>
+          </Suspense>
+        </Providers>
       </body>
     </html>
   );
