@@ -1,0 +1,317 @@
+import type {
+  User,
+  Project,
+  Environment,
+  Deployment,
+  DeploymentLog,
+  Resource,
+  ResourceDefaultKey,
+  Domain,
+  DNSInstructions,
+  EnvironmentVariable,
+  GitHubInstallation,
+  GitHubRepository,
+  GitHubBranch,
+  ActivityLog,
+  SchemaNode,
+  TableInfo,
+  TableData,
+  QueryResult,
+  PaginatedResult,
+  CreateProjectPayload,
+  CreateEnvironmentPayload,
+  UpdateEnvironmentPayload,
+  CreateVariablePayload,
+  UpdateVariablePayload,
+  CreateResourcePayload,
+  AddDomainPayload,
+  ResourceType,
+} from "@/lib/types";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+
+const TOKEN_KEY = "orbit_access_token";
+
+function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setAuthToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearAuthToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const message = body?.error ?? body?.message ?? res.statusText;
+    throw new Error(message);
+  }
+
+  const json = await res.json();
+  if (json && typeof json === "object" && "data" in json && "meta" in json) {
+    return json as T;
+  }
+  return (json?.data !== undefined ? json.data : json) as T;
+}
+
+export const api = {
+  auth: {
+    me: () => request<User>("/auth/me"),
+    githubLoginUrl: () =>
+      request<{ url: string }>("/auth/github").then((r) => r.url),
+  },
+
+  projects: {
+    list: () => request<Project[]>("/projects"),
+    get: (id: string) => request<Project>(`/projects/${id}`),
+    create: (payload: CreateProjectPayload) =>
+      request<{ project: Project; environmentId: string }>("/projects", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    update: (id: string, payload: Partial<CreateProjectPayload>) =>
+      request<Project>(`/projects/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: string) =>
+      request<void>(`/projects/${id}`, { method: "DELETE" }),
+    branches: (id: string) =>
+      request<GitHubBranch[]>(`/projects/${id}/branches`),
+  },
+
+  github: {
+    installUrl: () =>
+      request<{ url: string }>("/github/install").then((r) => r.url),
+    installations: () => request<GitHubInstallation[]>("/github/installations"),
+    repositories: (installationId: number) =>
+      request<GitHubRepository[]>(`/github/${installationId}/repositories`),
+    branches: (installationId: number, repoFullName: string) =>
+      request<GitHubBranch[]>(
+        `/github/branches?installationId=${installationId}&repo=${repoFullName}`,
+      ),
+    updateAccessUrl: (installationId: number) =>
+      request<{ url: string }>(`/github/${installationId}/update-access`).then(
+        (r) => r.url,
+      ),
+  },
+
+  slack: {
+    installUrl: () =>
+      request<{ url: string }>("/slack/install").then((r) => r.url),
+  },
+
+  environments: {
+    list: (projectId: string) =>
+      request<Environment[]>(`/projects/${projectId}/environments`),
+    get: (id: string) => request<Environment>(`/environments/${id}`),
+    create: (projectId: string, payload: CreateEnvironmentPayload) =>
+      request<Environment>(`/projects/${projectId}/environments`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    update: (id: string, payload: UpdateEnvironmentPayload) =>
+      request<Environment>(`/environments/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: string) =>
+      request<void>(`/environments/${id}`, { method: "DELETE" }),
+
+    variables: {
+      list: (environmentId: string) =>
+        request<EnvironmentVariable[]>(
+          `/environments/${environmentId}/variables`,
+        ),
+      create: (
+        environmentId: string,
+        payload: CreateVariablePayload,
+        skipRedeploy = false,
+      ) =>
+        request<EnvironmentVariable>(
+          `/environments/${environmentId}/variables?skip_redeploy=${skipRedeploy}`,
+          { method: "POST", body: JSON.stringify(payload) },
+        ),
+      bulkCreate: (
+        environmentId: string,
+        variables: CreateVariablePayload[],
+        skipRedeploy = false,
+      ) =>
+        request<EnvironmentVariable[]>(
+          `/environments/${environmentId}/variables/bulk?skip_redeploy=${skipRedeploy}`,
+          { method: "POST", body: JSON.stringify(variables) },
+        ),
+      update: (
+        id: string,
+        payload: UpdateVariablePayload,
+        skipRedeploy = false,
+      ) =>
+        request<EnvironmentVariable>(
+          `/variables/${id}?skip_redeploy=${skipRedeploy}`,
+          { method: "PATCH", body: JSON.stringify(payload) },
+        ),
+      delete: (id: string, skipRedeploy = false) =>
+        request<void>(`/variables/${id}?skip_redeploy=${skipRedeploy}`, {
+          method: "DELETE",
+        }),
+    },
+
+    deploy: (environmentId: string, resourceCount: number) =>
+      request<{ deploymentId: string; status: string }>(
+        `/environments/${environmentId}/deploy?resource_count=${resourceCount}`,
+        { method: "POST" },
+      ),
+  },
+
+  deployments: {
+    get: (id: string) => request<Deployment>(`/deployments/${id}`),
+    listByEnvironment: (
+      environmentId: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        trigger?: string;
+        status?: string;
+        startDate?: string;
+        endDate?: string;
+      },
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      if (params?.trigger) searchParams.set("trigger", params.trigger);
+      if (params?.status) searchParams.set("status", params.status);
+      if (params?.startDate) searchParams.set("startDate", params.startDate);
+      if (params?.endDate) searchParams.set("endDate", params.endDate);
+      const qs = searchParams.toString();
+      return request<PaginatedResult<Deployment>>(
+        `/environments/${environmentId}/deployments${qs ? `?${qs}` : ""}`,
+      );
+    },
+    redeploy: (id: string) =>
+      request<{ deploymentId: string; status: string }>(
+        `/deployments/${id}/redeploy`,
+        { method: "POST" },
+      ),
+    rollback: (id: string) =>
+      request<{ deploymentId: string; status: string }>(
+        `/deployments/${id}/rollback`,
+        { method: "POST" },
+      ),
+    abort: (id: string, markedResources?: string[]) =>
+      request<void>(`/deployments/${id}/abort`, {
+        method: "POST",
+        body: JSON.stringify({ marked_resources: markedResources ?? [] }),
+      }),
+    logs: (id: string) => request<DeploymentLog[]>(`/deployments/${id}/logs`),
+    logsStreamUrl: (id: string) => `${API_URL}/deployments/${id}/logs/stream`,
+  },
+
+  resources: {
+    defaults: (types: ResourceType[]) =>
+      request<Partial<Record<ResourceType, ResourceDefaultKey[]>>>(
+        `/resources/defaults?type=${types.join(",")}`,
+      ),
+    create: (environmentId: string, payload: CreateResourcePayload) =>
+      request<Resource>(`/environments/${environmentId}/resources`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    get: (id: string) => request<Resource>(`/resources/${id}`),
+    clear: (id: string) =>
+      request<{ resourceId: string; status: string }>(
+        `/resources/${id}/clear`,
+        { method: "POST" },
+      ),
+    delete: (id: string) =>
+      request<void>(`/resources/${id}`, { method: "DELETE" }),
+  },
+
+  workbench: {
+    schema: (resourceId: string) =>
+      request<SchemaNode[]>(`/resources/${resourceId}/schema`),
+    tables: (resourceId: string) =>
+      request<TableInfo[]>(`/resources/${resourceId}/tables`),
+    tableData: (
+      resourceId: string,
+      tableName: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        sort?: string;
+        filter?: string;
+      },
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      if (params?.sort) searchParams.set("sort", params.sort);
+      if (params?.filter) searchParams.set("filter", params.filter);
+      const qs = searchParams.toString();
+      return request<TableData>(
+        `/resources/${resourceId}/tables/${tableName}${qs ? `?${qs}` : ""}`,
+      );
+    },
+    executeQuery: (resourceId: string, query: string) =>
+      request<QueryResult>(`/resources/${resourceId}/query`, {
+        method: "POST",
+        body: JSON.stringify({ query }),
+      }),
+  },
+
+  domains: {
+    list: (environmentId: string) =>
+      request<Domain[]>(`/environments/${environmentId}/domains`),
+    add: (environmentId: string, payload: AddDomainPayload) =>
+      request<DNSInstructions>(`/environments/${environmentId}/domains`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    delete: (id: string) =>
+      request<void>(`/domains/${id}`, { method: "DELETE" }),
+  },
+
+  activity: {
+    list: (params?: {
+      projectId?: string;
+      deploymentId?: string;
+      resourceId?: string;
+      domainId?: string;
+      environmentId?: string;
+      type?: string;
+    }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.projectId) searchParams.set("projectId", params.projectId);
+      if (params?.deploymentId)
+        searchParams.set("deploymentId", params.deploymentId);
+      if (params?.resourceId) searchParams.set("resourceId", params.resourceId);
+      if (params?.domainId) searchParams.set("domainId", params.domainId);
+      if (params?.environmentId)
+        searchParams.set("environmentId", params.environmentId);
+      if (params?.type) searchParams.set("type", params.type);
+      const qs = searchParams.toString();
+      return request<ActivityLog[]>(`/activity${qs ? `?${qs}` : ""}`);
+    },
+  },
+};
