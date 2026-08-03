@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import "@/lib/fontawesome";
 import { Providers } from "@/components/providers";
-import { AuthCallback } from "@/components/auth-callback";
+import { AuthCallback } from "@/components/auth/callback";
 
 const inter = Inter({
   variable: "--font-inter",
