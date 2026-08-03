@@ -27,8 +27,10 @@ import type {
   AddDomainPayload,
   ResourceType,
 } from "@/lib/types";
+import { resolveMock } from "@/mocks/handler";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
+const MOCK_MODE = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 
 const TOKEN_KEY = "orbit_access_token";
 
@@ -46,6 +48,31 @@ export function clearAuthToken(): void {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (MOCK_MODE) {
+    const method = (options.method as string) ?? "GET";
+    const mock = resolveMock(method, path);
+
+    if (mock) {
+      if ("error" in mock) {
+        throw new Error(mock.error);
+      }
+
+      const json = mock;
+      if (
+        json &&
+        typeof json === "object" &&
+        "data" in json &&
+        "meta" in json
+      ) {
+        return json as T;
+      }
+      return (json?.data !== undefined ? json.data : json) as T;
+    }
+
+    console.log("No mock found for: ", method, path);
+    return {} as T;
+  }
+
   const token = getAuthToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
