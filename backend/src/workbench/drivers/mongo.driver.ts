@@ -150,9 +150,15 @@ export class MongoDriver implements DatabaseDriver {
     const db = this.client.db();
     const collection = db.collection(name);
 
-    const total = await collection.countDocuments();
+    const filter = (options.filter as Record<string, unknown>) ?? {};
 
-    const rows = await collection.find({}).skip(offset).limit(limit).toArray();
+    const total = await collection.countDocuments(filter);
+
+    const rows = await collection
+      .find(filter)
+      .skip(offset)
+      .limit(limit)
+      .toArray();
 
     const totalPages = Math.ceil(total / limit);
 

@@ -269,7 +269,22 @@ export class DeploymentProcessor extends WorkerHost {
       });
 
       if (resources.length === resourceCount) {
+        const network = await this.docker.getOrCreateProjectNetwork(
+          ctx.project.id,
+        );
+
         for (const r of resources) {
+          if (r.containerId) {
+            try {
+              await this.docker.connectContainerToNetwork(
+                network.id,
+                r.containerId,
+              );
+            } catch {
+              // container may already be connected
+            }
+          }
+
           const creds = r.credentials as Record<string, string> | null;
           if (creds) {
             for (const [key, value] of Object.entries(creds)) {

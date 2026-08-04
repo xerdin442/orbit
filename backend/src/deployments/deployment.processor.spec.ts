@@ -98,6 +98,8 @@ describe('DeploymentProcessor', () => {
   let docker: {
     stopContainer: jest.Mock;
     removeContainer: jest.Mock;
+    getOrCreateProjectNetwork: jest.Mock;
+    connectContainerToNetwork: jest.Mock;
   };
   let command: Record<string, jest.Mock>;
   let caddy: Record<string, jest.Mock>;
@@ -132,6 +134,10 @@ describe('DeploymentProcessor', () => {
     docker = {
       stopContainer: jest.fn().mockResolvedValue(undefined),
       removeContainer: jest.fn().mockResolvedValue(undefined),
+      getOrCreateProjectNetwork: jest
+        .fn()
+        .mockResolvedValue({ id: 'network-1' }),
+      connectContainerToNetwork: jest.fn().mockResolvedValue(undefined),
     };
     command = {};
     caddy = {};
@@ -433,6 +439,7 @@ describe('DeploymentProcessor', () => {
       db.resource.findMany.mockResolvedValue([
         {
           id: 'resource-1',
+          containerId: 'container-res-1',
           status: ResourceStatus.ready,
           credentials: { REDIS_URL: 'redis://localhost:6379' },
         },
@@ -442,6 +449,13 @@ describe('DeploymentProcessor', () => {
 
       await processor.process(job);
 
+      expect(docker.getOrCreateProjectNetwork).toHaveBeenCalledWith(
+        'project-1',
+      );
+      expect(docker.connectContainerToNetwork).toHaveBeenCalledWith(
+        'network-1',
+        'container-res-1',
+      );
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
         LogLevel.INFO,

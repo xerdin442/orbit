@@ -43,14 +43,19 @@ describe('HealthCheckStep', () => {
     (global as any).fetch = jest.fn().mockResolvedValue({ ok: true });
     const ctx = {
       deployment: { id: 'dep-1' },
-      project: { healthCheck: true },
+      project: {
+        healthCheck: true,
+        healthCheckPort: 4000,
+        healthCheckPath: '/api/health',
+        healthCheckTimeout: 30,
+      },
       containerId: 'container-1',
     } as DeploymentContext;
 
     await step.execute(ctx);
 
     expect((global as any).fetch).toHaveBeenCalledWith(
-      'http://172.17.0.2:3000/health',
+      'http://172.17.0.2:4000/api/health',
     );
     delete (global as any).fetch;
   });
@@ -81,7 +86,12 @@ describe('HealthCheckStep', () => {
 
     const ctx = {
       deployment: { id: 'dep-1' },
-      project: { healthCheck: true },
+      project: {
+        healthCheck: true,
+        healthCheckPort: 3000,
+        healthCheckPath: '/health',
+        healthCheckTimeout: 5,
+      },
       containerId: 'container-1',
     } as DeploymentContext;
 

@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
-import { ActivityType } from '@generated/client';
+import { Activity, ActivityType } from '@generated/client';
 import type { Prisma } from '@generated/client';
-import { ActivityLogFilter } from '@src/common/types';
+import { FilterActivityLogsDto } from './dto/activity-log.dto';
+import { PaginatedResult } from '@src/common/types';
 
 @Injectable()
 export class ActivityService {
@@ -22,45 +23,80 @@ export class ActivityService {
     });
   }
 
-  async findLogs(options: ActivityLogFilter) {
-    const where: Prisma.ActivityWhereInput = {
-      actorId: options.actorId,
-    };
+  async findLogs(
+    actorId: string,
+    options: FilterActivityLogsDto,
+  ): Promise<PaginatedResult<Activity>> {
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 20;
+
+    const conditions: Prisma.ActivityWhereInput[] = [{ actorId }];
 
     if (options.type) {
-      where.type = this.resolveTypeFilter(options.type);
+      conditions.push({ type: this.resolveTypeFilter(options.type) });
     }
 
+    if (options.endDate) {
+      options.endDate.setHours(23, 59, 59, 999);
+      conditions.push({ createdAt: { lte: options.endDate } });
+    }
+
+    if (options.startDate) {
+      conditions.push({ createdAt: { gte: options.startDate } });
+    }
+
+    const entityFilters: Array<{ path: string[]; id: string }> = [];
     if (options.projectId) {
-      where.metadata = { path: ['projectId'], equals: options.projectId };
+      entityFilters.push({ path: ['projectId'], id: options.projectId });
     }
-
     if (options.environmentId) {
-      where.metadata = {
+      entityFilters.push({
         path: ['environmentId'],
-        equals: options.environmentId,
-      };
+        id: options.environmentId,
+      });
     }
-
     if (options.domainId) {
-      where.metadata = { path: ['domainId'], equals: options.domainId };
+      entityFilters.push({ path: ['domainId'], id: options.domainId });
     }
-
     if (options.deploymentId) {
-      where.metadata = {
+      entityFilters.push({
         path: ['deploymentId'],
-        equals: options.deploymentId,
-      };
+        id: options.deploymentId,
+      });
     }
-
     if (options.resourceId) {
-      where.metadata = { path: ['resourceId'], equals: options.resourceId };
+      entityFilters.push({ path: ['resourceId'], id: options.resourceId });
     }
 
-    return this.db.activity.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
+    for (const filter of entityFilters) {
+      conditions.push({
+        metadata: { path: filter.path, equals: filter.id },
+      });
+    }
+
+    const where: Prisma.ActivityWhereInput = { AND: conditions };
+
+    const [logs, total] = await Promise.all([
+      this.db.activity.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      this.db.activity.count({ where }),
+    ]);
+
+    return {
+      data: logs,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   private resolveTypeFilter(pattern: string): Prisma.EnumActivityTypeFilter {
