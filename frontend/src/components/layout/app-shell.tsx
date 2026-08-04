@@ -13,7 +13,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     sidebarCollapsed,
     setSelectedProject,
     selectedProject,
-    setSelectedEnvironment,
   } = useUIStore();
 
   const { data: user, isLoading: userLoading } = useQuery({
@@ -34,19 +33,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [projects, selectedProject, setSelectedProject]);
 
-  useEffect(() => {
-    if (selectedProject && user) {
-      api.environments.list(selectedProject.id).then((envs) => {
-        if (envs.length > 0) {
-          setSelectedEnvironment(envs[0]);
-        }
-      });
-    }
-  }, [selectedProject, user, setSelectedEnvironment]);
-
   if (userLoading) {
     return (
-      <div className="flex h-full items-center justify-center bg-background">
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );

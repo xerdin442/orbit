@@ -20,10 +20,12 @@ export function SectionCard({
       className={cn("rounded-xl border border-border bg-card p-6", className)}
     >
       {(title || actions) && (
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-5">
           <div>
             {title && (
-              <h3 className="text-sm font-medium text-foreground">{title}</h3>
+              <h3 className="text-base font-semibold text-foreground">
+                {title}
+              </h3>
             )}
             {description && (
               <p className="text-xs text-muted-foreground mt-0.5">

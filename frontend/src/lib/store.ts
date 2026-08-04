@@ -21,6 +21,12 @@ export const useUIStore = create<UIState>((set) => ({
     set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   setSelectedProject: (project) =>
-    set({ selectedProject: project, selectedEnvironment: null }),
+    set((state) => ({
+      selectedProject: project,
+      selectedEnvironment:
+        project?.id === state.selectedProject?.id
+          ? state.selectedEnvironment
+          : null,
+    })),
   setSelectedEnvironment: (env) => set({ selectedEnvironment: env }),
 }));

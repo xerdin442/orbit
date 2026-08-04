@@ -19,7 +19,7 @@ import {
   Database,
   Globe,
   KeyRound,
-  ScrollText,
+  Logs,
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
@@ -60,7 +60,7 @@ const navItems = [
   {
     href: (id: string) => `/projects/${id}/logs`,
     label: "Logs",
-    icon: ScrollText,
+    icon: Logs,
   },
   {
     href: (id: string) => `/projects/${id}/settings`,
@@ -123,7 +123,7 @@ export function Sidebar({ projects, user }: SidebarProps) {
           )}
           <button
             onClick={toggleSidebar}
-            className="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
+            className="shrink-0 cursor-pointer inline-flex items-center justify-center h-8 w-8 rounded-md text-sidebar-foreground hover:bg-sidebar-accent"
           >
             {sidebarCollapsed ? (
               <PanelLeftOpen className="size-4" />
