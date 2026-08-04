@@ -140,6 +140,7 @@ export function Sidebar({ projects, user }: SidebarProps) {
               selectedProject={selectedProject}
               onSelect={(p) => {
                 setSelectedProject(p);
+                router.push(`/projects/${p.id}`);
               }}
               onNewProject={handleNewProject}
             />
