@@ -40,11 +40,11 @@ export function CopyToClipboardButton({
     <button
       onClick={handleCopy}
       className={cn(
-        "inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
+        "inline-flex items-center justify-center cursor-pointer h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
         className,
       )}
     >
-      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+      {copied ? <Check className="size-4" /> : <Copy className="size-3.5" />}
     </button>
   );
 }
