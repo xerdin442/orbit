@@ -36,6 +36,7 @@ const navItems = [
     href: (id: string) => `/projects/${id}`,
     label: "Overview",
     icon: LayoutDashboard,
+    exact: true,
   },
   {
     href: (id: string) => `/projects/${id}/deployments`,
@@ -69,6 +70,11 @@ const navItems = [
   },
 ];
 
+function getProjectIdFromPath(pathname: string): string | null {
+  const match = pathname.match(/^\/projects\/([^/]+)/);
+  return match?.[1] ?? null;
+}
+
 interface SidebarProps {
   projects: Project[];
   user: UserType;
@@ -86,7 +92,8 @@ export function Sidebar({ projects, user }: SidebarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const projectId = selectedProject?.id;
+  const urlProjectId = getProjectIdFromPath(pathname);
+  const projectId = urlProjectId ?? selectedProject?.id;
 
   const handleLogout = () => {
     clearAuthToken();
@@ -106,6 +113,14 @@ export function Sidebar({ projects, user }: SidebarProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!urlProjectId) return;
+    if (urlProjectId !== selectedProject?.id) {
+      const project = projects.find((p) => p.id === urlProjectId);
+      if (project) setSelectedProject(project);
+    }
+  }, [urlProjectId, projects, selectedProject, setSelectedProject]);
 
   return (
     <TooltipProvider delay={0}>
@@ -155,8 +170,9 @@ export function Sidebar({ projects, user }: SidebarProps) {
             {projectId &&
               navItems.map((item) => {
                 const href = item.href(projectId);
-                const isActive =
-                  pathname === href || pathname.startsWith(href + "/");
+                const isActive = item.exact
+                  ? pathname === href || pathname === href + "/"
+                  : pathname === href || pathname.startsWith(href + "/");
                 const Icon = item.icon;
 
                 if (sidebarCollapsed) {
