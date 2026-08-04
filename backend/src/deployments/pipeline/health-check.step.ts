@@ -19,10 +19,14 @@ export class HealthCheckStep implements DeploymentStep {
   async execute(ctx: DeploymentContext): Promise<void> {
     if (!ctx.project.healthCheck) return;
 
+    const port = ctx.project.healthCheckPort ?? 3000;
+    const path = ctx.project.healthCheckPath ?? '/health';
+    const timeoutSeconds = ctx.project.healthCheckTimeout ?? 60;
+
     await this.log.append(
       ctx.deployment.id,
       LogLevel.INFO,
-      'Running health check...',
+      `Running health check on port ${port} at ${path}...`,
     );
 
     const container = await this.docker.inspectContainer(ctx.containerId);
@@ -31,11 +35,11 @@ export class HealthCheckStep implements DeploymentStep {
         Object.keys(container.NetworkSettings.Networks)[0]
       ].IPAddress;
 
-    const deadline = Date.now() + 60_000;
+    const deadline = Date.now() + timeoutSeconds * 1000;
 
     while (Date.now() < deadline) {
       try {
-        const response = await fetch(`http://${ip}:3000/health`);
+        const response = await fetch(`http://${ip}:${port}${path}`);
 
         if (response.ok) {
           await this.log.append(
@@ -64,7 +68,7 @@ export class HealthCheckStep implements DeploymentStep {
     await this.docker.stopContainer(ctx.containerId);
     await this.docker.removeContainer(ctx.containerId);
     throw new DeploymentStepExecutionError(
-      'Health check timed out after 60 seconds',
+      `Health check timed out after ${timeoutSeconds} seconds`,
     );
   }
 }

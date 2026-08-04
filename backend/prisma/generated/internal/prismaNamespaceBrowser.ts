@@ -97,6 +97,9 @@ export const ProjectScalarFieldEnum = {
   id: 'id',
   name: 'name',
   healthCheck: 'healthCheck',
+  healthCheckPort: 'healthCheckPort',
+  healthCheckPath: 'healthCheckPath',
+  healthCheckTimeout: 'healthCheckTimeout',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   ownerId: 'ownerId'

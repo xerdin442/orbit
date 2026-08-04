@@ -90,7 +90,9 @@ export class GitHubWebhookController {
     const branch = branchRef.replace('refs/heads/', '');
 
     const source = await this.db.source.findFirst({
-      where: { repositoryUrl: { endsWith: repoFullName } },
+      where: {
+        repositoryUrl: { equals: `https://github.com/${repoFullName}` },
+      },
       include: { project: { include: { environments: true } } },
     });
 

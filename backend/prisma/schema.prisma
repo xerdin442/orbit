@@ -110,11 +110,14 @@ model User {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  name        String
-  healthCheck Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String
+  healthCheck        Boolean  @default(false)
+  healthCheckPort    Int      @default(3000)
+  healthCheckPath    String   @default("/health")
+  healthCheckTimeout Int      @default(60)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)

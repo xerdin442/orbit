@@ -39,6 +39,9 @@ export class ProjectsService {
             create: {
               name: dto.name.toLowerCase(),
               healthCheck: dto.healthCheck ?? false,
+              healthCheckPort: dto.healthCheckPort ?? 3000,
+              healthCheckPath: dto.healthCheckPath ?? '/health',
+              healthCheckTimeout: dto.healthCheckTimeout ?? 60,
               ownerId: userId,
               source: {
                 create: {
@@ -80,7 +83,7 @@ export class ProjectsService {
     await this.invalidateCache();
 
     return {
-      environmentId: environment.projectId,
+      environmentId: environment.id,
       project: environment.project,
     };
   }

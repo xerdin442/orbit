@@ -14,9 +14,6 @@ export class ActivityController {
     @Req() req: AuthenticatedRequest,
     @Query() dto: FilterActivityLogsDto,
   ) {
-    return this.activity.findLogs({
-      actorId: req.user.id,
-      ...dto,
-    });
+    return this.activity.findLogs(req.user.id, dto);
   }
 }

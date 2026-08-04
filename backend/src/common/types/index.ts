@@ -152,16 +152,6 @@ export class DeploymentStepExecutionError extends Error {
   }
 }
 
-export interface ActivityLogFilter {
-  actorId: string;
-  projectId?: string;
-  environmentId?: string;
-  deploymentId?: string;
-  domainId?: string;
-  resourceId?: string;
-  type?: string;
-}
-
 export interface ResourceDefaultKey {
   key: string;
   description: string;
