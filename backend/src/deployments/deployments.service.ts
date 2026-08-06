@@ -26,23 +26,8 @@ export class DeploymentsService {
     private readonly resources: ResourcesService,
   ) {}
 
-  async createDeployment(
-    environmentId: string,
-    userId: string,
-    trigger: DeploymentTrigger,
-  ) {
-    const env = await this.db.environment.findFirst({
-      where: { id: environmentId, project: { ownerId: userId } },
-      include: {
-        project: { include: { source: true } },
-        variables: true,
-        resources: true,
-      },
-    });
-
-    if (!env) {
-      throw new NotFoundException('Environment not found');
-    }
+  async createDeployment(environmentId: string, userId: string) {
+    const env = await this.verifyEnvironmentOwnership(environmentId, userId);
 
     const active = await this.db.deployment.findFirst({
       where: {
@@ -59,7 +44,7 @@ export class DeploymentsService {
     const created = await this.db.deployment.create({
       data: {
         environmentId,
-        trigger,
+        trigger: DeploymentTrigger.manual,
         imageTag: null,
         commitSha: '',
         buildStatus: BuildStatus.pending,
@@ -70,10 +55,47 @@ export class DeploymentsService {
     await this.activity.log(
       ActivityType.deployment_started,
       env.project.ownerId,
-      { deploymentId: created.id, environmentId, trigger: trigger },
+      { deploymentId: created.id, environmentId, trigger: created.trigger },
     );
 
     return created;
+  }
+
+  async triggerRedeployment(environmentId: string, userId: string) {
+    const env = await this.verifyEnvironmentOwnership(environmentId, userId);
+
+    if (!env.currentDeploymentId) {
+      throw new NotFoundException('No active deployment in this environment');
+    }
+
+    const currentDeployment = await this.findById(
+      env.currentDeploymentId,
+      userId,
+    );
+
+    const newDeployment = await this.db.deployment.create({
+      data: {
+        environmentId,
+        trigger: DeploymentTrigger.redeploy,
+        imageTag: currentDeployment.imageTag,
+        commitSha: currentDeployment.commitSha,
+        commitMessage: currentDeployment.commitMessage,
+        buildStatus: BuildStatus.pending,
+        lifecycleStatus: LifecycleStatus.inactive,
+      },
+    });
+
+    await this.activity.log(
+      ActivityType.deployment_started,
+      env.project.ownerId,
+      {
+        deploymentId: newDeployment.id,
+        environmentId,
+        trigger: newDeployment.trigger,
+      },
+    );
+
+    return newDeployment;
   }
 
   async findById(id: string, userId: string) {
@@ -170,7 +192,7 @@ export class DeploymentsService {
     await this.activity.log(ActivityType.deployment_rolled_back, userId, {
       deploymentId: rolledDeployment.id,
       environmentId: deployment.environmentId,
-      trigger: DeploymentTrigger.rollback,
+      trigger: rolledDeployment.trigger,
     });
 
     return rolledDeployment;
@@ -253,10 +275,13 @@ export class DeploymentsService {
   ) {
     const env = await this.db.environment.findFirst({
       where: { id: environmentId, project: { ownerId: userId } },
+      include: { project: true },
     });
 
     if (!env) {
       throw new NotFoundException('Environment not found');
     }
+
+    return env;
   }
 }

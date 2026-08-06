@@ -3,9 +3,14 @@ import { BullModule } from '@nestjs/bullmq';
 import { EnvironmentsService } from './environments.service';
 import { EnvironmentsController } from './environments.controller';
 import { CleanupModule } from '@src/cleanup/cleanup.module';
+import { DeploymentsModule } from '@src/deployments/deployments.module';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: 'deployments' }), CleanupModule],
+  imports: [
+    BullModule.registerQueue({ name: 'deployments' }),
+    DeploymentsModule,
+    CleanupModule,
+  ],
   controllers: [EnvironmentsController],
   providers: [EnvironmentsService],
 })

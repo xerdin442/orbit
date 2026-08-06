@@ -27,12 +27,7 @@ import {
   formatDuration,
 } from './blocks/deployment-status.blocks';
 import type { DeploymentJob } from '@src/common/types';
-import {
-  DeploymentTrigger,
-  ActivityType,
-  LifecycleStatus,
-  BuildStatus,
-} from '@generated/client';
+import { ActivityType, LifecycleStatus, BuildStatus } from '@generated/client';
 import { Logger } from '@src/common/logger';
 
 interface SlackCommandContext {
@@ -521,7 +516,6 @@ export class SlackBoltService implements OnModuleInit {
         const deployment = await this.deployments.createDeployment(
           metadata.environmentId,
           record.userId,
-          DeploymentTrigger.manual,
         );
 
         await this.deployQueue.add('deploy', {

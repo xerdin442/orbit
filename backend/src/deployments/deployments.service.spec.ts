@@ -51,16 +51,19 @@ describe('DeploymentsService', () => {
     it('throws if environment not found', async () => {
       db.environment.findFirst = jest.fn().mockResolvedValue(null);
       await expect(
-        service.createDeployment('env-1', 'user-1', DeploymentTrigger.manual),
+        service.createDeployment('env-1', 'user-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws if active deployment exists', async () => {
-      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        project: { ownerId: 'user-1' },
+      });
       db.deployment.findFirst = jest.fn().mockResolvedValue({ id: 'dep-1' });
 
       await expect(
-        service.createDeployment('env-1', 'user-1', DeploymentTrigger.manual),
+        service.createDeployment('env-1', 'user-1'),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -70,15 +73,81 @@ describe('DeploymentsService', () => {
         project: { ownerId: 'user-1' },
       });
       db.deployment.findFirst = jest.fn().mockResolvedValue(null);
-      db.deployment.create = jest.fn().mockResolvedValue({ id: 'dep-1' });
+      db.deployment.create = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        trigger: DeploymentTrigger.manual,
+      });
 
-      const result = await service.createDeployment(
-        'env-1',
-        'user-1',
-        DeploymentTrigger.manual,
-      );
+      const result = await service.createDeployment('env-1', 'user-1');
       expect(result.id).toBe('dep-1');
+      expect(db.deployment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          environmentId: 'env-1',
+          trigger: DeploymentTrigger.manual,
+        }),
+      });
       expect(activity.log).toHaveBeenCalled();
+    });
+  });
+
+  describe('triggerRedeployment', () => {
+    it('throws if environment not found', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(
+        service.triggerRedeployment('env-1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws if environment has no active deployment', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        currentDeploymentId: null,
+        project: { ownerId: 'user-1' },
+      });
+
+      await expect(
+        service.triggerRedeployment('env-1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('creates a redeploy deployment based on the current deployment', async () => {
+      db.environment.findFirst = jest
+        .fn()
+        .mockResolvedValueOnce({
+          id: 'env-1',
+          currentDeploymentId: 'dep-current',
+          project: { ownerId: 'user-1' },
+        })
+        .mockResolvedValueOnce(undefined);
+
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-current',
+        environmentId: 'env-1',
+        imageTag: 'project-proj-1:abc',
+        commitSha: 'abc',
+        commitMessage: 'init',
+      });
+
+      db.deployment.create = jest.fn().mockResolvedValue({
+        id: 'dep-new',
+        trigger: DeploymentTrigger.redeploy,
+      });
+
+      const result = await service.triggerRedeployment('env-1', 'user-1');
+
+      expect(db.deployment.create).toHaveBeenCalledWith({
+        data: {
+          environmentId: 'env-1',
+          trigger: DeploymentTrigger.redeploy,
+          imageTag: 'project-proj-1:abc',
+          commitSha: 'abc',
+          commitMessage: 'init',
+          buildStatus: BuildStatus.pending,
+          lifecycleStatus: LifecycleStatus.inactive,
+        },
+      });
+      expect(activity.log).toHaveBeenCalled();
+      expect(result.id).toBe('dep-new');
     });
   });
 

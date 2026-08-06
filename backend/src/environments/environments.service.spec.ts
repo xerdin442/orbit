@@ -5,7 +5,8 @@ import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { CleanupService } from '@src/cleanup/cleanup.service';
-import { NotFoundException } from '@nestjs/common';
+import { DeploymentsService } from '@src/deployments/deployments.service';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import type { Queue } from 'bullmq';
 import { getQueueToken } from '@nestjs/bullmq';
 
@@ -22,6 +23,9 @@ describe('EnvironmentsService', () => {
   let cleanup: jest.Mocked<
     Pick<CleanupService, 'enqueueProjectCleanup' | 'enqueueEnvironmentCleanup'>
   >;
+  let deployments: jest.Mocked<
+    Pick<DeploymentsService, 'createDeployment' | 'triggerRedeployment'>
+  >;
   let queue: jest.Mocked<Pick<Queue, 'add'>>;
 
   beforeEach(async () => {
@@ -29,6 +33,7 @@ describe('EnvironmentsService', () => {
       project: { findFirst: jest.fn() },
       environment: {
         create: jest.fn(),
+        findFirst: jest.fn(),
         findUnique: jest.fn(),
         findUniqueOrThrow: jest.fn(),
         update: jest.fn(),
@@ -60,6 +65,10 @@ describe('EnvironmentsService', () => {
       enqueueProjectCleanup: jest.fn(),
       enqueueEnvironmentCleanup: jest.fn(),
     };
+    deployments = {
+      createDeployment: jest.fn(),
+      triggerRedeployment: jest.fn(),
+    };
     queue = { add: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -69,6 +78,7 @@ describe('EnvironmentsService', () => {
         { provide: EncryptionService, useValue: encryption },
         { provide: ActivityService, useValue: activity },
         { provide: CleanupService, useValue: cleanup },
+        { provide: DeploymentsService, useValue: deployments },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
         { provide: getQueueToken('deployments'), useValue: queue },
       ],
@@ -78,12 +88,14 @@ describe('EnvironmentsService', () => {
   });
 
   describe('create', () => {
-    it('creates environment after verifying ownership', async () => {
+    it('creates environment after verifying ownership and triggers initial deployment', async () => {
       db.project.findFirst.mockResolvedValue({
         id: 'proj-1',
         ownerId: 'user-1',
       });
+      db.environment.findFirst.mockResolvedValue(null);
       db.environment.create.mockResolvedValue({ id: 'env-1', name: 'staging' });
+      deployments.createDeployment.mockResolvedValue({ id: 'dep-1' });
 
       await service.create('proj-1', 'user-1', {
         name: 'staging',
@@ -98,6 +110,13 @@ describe('EnvironmentsService', () => {
           projectId: 'proj-1',
         },
       });
+      expect(deployments.createDeployment).toHaveBeenCalledWith(
+        'env-1',
+        'user-1',
+      );
+      expect(queue.add).toHaveBeenCalledWith('deploy', {
+        deployment: { id: 'dep-1' },
+      });
     });
 
     it('throws if project not owned', async () => {
@@ -108,6 +127,26 @@ describe('EnvironmentsService', () => {
           branch: 'develop',
         }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws if branch is already connected to an environment', async () => {
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environment.findFirst.mockResolvedValue({
+        id: 'env-existing',
+        branch: 'develop',
+      });
+
+      await expect(
+        service.create('proj-1', 'user-1', {
+          name: 'staging',
+          branch: 'develop',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(db.environment.create).not.toHaveBeenCalled();
     });
   });
 
@@ -186,17 +225,7 @@ describe('EnvironmentsService', () => {
         ownerId: 'user-1',
       });
       db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
-      db.environment.findUniqueOrThrow.mockResolvedValue({
-        id: 'env-1',
-        deployments: [
-          {
-            imageTag: 'project-proj-1:abc',
-            commitSha: 'abc',
-            commitMessage: 'init',
-          },
-        ],
-      });
-      db.deployment.create.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
 
       await service.createVariable('env-1', 'user-1', {
         key: 'KEY',
@@ -204,8 +233,37 @@ describe('EnvironmentsService', () => {
       });
 
       expect(encryption.encrypt).toHaveBeenCalledWith('secret');
-      expect(queue.add).toHaveBeenCalled();
+      expect(deployments.triggerRedeployment).toHaveBeenCalledWith(
+        'env-1',
+        'user-1',
+      );
+      expect(queue.add).toHaveBeenCalledWith('redeploy', {
+        deployment: { id: 'dep-1' },
+        skipImageBuild: true,
+      });
       expect(activity.log).toHaveBeenCalled();
+    });
+
+    it('skips redeploy when skipRedeploy is true', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
+
+      await service.createVariable(
+        'env-1',
+        'user-1',
+        { key: 'KEY', value: 'secret' },
+        true,
+      );
+
+      expect(deployments.triggerRedeployment).not.toHaveBeenCalled();
+      expect(queue.add).not.toHaveBeenCalled();
     });
   });
 
@@ -220,17 +278,7 @@ describe('EnvironmentsService', () => {
         ownerId: 'user-1',
       });
       db.environmentVariable.createMany.mockResolvedValue({ count: 2 });
-      db.environment.findUniqueOrThrow.mockResolvedValue({
-        id: 'env-1',
-        deployments: [
-          {
-            imageTag: 'project-proj-1:abc',
-            commitSha: 'abc',
-            commitMessage: 'init',
-          },
-        ],
-      });
-      db.deployment.create.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
 
       const result = await service.bulkCreateVariables('env-1', 'user-1', {
         variables: [
@@ -271,6 +319,59 @@ describe('EnvironmentsService', () => {
 
       await service.update('env-1', 'user-1', { name: 'updated' });
       expect(db.environment.update).toHaveBeenCalled();
+      expect(deployments.createDeployment).not.toHaveBeenCalled();
+    });
+
+    it('verifies branch uniqueness and triggers a new deployment when branch changes', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environment.findFirst.mockResolvedValue(null);
+      db.environment.update.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+        branch: 'main',
+      });
+      deployments.createDeployment.mockResolvedValue({ id: 'dep-1' });
+
+      await service.update('env-1', 'user-1', { branch: 'main' });
+
+      expect(db.environment.findFirst).toHaveBeenCalledWith({
+        where: { projectId: 'proj-1', branch: 'main' },
+      });
+      expect(deployments.createDeployment).toHaveBeenCalledWith(
+        'env-1',
+        'user-1',
+      );
+      expect(queue.add).toHaveBeenCalledWith('deploy', {
+        deployment: { id: 'dep-1' },
+      });
+    });
+
+    it('throws if the new branch is already connected to another environment', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environment.findFirst.mockResolvedValue({
+        id: 'env-other',
+        branch: 'main',
+      });
+
+      await expect(
+        service.update('env-1', 'user-1', { branch: 'main' }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(db.environment.update).not.toHaveBeenCalled();
     });
   });
 

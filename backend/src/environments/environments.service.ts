@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Queue } from 'bullmq';
@@ -16,12 +21,8 @@ import {
   UpdateVariableDto,
   BulkCreateVariablesDto,
 } from './dto/variable.dto';
-import {
-  ActivityType,
-  BuildStatus,
-  DeploymentTrigger,
-  LifecycleStatus,
-} from '@generated/client';
+import { ActivityType } from '@generated/client';
+import { DeploymentsService } from '@src/deployments/deployments.service';
 
 @Injectable()
 export class EnvironmentsService {
@@ -29,6 +30,7 @@ export class EnvironmentsService {
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
     private readonly activity: ActivityService,
+    private readonly deployments: DeploymentsService,
     private readonly cleanup: CleanupService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectQueue('deployments')
@@ -38,6 +40,8 @@ export class EnvironmentsService {
   async create(projectId: string, userId: string, dto: CreateEnvironmentDto) {
     await this.verifyProjectOwnership(projectId, userId);
 
+    await this.verifyUniqueBranch(projectId, dto.branch);
+
     const env = await this.db.environment.create({
       data: {
         name: dto.name,
@@ -46,6 +50,10 @@ export class EnvironmentsService {
         projectId,
       },
     });
+
+    const deployment = await this.deployments.createDeployment(env.id, userId);
+
+    await this.deployQueue.add('deploy', { deployment });
 
     await this.activity.log(ActivityType.environment_created, userId, {
       projectId,
@@ -81,12 +89,25 @@ export class EnvironmentsService {
   }
 
   async update(envId: string, userId: string, dto: UpdateEnvironmentDto) {
-    await this.findById(envId, userId);
+    const env = await this.findById(envId, userId);
+
+    if (dto.branch) {
+      await this.verifyUniqueBranch(env.projectId, dto.branch);
+    }
 
     const updated = await this.db.environment.update({
       where: { id: envId },
       data: dto,
     });
+
+    if (dto.branch) {
+      const deployment = await this.deployments.createDeployment(
+        updated.id,
+        userId,
+      );
+
+      await this.deployQueue.add('deploy', { deployment });
+    }
 
     await this.activity.log(ActivityType.environment_updated, userId, {
       projectId: updated.projectId,
@@ -145,7 +166,7 @@ export class EnvironmentsService {
     });
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId);
+      await this.triggerRedeploy(envId, userId);
     }
 
     await this.invalidateEnvCache(env.projectId, envId, true);
@@ -176,7 +197,7 @@ export class EnvironmentsService {
     const result = await this.db.environmentVariable.createMany({ data });
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId);
+      await this.triggerRedeploy(envId, userId);
     }
 
     await this.invalidateEnvCache(env.projectId, envId, true);
@@ -216,7 +237,7 @@ export class EnvironmentsService {
     const envId = updated.environment.id;
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId);
+      await this.triggerRedeploy(envId, userId);
     }
 
     await this.invalidateEnvCache(projectId, envId, true);
@@ -246,7 +267,7 @@ export class EnvironmentsService {
     await this.db.environmentVariable.delete({ where: { id: varId } });
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId);
+      await this.triggerRedeploy(envId, userId);
     }
 
     await this.invalidateEnvCache(projectId, envId, true);
@@ -285,31 +306,30 @@ export class EnvironmentsService {
     return project;
   }
 
-  private async triggerRedeploy(environmentId: string) {
-    const env = await this.db.environment.findUniqueOrThrow({
-      where: { id: environmentId },
-      include: {
-        deployments: { where: { lifecycleStatus: LifecycleStatus.active } },
+  private async verifyUniqueBranch(projectId: string, branch: string) {
+    const existing = await this.db.environment.findFirst({
+      where: {
+        projectId,
+        branch,
       },
     });
 
-    const activeDeployment = env.deployments[0];
+    if (existing) {
+      throw new ConflictException(
+        'This branch is already connected to an environment',
+      );
+    }
+  }
 
-    const deployment = await this.db.deployment.create({
-      data: {
-        environmentId,
-        trigger: DeploymentTrigger.redeploy,
-        imageTag: activeDeployment?.imageTag ?? null,
-        commitSha: activeDeployment?.commitSha ?? '',
-        commitMessage: activeDeployment?.commitMessage ?? null,
-        buildStatus: BuildStatus.pending,
-        lifecycleStatus: LifecycleStatus.inactive,
-      },
-    });
+  private async triggerRedeploy(envId: string, userId: string) {
+    const deployment = await this.deployments.triggerRedeployment(
+      envId,
+      userId,
+    );
 
     await this.deployQueue.add('redeploy', {
       deployment,
-      skipImageBuild: !!activeDeployment?.imageTag,
+      skipImageBuild: true,
     });
   }
 }
