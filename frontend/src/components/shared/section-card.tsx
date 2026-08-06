@@ -23,12 +23,12 @@ export function SectionCard({
         <div className="flex items-center justify-between mb-5">
           <div>
             {title && (
-              <h3 className="text-base font-semibold text-foreground">
+              <h3 className="text-[17px] font-semibold text-foreground">
                 {title}
               </h3>
             )}
             {description && (
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.75 leading-normal">
                 {description}
               </p>
             )}

@@ -49,7 +49,7 @@ export function clearAuthToken(): void {
 }
 
 function showRequestError(message: string): void {
-  toast.error("Request failed", { description: message, duration: 7000 });
+  toast.error("Request failed", { description: message, duration: 5000 });
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

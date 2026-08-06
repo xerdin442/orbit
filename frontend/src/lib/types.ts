@@ -28,6 +28,10 @@ export interface Project {
   id: string;
   name: string;
   ownerId: string;
+  healthCheck: boolean;
+  healthCheckPort: number;
+  healthCheckPath: string;
+  healthCheckTimeout: number;
   source: Source | null;
   createdAt: string;
   updatedAt: string;
@@ -244,6 +248,9 @@ export interface CreateProjectPayload {
   repositoryUrl: string;
   defaultBranch: string;
   healthCheck?: boolean;
+  healthCheckPort?: number;
+  healthCheckPath?: string;
+  healthCheckTimeout?: number;
   installationId?: number;
   envVars?: Record<string, string>;
 }
