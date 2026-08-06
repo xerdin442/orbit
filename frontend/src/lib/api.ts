@@ -28,6 +28,7 @@ import type {
   ResourceType,
 } from "@/lib/types";
 import { resolveMock } from "@/mocks/handler";
+import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api";
 const MOCK_MODE = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
@@ -50,10 +51,13 @@ export function clearAuthToken(): void {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (MOCK_MODE) {
     const method = (options.method as string) ?? "GET";
-    const mock = resolveMock(method, path);
+    const body =
+      typeof options.body === "string" ? JSON.parse(options.body) : undefined;
+    const mock = resolveMock(method, path, body);
 
     if (mock) {
       if ("error" in mock) {
+        toast.error(mock.error);
         throw new Error(mock.error);
       }
 
@@ -90,14 +94,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const errorField = body?.error;
+    const message: string =
+      typeof errorField === "string"
+        ? errorField
+        : (errorField?.message ?? body?.message ?? res.statusText);
+
     if (res.status === 401) {
       clearAuthToken();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
+    } else {
+      toast.error(message);
     }
-    const body = await res.json().catch(() => ({}));
-    const message = body?.error ?? body?.message ?? res.statusText;
+
     throw new Error(message);
   }
 
@@ -215,6 +227,11 @@ export const api = {
         `/environments/${environmentId}/deploy?resource_count=${resourceCount}`,
         { method: "POST" },
       ),
+    redeploy: (environmentId: string) =>
+      request<{ deploymentId: string; status: string }>(
+        `/environments/${environmentId}/redeploy`,
+        { method: "POST" },
+      ),
   },
 
   deployments: {
@@ -242,11 +259,6 @@ export const api = {
         `/environments/${environmentId}/deployments${qs ? `?${qs}` : ""}`,
       );
     },
-    redeploy: (id: string) =>
-      request<{ deploymentId: string; status: string }>(
-        `/deployments/${id}/redeploy`,
-        { method: "POST" },
-      ),
     rollback: (id: string) =>
       request<{ deploymentId: string; status: string }>(
         `/deployments/${id}/rollback`,

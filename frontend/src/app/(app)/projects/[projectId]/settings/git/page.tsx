@@ -8,6 +8,7 @@ import { RepoCard } from "@/components/github/repo-card";
 import { Skeleton } from "@/components/shared/skeleton";
 import { SectionCard } from "@/components/shared/section-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
 import { useState } from "react";
 
 export default function GitSettingsPage() {
@@ -15,6 +16,7 @@ export default function GitSettingsPage() {
   const { selectedEnvironment, setSelectedEnvironment } = useUIStore();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [pendingBranch, setPendingBranch] = useState<string | null>(null);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -46,17 +48,25 @@ export default function GitSettingsPage() {
     }
   };
 
-  const handleBranchChange = async (branch: string | null) => {
-    if (!selectedEnvironment || !branch) return;
+  const handleBranchSelect = (branch: string | null) => {
+    if (!branch || branch === selectedEnvironment?.branch) return;
+    setPendingBranch(branch);
+  };
+
+  const handleConfirmBranchChange = async () => {
+    if (!selectedEnvironment || !pendingBranch || isUpdating) return;
     setIsUpdating(true);
     try {
       const updated = await api.environments.update(selectedEnvironment.id, {
-        branch,
+        branch: pendingBranch,
       });
       setSelectedEnvironment(updated);
       queryClient.invalidateQueries({ queryKey: ["environments", projectId] });
+    } catch {
+      // error toast already surfaced by the API client
     } finally {
       setIsUpdating(false);
+      setPendingBranch(null);
     }
   };
 
@@ -87,17 +97,36 @@ export default function GitSettingsPage() {
   }
 
   return (
-    <RepoCard
-      repoUrl={project.source!.repositoryUrl}
-      installationLogin={installationLogin}
-      autoDeploy={selectedEnvironment?.autoDeploy ?? false}
-      branches={branches ?? []}
-      selectedBranch={
-        selectedEnvironment?.branch ?? branches?.[0]?.name ?? "main"
-      }
-      isUpdating={isUpdating}
-      onBranchChange={handleBranchChange}
-      onToggleConnection={handleToggleConnection}
-    />
+    <>
+      <RepoCard
+        repoUrl={project.source!.repositoryUrl}
+        installationLogin={installationLogin}
+        autoDeploy={selectedEnvironment?.autoDeploy ?? false}
+        branches={branches ?? []}
+        selectedBranch={
+          pendingBranch ??
+          selectedEnvironment?.branch ??
+          branches?.[0]?.name ??
+          "main"
+        }
+        isUpdating={isUpdating}
+        onBranchChange={handleBranchSelect}
+        onToggleConnection={handleToggleConnection}
+      />
+
+      <ConfirmationDialog
+        open={pendingBranch !== null}
+        onOpenChange={(open) => !open && !isUpdating && setPendingBranch(null)}
+        title="Change deployment branch?"
+        description={
+          pendingBranch
+            ? `This environment will switch to deploy changes from "${pendingBranch}". A new deployment will be triggered immediately.`
+            : ""
+        }
+        confirmLabel="Change branch"
+        onConfirm={handleConfirmBranchChange}
+        onCancel={() => !isUpdating && setPendingBranch(null)}
+      />
+    </>
   );
 }

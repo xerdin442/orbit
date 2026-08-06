@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {children}
       <Toaster
         theme="dark"
-        position="bottom-right"
+        position="top-right"
         toastOptions={{
           style: {
             background: "oklch(0.18 0 0)",
