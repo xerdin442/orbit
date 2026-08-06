@@ -50,7 +50,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           loading: <LoaderCircle className="size-5 animate-spin" />,
         }}
         toastOptions={{
-          duration: 5000,
+          duration: 3500,
           classNames: {
             toast:
               "rounded-lg border border-border bg-popover text-popover-foreground shadow-lg",
