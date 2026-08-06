@@ -47,7 +47,7 @@ export function TopNav() {
   }, [selectedProject?.id]);
 
   return (
-    <header className="flex items-center gap-3 h-12 px-6 border-b border-border bg-background shrink-0">
+    <header className="flex items-center gap-3 h-16 px-6 border-b border-border bg-background shrink-0">
       <span className="text-sm font-medium text-foreground">
         {selectedProject?.name ?? "Orbit"}
       </span>
