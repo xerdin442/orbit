@@ -48,6 +48,10 @@ export function clearAuthToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+function showRequestError(message: string): void {
+  toast.error("Request failed", { description: message, duration: 7000 });
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (MOCK_MODE) {
     const method = (options.method as string) ?? "GET";
@@ -57,7 +61,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
     if (mock) {
       if ("error" in mock) {
-        toast.error(mock.error);
+        showRequestError(mock.error);
         throw new Error(mock.error);
       }
 
@@ -107,7 +111,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         window.location.href = "/login";
       }
     } else {
-      toast.error(message);
+      showRequestError(message);
     }
 
     throw new Error(message);

@@ -10,6 +10,7 @@ import { SectionCard } from "@/components/shared/section-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function GitSettingsPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -36,13 +37,21 @@ export default function GitSettingsPage() {
 
   const handleToggleConnection = async () => {
     if (!selectedEnvironment) return;
+    const connecting = !selectedEnvironment.autoDeploy;
     setIsUpdating(true);
     try {
       const updated = await api.environments.update(selectedEnvironment.id, {
-        autoDeploy: !selectedEnvironment.autoDeploy,
+        autoDeploy: connecting,
       });
       setSelectedEnvironment(updated);
       queryClient.invalidateQueries({ queryKey: ["environments", projectId] });
+      toast.success(
+        connecting
+          ? `Branch ${updated.branch} is now connected for automatic deployments`
+          : `Automatic deployments have been disabled for branch ${updated.branch}`,
+      );
+    } catch {
+      // error toast already surfaced by the API client
     } finally {
       setIsUpdating(false);
     }
@@ -62,6 +71,9 @@ export default function GitSettingsPage() {
       });
       setSelectedEnvironment(updated);
       queryClient.invalidateQueries({ queryKey: ["environments", projectId] });
+      toast.success(`Branch changed to "${updated.branch}"`, {
+        description: "A new deployment has been triggered.",
+      });
     } catch {
       // error toast already surfaced by the API client
     } finally {

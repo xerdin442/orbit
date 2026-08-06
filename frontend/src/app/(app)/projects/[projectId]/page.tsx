@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import Link from "next/link";
+import { toast } from "sonner";
 
 export default function ProjectOverviewPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -110,6 +111,7 @@ export default function ProjectOverviewPage() {
       await queryClient.invalidateQueries({
         queryKey: ["activity", projectId],
       });
+      toast.success("Redeploy triggered");
     } catch {
       // error toast already surfaced by the API client
     } finally {
@@ -128,6 +130,9 @@ export default function ProjectOverviewPage() {
       await queryClient.invalidateQueries({
         queryKey: ["activity", projectId],
       });
+      toast.success("Rollback triggered");
+    } catch {
+      // error toast already surfaced by the API client
     } finally {
       setRollingBack(false);
     }
