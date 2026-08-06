@@ -13,6 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     sidebarCollapsed,
     setSelectedProject,
     selectedProject,
+    setUserProfile,
   } = useUIStore();
 
   const { data: user, isLoading: userLoading } = useQuery({
@@ -25,6 +26,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     queryKey: ["projects"],
     queryFn: () => api.projects.list(),
   });
+
+  useEffect(() => {
+    if (user) setUserProfile(user);
+  }, [user, setUserProfile]);
 
   useEffect(() => {
     if (projects && projects.length > 0 && !selectedProject) {
