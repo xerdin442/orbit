@@ -63,6 +63,8 @@ export class ResourcesService {
 
     await this.resourceQueue.add('provision', { resourceId: resource.id });
 
+    await this.cache.del(`/api/environments/${environmentId}/resources`);
+
     return resource;
   }
 
@@ -77,6 +79,12 @@ export class ResourcesService {
     }
 
     return resource;
+  }
+
+  async findByEnvironment(environmentId: string, userId: string) {
+    return await this.db.resource.findMany({
+      where: { environmentId, environment: { project: { ownerId: userId } } },
+    });
   }
 
   async delete(id: string, userId: string) {

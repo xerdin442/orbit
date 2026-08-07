@@ -273,8 +273,7 @@ export interface CreateVariablePayload {
 }
 
 export interface UpdateVariablePayload {
-  key?: string;
-  value?: string;
+  value: string;
 }
 
 export interface CreateResourcePayload {
