@@ -115,6 +115,35 @@ describe('ResourcesService', () => {
     });
   });
 
+  describe('findByEnvironment', () => {
+    it('returns resources scoped to the environment and owner', async () => {
+      db.resource.findMany = jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'res-1', environmentId: 'env-1' },
+          { id: 'res-2', environmentId: 'env-1' },
+        ]);
+
+      const result = await service.findByEnvironment('env-1', 'user-1');
+
+      expect(db.resource.findMany).toHaveBeenCalledWith({
+        where: {
+          environmentId: 'env-1',
+          environment: { project: { ownerId: 'user-1' } },
+        },
+      });
+      expect(result).toHaveLength(2);
+    });
+
+    it('returns an empty array when the environment has no resources', async () => {
+      db.resource.findMany = jest.fn().mockResolvedValue([]);
+
+      const result = await service.findByEnvironment('env-1', 'user-1');
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('delete', () => {
     it('cleans up Docker resources and deletes', async () => {
       db.resource.findFirst = jest.fn().mockResolvedValue({

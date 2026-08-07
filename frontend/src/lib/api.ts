@@ -175,56 +175,67 @@ export const api = {
   environments: {
     list: (projectId: string) =>
       request<Environment[]>(`/projects/${projectId}/environments`),
-    get: (id: string) => request<Environment>(`/environments/${id}`),
+    get: (projectId: string, id: string) =>
+      request<Environment>(`/projects/${projectId}/environments/${id}`),
     create: (projectId: string, payload: CreateEnvironmentPayload) =>
       request<Environment>(`/projects/${projectId}/environments`, {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    update: (id: string, payload: UpdateEnvironmentPayload) =>
-      request<Environment>(`/environments/${id}`, {
+    update: (
+      projectId: string,
+      id: string,
+      payload: UpdateEnvironmentPayload,
+    ) =>
+      request<Environment>(`/projects/${projectId}/environments/${id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
       }),
-    delete: (id: string) =>
-      request<void>(`/environments/${id}`, { method: "DELETE" }),
+    delete: (projectId: string, id: string) =>
+      request<void>(`/projects/${projectId}/environments/${id}`, {
+        method: "DELETE",
+      }),
 
     variables: {
-      list: (environmentId: string) =>
+      list: (projectId: string, environmentId: string) =>
         request<EnvironmentVariable[]>(
-          `/environments/${environmentId}/variables`,
+          `/projects/${projectId}/environments/${environmentId}/variables`,
         ),
       create: (
+        projectId: string,
         environmentId: string,
         payload: CreateVariablePayload,
         skipRedeploy = false,
       ) =>
         request<EnvironmentVariable>(
-          `/environments/${environmentId}/variables?skip_redeploy=${skipRedeploy}`,
+          `/projects/${projectId}/environments/${environmentId}/variables?skip_redeploy=${skipRedeploy}`,
           { method: "POST", body: JSON.stringify(payload) },
         ),
       bulkCreate: (
+        projectId: string,
         environmentId: string,
         variables: CreateVariablePayload[],
         skipRedeploy = false,
       ) =>
         request<EnvironmentVariable[]>(
-          `/environments/${environmentId}/variables/bulk?skip_redeploy=${skipRedeploy}`,
-          { method: "POST", body: JSON.stringify(variables) },
+          `/projects/${projectId}/environments/${environmentId}/variables/bulk?skip_redeploy=${skipRedeploy}`,
+          { method: "POST", body: JSON.stringify({ variables }) },
         ),
       update: (
+        projectId: string,
         id: string,
         payload: UpdateVariablePayload,
         skipRedeploy = false,
       ) =>
         request<EnvironmentVariable>(
-          `/variables/${id}?skip_redeploy=${skipRedeploy}`,
+          `/projects/${projectId}/environments/variables/${id}?skip_redeploy=${skipRedeploy}`,
           { method: "PATCH", body: JSON.stringify(payload) },
         ),
-      delete: (id: string, skipRedeploy = false) =>
-        request<void>(`/variables/${id}?skip_redeploy=${skipRedeploy}`, {
-          method: "DELETE",
-        }),
+      delete: (projectId: string, id: string, skipRedeploy = false) =>
+        request<void>(
+          `/projects/${projectId}/environments/variables/${id}?skip_redeploy=${skipRedeploy}`,
+          { method: "DELETE" },
+        ),
     },
 
     deploy: (environmentId: string, resourceCount: number) =>

@@ -40,9 +40,11 @@ export default function GitSettingsPage() {
     const connecting = !selectedEnvironment.autoDeploy;
     setIsUpdating(true);
     try {
-      const updated = await api.environments.update(selectedEnvironment.id, {
-        autoDeploy: connecting,
-      });
+      const updated = await api.environments.update(
+        projectId,
+        selectedEnvironment.id,
+        { autoDeploy: connecting },
+      );
       setSelectedEnvironment(updated);
       queryClient.invalidateQueries({ queryKey: ["environments", projectId] });
       toast.success(
@@ -66,9 +68,11 @@ export default function GitSettingsPage() {
     if (!selectedEnvironment || !pendingBranch || isUpdating) return;
     setIsUpdating(true);
     try {
-      const updated = await api.environments.update(selectedEnvironment.id, {
-        branch: pendingBranch,
-      });
+      const updated = await api.environments.update(
+        projectId,
+        selectedEnvironment.id,
+        { branch: pendingBranch },
+      );
       setSelectedEnvironment(updated);
       queryClient.invalidateQueries({ queryKey: ["environments", projectId] });
       toast.success(`Branch changed to "${updated.branch}"`, {
