@@ -79,14 +79,20 @@ export function DataTable<TData, TValue>({
   }
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-2.5", className)}>
       <div className="rounded-lg border border-border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                {headerGroup.headers.map((header, i) => (
+                  <TableHead
+                    key={header.id}
+                    className={cn(
+                      i === 0 && "pl-4",
+                      i === headerGroup.headers.length - 1 && "pr-4",
+                    )}
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -102,8 +108,14 @@ export function DataTable<TData, TValue>({
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                  {row.getVisibleCells().map((cell, i) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        i === 0 && "pl-4",
+                        i === row.getVisibleCells().length - 1 && "pr-4",
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -127,8 +139,8 @@ export function DataTable<TData, TValue>({
       </div>
 
       {totalPages > 1 && onPageChange && (
-        <div className="flex items-center justify-between px-2">
-          <span className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-end pr-1.5 gap-2.5">
+          <span className="text-[0.8125rem] text-muted-foreground">
             Page {pageIndex + 1} of {totalPages}
           </span>
           <div className="flex items-center gap-1">

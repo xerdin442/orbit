@@ -294,6 +294,8 @@ export const api = {
       request<Partial<Record<ResourceType, ResourceDefaultKey[]>>>(
         `/resources/defaults?type=${types.join(",")}`,
       ),
+    list: (environmentId: string) =>
+      request<Resource[]>(`/environments/${environmentId}/resources`),
     create: (environmentId: string, payload: CreateResourcePayload) =>
       request<Resource>(`/environments/${environmentId}/resources`, {
         method: "POST",

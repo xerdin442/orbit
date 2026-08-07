@@ -30,9 +30,7 @@ import type {
   GitHubRepository,
   Project,
 } from "@/lib/types";
-import { parseEnvFile } from "@/lib/utils";
-
-const ENV_FILENAME_PATTERN = /^\.env(\..+)?$/i;
+import { ENV_FILENAME_PATTERN, parseEnvFile } from "@/lib/utils";
 
 interface ConfigureProjectStepProps {
   installation: GitHubInstallation;

@@ -38,10 +38,7 @@ export function TerminalViewer({
     <div
       ref={ref}
       className={cn(
-        "h-full overflow-auto rounded-xs bg-black p-4 font-mono text-[0.8125rem]",
-        "scrollbar-thin [scrollbar-color:rgba(255,255,255,0.15)_transparent]",
-        "[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent",
-        "[&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar-thumb:hover]:bg-white/25",
+        "h-full overflow-auto rounded-xs bg-black p-4 font-mono text-[0.8125rem] custom-scrollbar",
         className,
       )}
     >
