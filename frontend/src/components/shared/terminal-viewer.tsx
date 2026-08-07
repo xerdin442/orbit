@@ -25,11 +25,17 @@ export function TerminalViewer({
     if (!el) return;
 
     setHasOverflow(el.scrollHeight > el.clientHeight);
+  }, [lines]);
 
-    if (autoScroll) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [lines, autoScroll]);
+  // Re-runs once the overflow spacer above has actually committed to the
+  // DOM (hasOverflow is a dep), so the initial autoscroll on open accounts
+  // for its height instead of stopping short of it.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !autoScroll) return;
+
+    el.scrollTop = el.scrollHeight;
+  }, [lines, autoScroll, hasOverflow]);
 
   return (
     <div
