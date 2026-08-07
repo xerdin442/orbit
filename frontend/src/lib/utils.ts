@@ -1,11 +1,44 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import type { BuildStatus, DeploymentLog, LogLevel } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-export function parseEnvFile(content: string): { key: string; value: string }[] {
+export function buildStatusBadgeVariant(
+  status: BuildStatus,
+): "ready" | "failed" | "building" | "inactive" {
+  if (status === "ready") return "ready";
+  if (status === "failed") return "failed";
+  if (status === "building" || status === "pending") return "building";
+  return "inactive";
+}
+
+export function isBuildInProgress(status: BuildStatus): boolean {
+  const TERMINAL_BUILD_STATUSES: BuildStatus[] = ["ready", "failed", "aborted"];
+  return !TERMINAL_BUILD_STATUSES.includes(status);
+}
+
+export function formatDuration(start: string, end: string | null): string {
+  const startMs = new Date(start).getTime();
+  const endMs = end ? new Date(end).getTime() : Date.now();
+  const totalSeconds = Math.max(0, Math.floor((endMs - startMs) / 1000));
+
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes < 60) return `${minutes}m ${seconds}s`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+export function parseEnvFile(
+  content: string,
+): { key: string; value: string }[] {
   const result: { key: string; value: string }[] = [];
 
   for (const rawLine of content.split(/\r?\n/)) {
@@ -29,4 +62,20 @@ export function parseEnvFile(content: string): { key: string; value: string }[] 
   }
 
   return result;
+}
+
+export function formatLogLine(log: DeploymentLog): string {
+  const time = new Date(log.timestamp).toLocaleTimeString();
+  return `[${time}] ${log.level.padEnd(8)} ${log.message}`;
+}
+
+export function logLevelColor(level: LogLevel): string {
+  const LOG_LEVEL_COLOR: Record<LogLevel, string> = {
+    INFO: "text-foreground/85",
+    WARN: "text-amber-400",
+    SUCCESS: "text-green-400",
+    ERROR: "text-red-400",
+  };
+
+  return LOG_LEVEL_COLOR[level];
 }

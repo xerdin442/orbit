@@ -12,7 +12,7 @@ interface KeyValueListProps {
 
 export function KeyValueList({ items, className }: KeyValueListProps) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-2.5", className)}>
       {items.map((item) => (
         <div key={item.key} className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">{item.key}</span>

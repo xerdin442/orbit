@@ -3,6 +3,7 @@ import type {
   Project,
   Environment,
   Deployment,
+  DeploymentDetail,
   DeploymentLog,
   Resource,
   ResourceDefaultKey,
@@ -239,7 +240,7 @@ export const api = {
   },
 
   deployments: {
-    get: (id: string) => request<Deployment>(`/deployments/${id}`),
+    get: (id: string) => request<DeploymentDetail>(`/deployments/${id}`),
     listByEnvironment: (
       environmentId: string,
       params?: {
