@@ -61,6 +61,21 @@ describe('CommandService', () => {
       expect(onStdout).toHaveBeenCalledWith('line1\n');
       expect(onStdout).toHaveBeenCalledWith('line2\n');
     });
+
+    it('calls onStderr callback with data chunks, independently of onStdout', async () => {
+      const onStdout = jest.fn();
+      const onStderr = jest.fn();
+      const promise = service.execute('cmd', [], onStdout, onStderr);
+      mockChild.stdout.emit('data', Buffer.from('normal output\n'));
+      mockChild.stderr.emit('data', Buffer.from('warning: deprecated\n'));
+      mockChild.emit('close', 0);
+
+      await promise;
+      expect(onStdout).toHaveBeenCalledTimes(1);
+      expect(onStdout).toHaveBeenCalledWith('normal output\n');
+      expect(onStderr).toHaveBeenCalledTimes(1);
+      expect(onStderr).toHaveBeenCalledWith('warning: deprecated\n');
+    });
   });
 
   describe('gitClone', () => {

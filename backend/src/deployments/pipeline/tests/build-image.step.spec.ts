@@ -3,6 +3,7 @@ import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { DeploymentContext } from '@src/common/types';
 import { DeploymentStepExecutionError } from '@src/common/types';
+import { LogLevel } from '@generated/client';
 
 const mockCtx = (): DeploymentContext =>
   ({
@@ -39,6 +40,7 @@ describe('BuildImageStep', () => {
       '/tmp/build',
       'project-proj-1:abc123',
       expect.any(Function),
+      expect.any(Function),
     );
   });
 
@@ -51,6 +53,29 @@ describe('BuildImageStep', () => {
 
     await expect(step.execute(mockCtx())).rejects.toThrow(
       DeploymentStepExecutionError,
+    );
+  });
+
+  it('logs stdout as INFO and stderr as WARN', async () => {
+    command.railpackBuild.mockImplementation(
+      async (_source, _tag, onStdout, onStderr) => {
+        onStdout?.('installing dependencies\n');
+        onStderr?.('deprecated inflight@1.0.6\n');
+        return { exitCode: 0, stdout: '', stderr: '' };
+      },
+    );
+
+    await step.execute(mockCtx());
+
+    expect(log.append).toHaveBeenCalledWith(
+      'dep-1',
+      LogLevel.INFO,
+      'installing dependencies',
+    );
+    expect(log.append).toHaveBeenCalledWith(
+      'dep-1',
+      LogLevel.WARN,
+      'deprecated inflight@1.0.6',
     );
   });
 });
