@@ -9,53 +9,41 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { TimestampDisplay } from "@/components/shared/timestamp-display";
 import { Skeleton } from "@/components/shared/skeleton";
 import { useUIStore } from "@/lib/store";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Activity,
   GitCommitHorizontal,
   Link as LinkIcon,
-  RotateCw,
-  Eye,
+  Terminal,
   Clock,
   Globe,
   Dot,
-  Undo2,
 } from "lucide-react";
 import { CopyToClipboardButton } from "@/components/shared/copy-to-clipboard-button";
 import { ActivityItem } from "@/components/shared/activity-item";
 import { Button } from "@/components/ui/button";
+import { RedeployButton } from "@/components/deployment/redeploy-button";
+import { RollbackButton } from "@/components/deployment/rollback-button";
+import { DeploymentLogsDialog } from "@/components/deployment/deployment-logs-dialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import Link from "next/link";
-import { toast } from "sonner";
+import { useSelectedEnvironment } from "@/hooks/use-selected-environment";
+import { useDialog } from "@/hooks/use-dialog";
+import { buildStatusBadgeVariant } from "@/lib/utils";
 
 export default function ProjectOverviewPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { setSelectedProject, selectedEnvironment, setSelectedEnvironment } =
-    useUIStore();
-  const [redeploying, setRedeploying] = useState(false);
-  const [rollingBack, setRollingBack] = useState(false);
+  const { setSelectedProject } = useUIStore();
+  const { selectedEnvironment } = useSelectedEnvironment(projectId);
+  const logsDialog = useDialog();
 
   const { data: project } = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => api.projects.get(projectId),
   });
-
-  const { data: environments } = useQuery({
-    queryKey: ["environments", projectId],
-    queryFn: () => api.environments.list(projectId),
-  });
-
-  useEffect(() => {
-    if (!environments || environments.length === 0) return;
-    if (!selectedEnvironment || selectedEnvironment.projectId !== projectId) {
-      const env =
-        environments.find((e) => e.name === "production") ?? environments[0];
-      setSelectedEnvironment(env);
-    }
-  }, [environments, projectId, selectedEnvironment, setSelectedEnvironment]);
 
   const { data: deployments, isLoading: deploymentsLoading } = useQuery({
     queryKey: ["deployments", selectedEnvironment?.id],
@@ -83,6 +71,12 @@ export default function ProjectOverviewPage() {
   }, [project, setSelectedProject]);
 
   const latestDeployment = deployments?.data?.[0];
+  const previousDeployment = deployments?.data?.[1];
+  const canRollbackToPrevious =
+    !!previousDeployment &&
+    (previousDeployment.lifecycleStatus === "inactive" ||
+      previousDeployment.buildStatus === "ready");
+
   const repoName = project?.source?.repositoryUrl.replace(
     "https://github.com/",
     "",
@@ -100,42 +94,11 @@ export default function ProjectOverviewPage() {
     return domains.find((d) => d.type === "managed") ?? domains[0];
   }, [domains]);
 
-  async function handleRedeploy() {
-    if (!selectedEnvironment) return;
-    setRedeploying(true);
-    try {
-      await api.environments.redeploy(selectedEnvironment.id);
-      await queryClient.invalidateQueries({
-        queryKey: ["deployments", selectedEnvironment.id],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["activity", projectId],
-      });
-      toast.success("Redeploy triggered");
-    } catch {
-      // error toast already surfaced by the API client
-    } finally {
-      setRedeploying(false);
-    }
-  }
-
-  async function handleRollback() {
-    if (!latestDeployment) return;
-    setRollingBack(true);
-    try {
-      await api.deployments.rollback(latestDeployment.id);
-      await queryClient.invalidateQueries({
-        queryKey: ["deployments", selectedEnvironment?.id],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["activity", projectId],
-      });
-      toast.success("Rollback triggered");
-    } catch {
-      // error toast already surfaced by the API client
-    } finally {
-      setRollingBack(false);
-    }
+  function handleDeploymentChanged() {
+    queryClient.invalidateQueries({
+      queryKey: ["deployments", selectedEnvironment?.id],
+    });
+    queryClient.invalidateQueries({ queryKey: ["activity", projectId] });
   }
 
   if (!projectId) return null;
@@ -156,7 +119,7 @@ export default function ProjectOverviewPage() {
           <div className="space-y-2">
             {repoName && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <FontAwesomeIcon icon={faGithub} className="size-4 shrink-0" />
+                <FontAwesomeIcon icon={faGithub} className="shrink-0" />
                 <span className="truncate">{repoName}</span>
                 {selectedEnvironment?.branch && (
                   <span className="ml-1 inline-flex items-center rounded-md bg-muted border border-white/10 px-1.5 py-0.5 text-xs font-medium font-mono text-muted-foreground">
@@ -209,39 +172,31 @@ export default function ProjectOverviewPage() {
             description={selectedEnvironment?.name}
             actions={
               latestDeployment && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
+                  <RedeployButton
+                    environmentId={latestDeployment.environmentId}
+                    commitSha={latestDeployment.commitSha}
+                    branch={selectedEnvironment?.branch ?? ""}
+                    onRedeployed={handleDeploymentChanged}
+                    className="text-xs"
+                  />
+                  {previousDeployment && (
+                    <RollbackButton
+                      deploymentId={previousDeployment.id}
+                      commitSha={previousDeployment.commitSha}
+                      onRolledBack={handleDeploymentChanged}
+                      disabled={!canRollbackToPrevious}
+                      className="text-xs"
+                    />
+                  )}
                   <Button
                     size="sm"
                     variant="outline"
                     className="text-xs"
-                    disabled={redeploying}
-                    onClick={handleRedeploy}
+                    onClick={logsDialog.open}
                   >
-                    <RotateCw className="size-3.5" />
-                    Redeploy
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                    disabled={rollingBack}
-                    onClick={handleRollback}
-                  >
-                    <Undo2 className="size-3.5" />
-                    Rollback
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                    onClick={() =>
-                      router.push(
-                        `/projects/${projectId}/deployments/${latestDeployment.id}`,
-                      )
-                    }
-                  >
-                    <Eye className="size-3.5" />
-                    Inspect
+                    <Terminal className="size-3.5" />
+                    View Logs
                   </Button>
                 </div>
               )
@@ -255,16 +210,9 @@ export default function ProjectOverviewPage() {
                     <span>Status</span>
                   </div>
                   <StatusBadge
-                    variant={
-                      latestDeployment.buildStatus === "ready"
-                        ? "ready"
-                        : latestDeployment.buildStatus === "failed"
-                          ? "failed"
-                          : latestDeployment.buildStatus === "building" ||
-                              latestDeployment.buildStatus === "pending"
-                            ? "building"
-                            : "inactive"
-                    }
+                    variant={buildStatusBadgeVariant(
+                      latestDeployment.buildStatus,
+                    )}
                   >
                     {latestDeployment.buildStatus}
                   </StatusBadge>
@@ -313,7 +261,9 @@ export default function ProjectOverviewPage() {
                   size="sm"
                   variant="outline"
                   className="h-7 text-xs"
-                  onClick={() => router.push(`/projects/${projectId}/activity`)}
+                  onClick={() =>
+                    router.push(`/activity?projectId=${projectId}`)
+                  }
                 >
                   View all
                 </Button>
@@ -368,16 +318,7 @@ export default function ProjectOverviewPage() {
                       className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm border-b border-border last:border-b-0 pb-3 last:pb-0 hover:text-foreground transition-colors"
                     >
                       <StatusBadge
-                        variant={
-                          d.buildStatus === "ready"
-                            ? "ready"
-                            : d.buildStatus === "failed"
-                              ? "failed"
-                              : d.buildStatus === "building" ||
-                                  d.buildStatus === "pending"
-                                ? "building"
-                                : "inactive"
-                        }
+                        variant={buildStatusBadgeVariant(d.buildStatus)}
                       >
                         {d.buildStatus}
                       </StatusBadge>
@@ -399,6 +340,15 @@ export default function ProjectOverviewPage() {
             </SectionCard>
           </div>
         </div>
+      )}
+
+      {latestDeployment && (
+        <DeploymentLogsDialog
+          open={logsDialog.isOpen}
+          onOpenChange={logsDialog.setIsOpen}
+          projectId={projectId}
+          deploymentId={latestDeployment.id}
+        />
       )}
     </div>
   );

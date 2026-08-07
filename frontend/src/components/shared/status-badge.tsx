@@ -7,14 +7,14 @@ const badgeVariants = cva(
     variants: {
       variant: {
         ready: "bg-green-500/10 text-green-500",
-        pending: "bg-yellow-500/10 text-yellow-500",
+        pending: "bg-yellow-500/10 text-yellow-500 animate-pulse",
         failed: "bg-red-500/10 text-red-500",
-        building: "bg-blue-500/10 text-blue-500",
+        building: "bg-blue-500/10 text-blue-500 animate-pulse",
         active: "bg-orange-500/10 text-orange-500",
         inactive: "bg-muted text-muted-foreground",
-        provisioning: "bg-yellow-500/10 text-yellow-500",
+        provisioning: "bg-yellow-500/10 text-yellow-500 animate-pulse",
         unhealthy: "bg-red-500/10 text-red-500",
-        verifying: "bg-blue-500/10 text-blue-500",
+        verifying: "bg-blue-500/10 text-blue-500 animate-pulse",
         aborted: "bg-muted text-muted-foreground",
       },
     },

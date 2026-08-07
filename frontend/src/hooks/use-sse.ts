@@ -2,10 +2,18 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 
-export function useSSE<T = unknown>(url: string | null) {
+export function useSSE<T = unknown>(
+  url: string | null,
+  onMessage?: (data: T) => void,
+) {
   const [data, setData] = useState<T | null>(null);
   const [connected, setConnected] = useState(false);
   const ref = useRef<EventSource | null>(null);
+  const onMessageRef = useRef(onMessage);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  });
 
   useEffect(() => {
     if (!url) return;
@@ -16,11 +24,14 @@ export function useSSE<T = unknown>(url: string | null) {
     es.onopen = () => setConnected(true);
 
     es.onmessage = (event) => {
+      let parsed: T;
       try {
-        setData(JSON.parse(event.data));
+        parsed = JSON.parse(event.data);
       } catch {
-        setData(event.data as T);
+        parsed = event.data as T;
       }
+      setData(parsed);
+      onMessageRef.current?.(parsed);
     };
 
     es.onerror = () => {
