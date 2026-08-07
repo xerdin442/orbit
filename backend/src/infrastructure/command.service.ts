@@ -2,14 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { spawn } from 'child_process';
 import { CommandResult } from '@src/common/types';
 
-export type OnStdout = (data: string) => void;
+export type OnOutput = (data: string) => void;
 
 @Injectable()
 export class CommandService {
   execute(
     command: string,
     args: string[],
-    onStdout?: OnStdout,
+    onStdout?: OnOutput,
+    onStderr?: OnOutput,
   ): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, { shell: false });
@@ -27,7 +28,12 @@ export class CommandService {
       });
 
       child.stderr.on('data', (data: Buffer) => {
-        stderr += data.toString();
+        const text = data.toString();
+        stderr += text;
+
+        if (onStderr) {
+          onStderr(text);
+        }
       });
 
       child.on('close', (code) => {
@@ -44,12 +50,14 @@ export class CommandService {
     repoUrl: string,
     branch: string,
     targetPath: string,
-    onStdout?: OnStdout,
+    onStdout?: OnOutput,
+    onStderr?: OnOutput,
   ) {
     return this.execute(
       'git',
       ['clone', '--branch', branch, repoUrl, targetPath],
       onStdout,
+      onStderr,
     );
   }
 
@@ -70,12 +78,14 @@ export class CommandService {
   async railpackBuild(
     sourcePath: string,
     imageTag: string,
-    onStdout?: OnStdout,
+    onStdout?: OnOutput,
+    onStderr?: OnOutput,
   ) {
     return this.execute(
       'railpack',
       ['build', sourcePath, '--tag', imageTag],
       onStdout,
+      onStderr,
     );
   }
 }
