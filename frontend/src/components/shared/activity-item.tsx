@@ -3,15 +3,28 @@
 import type { ActivityLog, ActivityType } from "@/lib/types";
 import { TimestampDisplay } from "./timestamp-display";
 import {
-  User,
-  Folder,
-  Layers,
   Rocket,
   KeyRound,
-  Globe,
-  Database,
   Activity,
   ChevronDown,
+  GlobeCheck,
+  GlobeX,
+  DatabaseX,
+  DatabasePlus,
+  DatabaseZap,
+  GlobeLock,
+  FolderX,
+  FolderPlus,
+  FolderSync,
+  LayersPlus,
+  LayersMinus,
+  Layers2,
+  UserRoundPlus,
+  UserRoundKey,
+  Undo2,
+  OctagonX,
+  Hourglass,
+  CircleX,
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub, faSlack } from "@fortawesome/free-brands-svg-icons";
@@ -25,25 +38,25 @@ interface ActivityItemProps {
 }
 
 const iconMap: Record<ActivityType, React.ReactNode> = {
-  user_signed_up: <User className="size-4" />,
-  user_signed_in: <User className="size-4" />,
-  project_created: <Folder className="size-4" />,
-  project_updated: <Folder className="size-4" />,
-  project_deleted: <Folder className="size-4" />,
-  environment_created: <Layers className="size-4" />,
-  environment_updated: <Layers className="size-4" />,
-  environment_deleted: <Layers className="size-4" />,
-  deployment_started: <Rocket className="size-4" />,
+  user_signed_up: <UserRoundPlus className="size-4" />,
+  user_signed_in: <UserRoundKey className="size-4" />,
+  project_created: <FolderPlus className="size-4.5" />,
+  project_updated: <FolderSync className="size-4.5" />,
+  project_deleted: <FolderX className="size-4.5" />,
+  environment_created: <LayersPlus className="size-4" />,
+  environment_updated: <Layers2 className="size-4" />,
+  environment_deleted: <LayersMinus className="size-4" />,
+  deployment_started: <Hourglass className="size-3.75" />,
   deployment_completed: <Rocket className="size-4" />,
-  deployment_failed: <Rocket className="size-4" />,
-  deployment_rolled_back: <Rocket className="size-4" />,
-  deployment_aborted: <Rocket className="size-4" />,
+  deployment_failed: <CircleX className="size-4.25" />,
+  deployment_rolled_back: <Undo2 className="size-4" />,
+  deployment_aborted: <OctagonX className="size-4" />,
   variable_created: <KeyRound className="size-4" />,
   variable_updated: <KeyRound className="size-4" />,
   variable_deleted: <KeyRound className="size-4" />,
-  domain_added: <Globe className="size-4" />,
-  domain_removed: <Globe className="size-4" />,
-  domain_verified: <Globe className="size-4" />,
+  domain_added: <GlobeCheck className="size-4" />,
+  domain_removed: <GlobeX className="size-4" />,
+  domain_verified: <GlobeLock className="size-4" />,
   github_installation_added: (
     <FontAwesomeIcon icon={faGithub} className="size-3.5" />
   ),
@@ -53,9 +66,9 @@ const iconMap: Record<ActivityType, React.ReactNode> = {
   github_webhook_event: (
     <FontAwesomeIcon icon={faGithub} className="size-3.5" />
   ),
-  resource_provisioned: <Database className="size-4" />,
-  resource_deleted: <Database className="size-4" />,
-  resource_data_cleared: <Database className="size-4" />,
+  resource_provisioned: <DatabasePlus className="size-4" />,
+  resource_deleted: <DatabaseX className="size-4" />,
+  resource_data_cleared: <DatabaseZap className="size-4" />,
   slack_installation_added: (
     <FontAwesomeIcon icon={faSlack} className="size-3.5" />
   ),
@@ -104,13 +117,13 @@ export function ActivityItem({
             Details
             <ChevronDown
               className={cn(
-                "size-3 transition-transform",
+                "size-3 transition-transform duration-200",
                 expanded && "rotate-180",
               )}
             />
           </button>
           {expanded && activity.metadata && (
-            <pre className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground overflow-auto">
+            <pre className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground overflow-auto leading-snug">
               {JSON.stringify(activity.metadata, null, 2)}
             </pre>
           )}
