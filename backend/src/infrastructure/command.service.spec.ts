@@ -122,5 +122,28 @@ describe('CommandService', () => {
         { shell: false },
       );
     });
+
+    it('appends --start-cmd when a start command is provided', async () => {
+      const promise = service.railpackBuild(
+        '/tmp/build',
+        'project-1:abc123',
+        'npm run start:prod',
+      );
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith(
+        'railpack',
+        [
+          'build',
+          '/tmp/build',
+          '--tag',
+          'project-1:abc123',
+          '--start-cmd',
+          'npm run start:prod',
+        ],
+        { shell: false },
+      );
+    });
   });
 });

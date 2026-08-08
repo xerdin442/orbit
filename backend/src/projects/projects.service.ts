@@ -40,6 +40,8 @@ export class ProjectsService {
               healthCheckPort: dto.healthCheckPort ?? 3000,
               healthCheckPath: dto.healthCheckPath ?? '/health',
               healthCheckTimeout: dto.healthCheckTimeout ?? 60,
+              buildDirectory: dto.buildDirectory,
+              startCommand: dto.startCommand,
               ownerId: userId,
               source: {
                 create: {

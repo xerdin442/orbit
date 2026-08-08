@@ -100,6 +100,8 @@ export const ProjectScalarFieldEnum = {
   healthCheckPort: 'healthCheckPort',
   healthCheckPath: 'healthCheckPath',
   healthCheckTimeout: 'healthCheckTimeout',
+  buildDirectory: 'buildDirectory',
+  startCommand: 'startCommand',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   ownerId: 'ownerId'
