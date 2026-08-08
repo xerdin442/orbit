@@ -82,7 +82,13 @@ export class CommandService {
     onStdout?: OnOutput,
     onStderr?: OnOutput,
   ) {
-    const args = ['build', sourcePath, '--tag', imageTag];
+    const args = [
+      'build',
+      sourcePath,
+      '--tag',
+      imageTag,
+      '--error-missing-start',
+    ];
 
     if (startCommand) {
       args.push('--start-cmd', startCommand);
