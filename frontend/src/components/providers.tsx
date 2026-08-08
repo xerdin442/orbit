@@ -57,7 +57,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             title: "text-sm font-medium",
             description: "!text-muted-foreground",
             closeButton:
-              "!h-6 !w-6 !bg-muted !border !border-border !text-muted-foreground hover:!bg-accent hover:!text-foreground [&_svg]:!size-3.5",
+              "!h-6 !w-6 !bg-muted !border !border-border !text-muted-foreground hover:!bg-accent hover:!text-foreground [&_svg]:!size-3.5 [&_svg]:!stroke-[3.5]",
             success: "!border-green-500/30 [&_svg]:text-green-500",
             error: "!border-destructive/30 [&_svg]:text-destructive",
             info: "!border-blue-500/30 [&_svg]:text-blue-500",

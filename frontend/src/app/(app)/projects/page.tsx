@@ -34,18 +34,17 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Projects"
-        description="Manage your deployed applications"
-      >
-        <Button
-          onClick={() => router.push("/projects/new")}
-          size="sm"
-          className="text-sm"
-        >
-          <Plus className="size-4" />
-          New Project
-        </Button>
+      <PageHeader title="Projects">
+        {projects && projects.length > 0 && (
+          <Button
+            onClick={() => router.push("/projects/new")}
+            size="sm"
+            className="text-sm"
+          >
+            <Plus className="size-4" />
+            New Project
+          </Button>
+        )}
       </PageHeader>
 
       {isLoading && (

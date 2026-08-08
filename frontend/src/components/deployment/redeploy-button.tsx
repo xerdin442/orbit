@@ -66,6 +66,7 @@ export function RedeployButton({
         title="Redeploy this version?"
         description={`This triggers a new deployment of commit "${commitSha.slice(0, 7)}" on branch "${branch}", reusing the existing build image.`}
         confirmLabel={submitting ? "Redeploying..." : "Redeploy"}
+        loading={submitting}
         onConfirm={handleConfirm}
         onCancel={() => !submitting && setOpen(false)}
       />

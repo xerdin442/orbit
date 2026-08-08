@@ -12,8 +12,8 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/shared/skeleton";
 import type { GitHubInstallation } from "@/lib/types";
 
-function GitHubIcon({ className }: { className?: string }) {
-  return <FontAwesomeIcon icon={faGithub} className={className} />;
+function GitHubIcon() {
+  return <FontAwesomeIcon icon={faGithub} size="2xl" />;
 }
 
 interface SelectInstallationStepProps {
@@ -72,7 +72,7 @@ export function SelectInstallationStep({
         <EmptyState
           icon={GitHubIcon}
           title="No GitHub installations"
-          description="Connect your GitHub account to select a repository to deploy."
+          description="Connect your GitHub account and install the Orbit app."
           action={{ label: "Connect GitHub", onClick: handleConnect }}
           className="py-10"
         />
