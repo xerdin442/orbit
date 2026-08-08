@@ -78,14 +78,16 @@ export class CommandService {
   async railpackBuild(
     sourcePath: string,
     imageTag: string,
+    startCommand?: string,
     onStdout?: OnOutput,
     onStderr?: OnOutput,
   ) {
-    return this.execute(
-      'railpack',
-      ['build', sourcePath, '--tag', imageTag],
-      onStdout,
-      onStderr,
-    );
+    const args = ['build', sourcePath, '--tag', imageTag];
+
+    if (startCommand) {
+      args.push('--start-cmd', startCommand);
+    }
+
+    return this.execute('railpack', args, onStdout, onStderr);
   }
 }

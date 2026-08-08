@@ -19,9 +19,9 @@ export class HealthCheckStep implements DeploymentStep {
   async execute(ctx: DeploymentContext): Promise<void> {
     if (!ctx.project.healthCheck) return;
 
-    const port = ctx.project.healthCheckPort ?? 3000;
-    const path = ctx.project.healthCheckPath ?? '/health';
-    const timeoutSeconds = ctx.project.healthCheckTimeout ?? 60;
+    const port = ctx.project.healthCheckPort;
+    const path = ctx.project.healthCheckPath;
+    const timeoutSeconds = ctx.project.healthCheckTimeout;
 
     await this.log.append(
       ctx.deployment.id,

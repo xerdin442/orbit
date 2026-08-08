@@ -116,6 +116,8 @@ model Project {
   healthCheckPort    Int      @default(3000)
   healthCheckPath    String   @default("/health")
   healthCheckTimeout Int      @default(60)
+  buildDirectory     String?
+  startCommand       String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
