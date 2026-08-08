@@ -11,7 +11,6 @@ import type { DeploymentJob } from '@src/common/types';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { CleanupService } from '@src/cleanup/cleanup.service';
 import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
@@ -31,7 +30,6 @@ export class EnvironmentsService {
     private readonly encryption: EncryptionService,
     private readonly activity: ActivityService,
     private readonly deployments: DeploymentsService,
-    private readonly cleanup: CleanupService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectQueue('deployments')
     private readonly deployQueue: Queue<DeploymentJob>,
@@ -117,21 +115,6 @@ export class EnvironmentsService {
     await this.invalidateEnvCache(updated.projectId, envId);
 
     return updated;
-  }
-
-  async delete(envId: string, userId: string) {
-    const env = await this.findById(envId, userId);
-
-    await this.cleanup.enqueueEnvironmentCleanup(envId);
-
-    await this.db.environment.delete({ where: { id: envId } });
-
-    await this.activity.log(ActivityType.environment_deleted, userId, {
-      projectId: env.projectId,
-      environmentId: envId,
-    });
-
-    await this.invalidateEnvCache(env.projectId, envId);
   }
 
   async getVariables(envId: string, userId: string) {

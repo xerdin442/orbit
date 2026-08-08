@@ -13,11 +13,15 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
+import { CleanupService } from '@src/cleanup/cleanup.service';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectsController {
-  constructor(private readonly projects: ProjectsService) {}
+  constructor(
+    private readonly projects: ProjectsService,
+    private readonly cleanup: CleanupService,
+  ) {}
 
   @Post()
   async create(
@@ -48,7 +52,7 @@ export class ProjectsController {
 
   @Delete(':id')
   delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.projects.delete(id, req.user.id);
+    return this.cleanup.enqueueProjectCleanup(id, req.user.id);
   }
 
   @Get(':id/branches')

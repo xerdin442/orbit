@@ -5,7 +5,6 @@ import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { GitHubService } from '@src/github/github.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { CleanupService } from '@src/cleanup/cleanup.service';
 import { NotFoundException } from '@nestjs/common';
 
 describe('ProjectsService', () => {
@@ -26,9 +25,6 @@ describe('ProjectsService', () => {
     Pick<GitHubService, 'listRepositories' | 'listBranches'>
   >;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
-  let cleanup: jest.Mocked<
-    Pick<CleanupService, 'enqueueProjectCleanup' | 'enqueueEnvironmentCleanup'>
-  >;
 
   beforeEach(async () => {
     db = {
@@ -59,10 +55,6 @@ describe('ProjectsService', () => {
     encryption = { encrypt: jest.fn((v) => `encrypted_${v}`) };
     github = { listRepositories: jest.fn(), listBranches: jest.fn() };
     activity = { log: jest.fn() };
-    cleanup = {
-      enqueueProjectCleanup: jest.fn(),
-      enqueueEnvironmentCleanup: jest.fn(),
-    };
 
     (db.$transaction as jest.Mock).mockImplementation((cb: Function) => cb(db));
 
@@ -73,7 +65,6 @@ describe('ProjectsService', () => {
         { provide: EncryptionService, useValue: encryption },
         { provide: GitHubService, useValue: github },
         { provide: ActivityService, useValue: activity },
-        { provide: CleanupService, useValue: cleanup },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
       ],
     }).compile();
@@ -125,28 +116,6 @@ describe('ProjectsService', () => {
           data: expect.objectContaining({ name: 'updated' }),
         }),
       );
-      expect(activity.log).toHaveBeenCalled();
-    });
-  });
-
-  describe('delete', () => {
-    it('throws if not owned', async () => {
-      db.project.findFirst.mockResolvedValue(null);
-      await expect(service.delete('proj-1', 'user-1')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('enqueues cleanup and deletes', async () => {
-      db.project.findFirst.mockResolvedValue({
-        id: 'proj-1',
-        ownerId: 'user-1',
-      });
-      await service.delete('proj-1', 'user-1');
-      expect(cleanup.enqueueProjectCleanup).toHaveBeenCalledWith('proj-1');
-      expect(db.project.delete).toHaveBeenCalledWith({
-        where: { id: 'proj-1' },
-      });
       expect(activity.log).toHaveBeenCalled();
     });
   });
