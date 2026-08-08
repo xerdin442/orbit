@@ -26,7 +26,7 @@ const FILTER_LABELS: Record<(typeof FILTER_KEYS)[number], string> = {
   resourceId: "resource",
   domainId: "domain",
   environmentId: "environment",
-  type: "type",
+  type: "activity type",
 };
 
 export default function ActivityPage() {
@@ -55,7 +55,7 @@ export default function ActivityPage() {
             : "All activity across your projects"
         }
       >
-        {activeFilterKey && (
+        {activeFilterKey && activity && activity.length > 0 && (
           <Link
             href="/activity"
             className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"

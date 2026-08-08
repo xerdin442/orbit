@@ -6,7 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { User, UserRoundCog, LogOut } from "lucide-react";
+import { UserRound, UserRoundCog, LogOut } from "lucide-react";
 
 interface UserSectionProps {
   username: string;
@@ -35,7 +35,7 @@ export function UserSection({
             onClick={onToggleMenu}
             className="flex items-center justify-center cursor-pointer h-9 w-9 mx-auto rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
           >
-            <User className="size-4" />
+            <UserRound className="size-4" />
           </TooltipTrigger>
           <TooltipContent side="right">{username}</TooltipContent>
         </Tooltip>
@@ -72,7 +72,7 @@ export function UserSection({
         onClick={onToggleMenu}
         className="flex items-center cursor-pointer gap-3 px-3 py-2 w-full rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
       >
-        <User className="size-4 shrink-0" />
+        <UserRound className="size-4 shrink-0" />
         <span className="flex-1 text-left truncate">{username}</span>
       </button>
 
