@@ -1,6 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { BuildStatus, DeploymentLog, LogLevel } from "@/lib/types";
+import type {
+  BuildStatus,
+  DeploymentLog,
+  LogLevel,
+  VariableEntry,
+} from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,10 +47,9 @@ export function formatDuration(start: string, end: string | null): string {
 
 export const ENV_FILENAME_PATTERN = /^\.env(\..+)?$/i;
 
-export function parseEnvFile(
-  content: string,
-): { key: string; value: string }[] {
-  const result: { key: string; value: string }[] = [];
+export function parseEnvFile(content: string): VariableEntry[] {
+  const result: VariableEntry[] = [];
+  const seen = new Set<string>();
 
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -64,7 +68,14 @@ export function parseEnvFile(
       value = value.slice(1, -1);
     }
 
-    if (key) result.push({ key, value });
+    if (!key) continue;
+
+    if (seen.has(key)) {
+      throw new Error(`Duplicate variable "${key}" found in file`);
+    }
+    seen.add(key);
+
+    result.push({ key, value });
   }
 
   return result;
