@@ -4,7 +4,6 @@ import { EnvironmentsService } from './environments.service';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { CleanupService } from '@src/cleanup/cleanup.service';
 import { DeploymentsService } from '@src/deployments/deployments.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import type { Queue } from 'bullmq';
@@ -20,9 +19,6 @@ describe('EnvironmentsService', () => {
   >;
   let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
-  let cleanup: jest.Mocked<
-    Pick<CleanupService, 'enqueueProjectCleanup' | 'enqueueEnvironmentCleanup'>
-  >;
   let deployments: jest.Mocked<
     Pick<DeploymentsService, 'createDeployment' | 'triggerRedeployment'>
   >;
@@ -62,10 +58,6 @@ describe('EnvironmentsService', () => {
       decrypt: jest.fn((v) => v.replace('enc_', '')),
     };
     activity = { log: jest.fn() };
-    cleanup = {
-      enqueueProjectCleanup: jest.fn(),
-      enqueueEnvironmentCleanup: jest.fn(),
-    };
     deployments = {
       createDeployment: jest.fn(),
       triggerRedeployment: jest.fn(),
@@ -78,7 +70,6 @@ describe('EnvironmentsService', () => {
         { provide: DbService, useValue: db },
         { provide: EncryptionService, useValue: encryption },
         { provide: ActivityService, useValue: activity },
-        { provide: CleanupService, useValue: cleanup },
         { provide: DeploymentsService, useValue: deployments },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
         { provide: getQueueToken('deployments'), useValue: queue },
@@ -566,25 +557,6 @@ describe('EnvironmentsService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(db.environment.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('delete', () => {
-    it('enqueues cleanup and deletes after verification', async () => {
-      db.environment.findUnique.mockResolvedValue({
-        id: 'env-1',
-        projectId: 'proj-1',
-      });
-      db.project.findFirst.mockResolvedValue({
-        id: 'proj-1',
-        ownerId: 'user-1',
-      });
-
-      await service.delete('env-1', 'user-1');
-      expect(cleanup.enqueueEnvironmentCleanup).toHaveBeenCalledWith('env-1');
-      expect(db.environment.delete).toHaveBeenCalledWith({
-        where: { id: 'env-1' },
-      });
     });
   });
 });

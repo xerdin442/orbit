@@ -1,19 +1,34 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import jwt from 'jsonwebtoken';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { Secrets } from '@src/common/secrets';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { ActivityType } from '@generated/client';
-import { Logger } from '@src/common/logger';
-import { GitHubAccountResponse, GitHubRepositoryList } from '@src/common/types';
+import { CleanupService } from '@src/cleanup/cleanup.service';
+import {
+  ActivityType,
+  BuildStatus,
+  DeploymentTrigger,
+  LifecycleStatus,
+} from '@generated/client';
+import {
+  GitHubAccountResponse,
+  GitHubRepositoryList,
+  DeploymentJob,
+} from '@src/common/types';
 
 @Injectable()
 export class GitHubService {
-  private readonly logger = Logger(GitHubService.name);
-
   constructor(
     private readonly db: DbService,
     private readonly activity: ActivityService,
+    private readonly cleanup: CleanupService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    @InjectQueue('deployments')
+    private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
 
   getInstallUrl(): string {
@@ -25,6 +40,23 @@ export class GitHubService {
     userId: string,
   ): Promise<string> {
     await this.verifyOwnership(installationId, userId);
+
+    await this.cache.del(
+      `/api/github/installations/${installationId}/repositories`,
+    );
+
+    const sources = await this.db.source.findMany({
+      where: { installationId },
+      select: { repositoryUrl: true },
+    });
+
+    for (const { repositoryUrl } of sources) {
+      const repoFullName = repositoryUrl.replace('https://github.com/', '');
+      await this.cache.del(
+        `/api/github/installations/${installationId}/branches?repo=${repoFullName}`,
+      );
+    }
+
     return `https://github.com/settings/installations/${installationId}`;
   }
 
@@ -46,7 +78,7 @@ export class GitHubService {
     );
 
     if (!response.ok) {
-      throw new Error(
+      throw new NotFoundException(
         `Failed to fetch installation details: ${response.statusText}`,
       );
     }
@@ -99,6 +131,45 @@ export class GitHubService {
     return data.token;
   }
 
+  async deleteInstallation(installationId: number, userId: string) {
+    await this.verifyOwnership(installationId, userId);
+
+    const token = this.generateAppJwt();
+    const response = await fetch(
+      `https://api.github.com/app/installations/${installationId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new NotFoundException(
+        `Failed to remove installation: ${response.statusText}`,
+      );
+    }
+
+    const sources = await this.db.source.findMany({
+      where: { installationId },
+      select: { projectId: true },
+    });
+
+    await this.db.gitHubInstallation.deleteMany({
+      where: { installationId },
+    });
+
+    for (const { projectId } of sources) {
+      await this.cleanup.enqueueProjectCleanup(projectId, userId);
+    }
+
+    await this.activity.log(ActivityType.github_installation_removed, userId, {
+      installationId,
+    });
+  }
+
   async listRepositories(installationId: number, userId: string) {
     await this.verifyOwnership(installationId, userId);
 
@@ -114,7 +185,9 @@ export class GitHubService {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to list repositories: ${response.statusText}`);
+      throw new NotFoundException(
+        `Failed to list repositories: ${response.statusText}`,
+      );
     }
 
     const data = (await response.json()) as GitHubRepositoryList;
@@ -144,11 +217,68 @@ export class GitHubService {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to list branches: ${response.statusText}`);
+      throw new NotFoundException(
+        `Failed to list branches: ${response.statusText}`,
+      );
     }
 
     const data = (await response.json()) as { name: string }[];
     return data;
+  }
+
+  verifySignature(payload: Buffer, signature: string): boolean {
+    if (!signature) return false;
+
+    const hmac = createHmac('sha256', Secrets.GITHUB_WEBHOOK_SECRET);
+    const digest = `sha256=${hmac.update(payload).digest('hex')}`;
+
+    try {
+      return timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
+    } catch {
+      return false;
+    }
+  }
+
+  async handlePushEvent(branchRef: string, repoFullName: string) {
+    const branch = branchRef.replace('refs/heads/', '');
+
+    const source = await this.db.source.findFirst({
+      where: {
+        repositoryUrl: { equals: `https://github.com/${repoFullName}` },
+      },
+      include: { project: { include: { environments: true } } },
+    });
+
+    if (!source) return;
+
+    for (const env of source.project.environments) {
+      if (env.branch !== branch || !env.autoDeploy) {
+        continue;
+      }
+
+      const deployment = await this.db.deployment.create({
+        data: {
+          environmentId: env.id,
+          trigger: DeploymentTrigger.webhook,
+          imageTag: null,
+          commitSha: '',
+          buildStatus: BuildStatus.pending,
+          lifecycleStatus: LifecycleStatus.inactive,
+        },
+      });
+
+      await this.activity.log(
+        ActivityType.deployment_started,
+        source.project.ownerId,
+        {
+          deploymentId: deployment.id,
+          environmentId: env.id,
+          trigger: deployment.trigger,
+        },
+      );
+
+      await this.deployQueue.add('webhook', { deployment });
+    }
   }
 
   private generateAppJwt(): string {

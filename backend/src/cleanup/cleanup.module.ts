@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { CleanupService } from './cleanup.service';
 import { CleanupProcessor } from './cleanup.processor';
 import { InfrastructureModule } from '@src/infrastructure/infrastructure.module';
 
+@Global()
 @Module({
   imports: [
     BullModule.registerQueue({ name: 'cleanup' }),

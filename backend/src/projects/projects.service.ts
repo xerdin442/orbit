@@ -5,7 +5,6 @@ import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { GitHubService } from '@src/github/github.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { CleanupService } from '@src/cleanup/cleanup.service';
 import { ActivityType } from '@generated/client';
 
 @Injectable()
@@ -15,7 +14,6 @@ export class ProjectsService {
     private readonly encryption: EncryptionService,
     private readonly github: GitHubService,
     private readonly activity: ActivityService,
-    private readonly cleanup: CleanupService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
@@ -128,20 +126,6 @@ export class ProjectsService {
     await this.invalidateCache(id);
 
     return updated;
-  }
-
-  async delete(id: string, userId: string) {
-    await this.findById(id, userId);
-
-    await this.cleanup.enqueueProjectCleanup(id);
-
-    await this.db.project.delete({ where: { id } });
-
-    await this.activity.log(ActivityType.project_deleted, userId, {
-      projectId: id,
-    });
-
-    await this.invalidateCache(id);
   }
 
   async findAvailableBranches(projectId: string, userId: string) {

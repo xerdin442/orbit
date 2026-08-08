@@ -34,12 +34,20 @@ export class CleanupProcessor extends WorkerHost {
         await this.stopAndRemoveContainer(resource.containerId);
       }
       if (resource.volumeId) {
-        await this.removeVolume(resource.volumeId);
+        try {
+          await this.docker.removeVolume(resource.volumeId);
+        } catch {
+          // volume already removed
+        }
       }
     }
 
     if (networkName) {
-      await this.removeNetwork(networkName);
+      try {
+        await this.docker.removeNetwork(networkName);
+      } catch {
+        // network already removed
+      }
     }
 
     this.logger.info(
@@ -58,22 +66,6 @@ export class CleanupProcessor extends WorkerHost {
       await this.docker.removeContainer(containerId);
     } catch {
       // container already removed
-    }
-  }
-
-  private async removeVolume(volumeId: string): Promise<void> {
-    try {
-      await this.docker.removeVolume(volumeId);
-    } catch {
-      // volume already removed
-    }
-  }
-
-  private async removeNetwork(networkName: string): Promise<void> {
-    try {
-      await this.docker.removeNetwork(networkName);
-    } catch {
-      // network already removed
     }
   }
 }
