@@ -84,7 +84,7 @@ export function DataTable<TData, TValue>({
     <div className={cn("space-y-2.5", className)}>
       <div
         className={cn(
-          "rounded-lg border border-border",
+          "overflow-hidden rounded-lg border border-border",
           stickyHeader && "custom-scrollbar max-h-112 overflow-y-auto",
         )}
       >
