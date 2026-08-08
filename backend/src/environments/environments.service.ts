@@ -155,6 +155,8 @@ export class EnvironmentsService {
   ) {
     const env = await this.findById(envId, userId);
 
+    await this.verifyUniqueKey(envId, dto.key);
+
     const encrypted = this.encryption.encrypt(dto.value);
 
     const created = await this.db.environmentVariable.create({
@@ -187,6 +189,30 @@ export class EnvironmentsService {
     skipRedeploy = false,
   ) {
     const env = await this.findById(envId, userId);
+
+    const keys = dto.variables.map((v) => v.key);
+
+    const seen = new Set<string>();
+    const duplicate = keys.find((key) => {
+      if (seen.has(key)) return true;
+      seen.add(key);
+      return false;
+    });
+
+    if (duplicate) {
+      throw new ConflictException(`Duplicate variables named "${duplicate}"`);
+    }
+
+    const conflicting = await this.db.environmentVariable.findMany({
+      where: { environmentId: envId, key: { in: keys } },
+      select: { key: true },
+    });
+
+    if (conflicting.length > 0) {
+      throw new ConflictException(
+        `Variable named "${conflicting[0].key}" already exists in this environment`,
+      );
+    }
 
     const data = dto.variables.map((v) => ({
       key: v.key,
@@ -223,6 +249,10 @@ export class EnvironmentsService {
 
     if (!existing) {
       throw new NotFoundException('Variable not found');
+    }
+
+    if (dto.key && dto.key !== existing.key) {
+      await this.verifyUniqueKey(existing.environmentId, dto.key);
     }
 
     const updated = await this.db.environmentVariable.update({
@@ -320,6 +350,18 @@ export class EnvironmentsService {
     if (existing) {
       throw new ConflictException(
         'This branch is already connected to an environment',
+      );
+    }
+  }
+
+  private async verifyUniqueKey(envId: string, key: string) {
+    const existing = await this.db.environmentVariable.findFirst({
+      where: { environmentId: envId, key },
+    });
+
+    if (existing) {
+      throw new ConflictException(
+        `Variable named "${key}" already exists in this environment`,
       );
     }
   }

@@ -45,6 +45,7 @@ describe('EnvironmentsService', () => {
         create: jest.fn(),
         createMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
       },
@@ -265,6 +266,30 @@ describe('EnvironmentsService', () => {
       expect(deployments.triggerRedeployment).not.toHaveBeenCalled();
       expect(queue.add).not.toHaveBeenCalled();
     });
+
+    it('throws if a variable with the same key already exists', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environmentVariable.findFirst.mockResolvedValue({
+        id: 'existing-var',
+        key: 'KEY',
+      });
+
+      await expect(
+        service.createVariable('env-1', 'user-1', {
+          key: 'KEY',
+          value: 'secret',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(db.environmentVariable.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('bulkCreateVariables', () => {
@@ -277,6 +302,7 @@ describe('EnvironmentsService', () => {
         id: 'proj-1',
         ownerId: 'user-1',
       });
+      db.environmentVariable.findMany.mockResolvedValue([]);
       db.environmentVariable.createMany.mockResolvedValue({ count: 2 });
       deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
 
@@ -289,6 +315,10 @@ describe('EnvironmentsService', () => {
 
       expect(encryption.encrypt).toHaveBeenCalledWith('val_a');
       expect(encryption.encrypt).toHaveBeenCalledWith('val_b');
+      expect(db.environmentVariable.findMany).toHaveBeenCalledWith({
+        where: { environmentId: 'env-1', key: { in: ['KEY_A', 'KEY_B'] } },
+        select: { key: true },
+      });
       expect(db.environmentVariable.createMany).toHaveBeenCalledWith({
         data: [
           { key: 'KEY_A', value: 'enc_val_a', environmentId: 'env-1' },
@@ -302,6 +332,52 @@ describe('EnvironmentsService', () => {
         expect.objectContaining({ keys: 'KEY_A,KEY_B' }),
       );
       expect(result).toEqual({ count: 2 });
+    });
+
+    it('throws if the same key appears more than once in the request', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+
+      await expect(
+        service.bulkCreateVariables('env-1', 'user-1', {
+          variables: [
+            { key: 'KEY_A', value: 'val_a' },
+            { key: 'KEY_A', value: 'val_b' },
+          ],
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(db.environmentVariable.findMany).not.toHaveBeenCalled();
+      expect(db.environmentVariable.createMany).not.toHaveBeenCalled();
+    });
+
+    it('throws if a key already exists in the environment', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environmentVariable.findMany.mockResolvedValue([{ key: 'KEY_A' }]);
+
+      await expect(
+        service.bulkCreateVariables('env-1', 'user-1', {
+          variables: [
+            { key: 'KEY_A', value: 'val_a' },
+            { key: 'KEY_B', value: 'val_b' },
+          ],
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(db.environmentVariable.createMany).not.toHaveBeenCalled();
     });
   });
 
@@ -382,6 +458,44 @@ describe('EnvironmentsService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(db.environmentVariable.update).not.toHaveBeenCalled();
+    });
+
+    it('throws if renaming to a key that already exists in the environment', async () => {
+      db.environmentVariable.findUnique.mockResolvedValue({
+        id: 'v1',
+        key: 'OLD_KEY',
+        environmentId: 'env-1',
+      });
+      db.environmentVariable.findFirst.mockResolvedValue({
+        id: 'other-var',
+        key: 'NEW_KEY',
+      });
+
+      await expect(
+        service.updateVariable('v1', 'user-1', { key: 'NEW_KEY' }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(db.environmentVariable.update).not.toHaveBeenCalled();
+    });
+
+    it('does not check for conflicts when the key is unchanged', async () => {
+      db.environmentVariable.findUnique.mockResolvedValue({
+        id: 'v1',
+        key: 'KEY',
+        environmentId: 'env-1',
+      });
+      db.environmentVariable.update.mockResolvedValue({
+        id: 'v1',
+        environment: { id: 'env-1', projectId: 'proj-1' },
+      });
+      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+
+      await service.updateVariable('v1', 'user-1', {
+        key: 'KEY',
+        value: 'new_secret',
+      });
+
+      expect(db.environmentVariable.findFirst).not.toHaveBeenCalled();
     });
   });
 
