@@ -4,6 +4,7 @@ import type {
   BuildStatus,
   DeploymentLog,
   LogLevel,
+  ResourceType,
   VariableEntry,
 } from "@/lib/types";
 
@@ -84,6 +85,27 @@ export function parseEnvFile(content: string): VariableEntry[] {
 export function formatLogLine(log: DeploymentLog): string {
   const time = new Date(log.timestamp).toLocaleTimeString();
   return `[${time}] ${log.level.padEnd(8)} ${log.message}`;
+}
+
+export const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
+  postgres: "PostgreSQL",
+  mysql: "MySQL",
+  redis: "Redis",
+  mongo: "MongoDB",
+};
+
+export const RESOURCE_TYPE_LOGOS: Record<ResourceType, string> = {
+  postgres: "/postgres.png",
+  mysql: "/mysql.png",
+  redis: "/redis.png",
+  mongo: "/mongo.png",
+};
+
+// Redis has no query/table browsing driver in the workbench.
+const WORKBENCH_SUPPORTED_TYPES: ResourceType[] = ["postgres", "mysql", "mongo"];
+
+export function supportsWorkbench(type: ResourceType): boolean {
+  return WORKBENCH_SUPPORTED_TYPES.includes(type);
 }
 
 export function logLevelColor(level: LogLevel): string {

@@ -33,6 +33,7 @@ interface DataTableProps<TData, TValue> {
   onSortChange?: (sorting: SortingState) => void;
   emptyMessage?: string;
   className?: string;
+  stickyHeader?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -46,6 +47,7 @@ export function DataTable<TData, TValue>({
   onSortChange,
   emptyMessage = "No results.",
   className,
+  stickyHeader = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -80,7 +82,12 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className={cn("space-y-2.5", className)}>
-      <div className="rounded-lg border border-border">
+      <div
+        className={cn(
+          "rounded-lg border border-border",
+          stickyHeader && "custom-scrollbar max-h-112 overflow-y-auto",
+        )}
+      >
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -89,8 +96,10 @@ export function DataTable<TData, TValue>({
                   <TableHead
                     key={header.id}
                     className={cn(
+                      "bg-card",
                       i === 0 && "pl-4",
                       i === headerGroup.headers.length - 1 && "pr-4",
+                      stickyHeader && "sticky top-0 z-10",
                     )}
                   >
                     {header.isPlaceholder
