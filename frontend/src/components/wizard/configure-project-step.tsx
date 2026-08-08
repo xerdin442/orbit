@@ -29,6 +29,7 @@ import type {
   GitHubInstallation,
   GitHubRepository,
   Project,
+  VariableEntry,
 } from "@/lib/types";
 import { ENV_FILENAME_PATTERN, parseEnvFile } from "@/lib/utils";
 
@@ -95,7 +96,17 @@ export function ConfigureProjectStep({
       return;
     }
 
-    const parsed = parseEnvFile(await file.text());
+    let parsed: VariableEntry[];
+    try {
+      parsed = parseEnvFile(await file.text());
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to parse "${file.name}"`,
+      );
+      return;
+    }
 
     if (parsed.length === 0) {
       toast.error(`No variables found in "${file.name}"`);

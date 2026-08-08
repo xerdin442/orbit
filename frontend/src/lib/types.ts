@@ -286,3 +286,8 @@ export interface CreateResourcePayload {
 export interface AddDomainPayload {
   hostname: string;
 }
+
+export interface VariableEntry {
+  key: string;
+  value: string;
+}
