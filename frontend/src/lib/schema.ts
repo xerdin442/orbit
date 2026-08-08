@@ -15,10 +15,21 @@ const healthCheckFieldsSchema = {
   healthCheckTimeout: z.coerce.number().int().min(1),
 };
 
+const buildConfigFieldsSchema = {
+  buildDirectory: z
+    .string()
+    .optional()
+    .refine((value) => !value || !value.split("/").includes(".."), {
+      message: 'Build directory cannot contain ".." segments',
+    }),
+  startCommand: z.string().optional(),
+};
+
 export const configureProjectSchema = z.object({
   name: projectNameSchema,
   defaultBranch: z.string().min(1, "Select a branch"),
   ...healthCheckFieldsSchema,
+  ...buildConfigFieldsSchema,
   envVars: z.array(z.object({ key: z.string(), value: z.string() })),
 });
 
@@ -30,6 +41,7 @@ export type ConfigureProjectFormOutput = z.output<
 export const editProjectSchema = z.object({
   name: projectNameSchema,
   ...healthCheckFieldsSchema,
+  ...buildConfigFieldsSchema,
 });
 
 export type EditProjectFormInput = z.input<typeof editProjectSchema>;

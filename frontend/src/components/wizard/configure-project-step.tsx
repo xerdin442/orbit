@@ -77,6 +77,8 @@ export function ConfigureProjectStep({
       healthCheckPort: 3000,
       healthCheckPath: "/health",
       healthCheckTimeout: 60,
+      buildDirectory: "",
+      startCommand: "",
       envVars: [],
     },
   });
@@ -159,6 +161,12 @@ export function ConfigureProjectStep({
             }
           : {}),
         ...(Object.keys(envVars).length > 0 ? { envVars } : {}),
+        ...(values.buildDirectory?.trim()
+          ? { buildDirectory: values.buildDirectory.trim() }
+          : {}),
+        ...(values.startCommand?.trim()
+          ? { startCommand: values.startCommand.trim() }
+          : {}),
       });
 
       onCreated(project, environmentId, Object.keys(envVars).length);
@@ -183,7 +191,9 @@ export function ConfigureProjectStep({
     >
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">Project name</label>
+          <label className="text-[0.8125rem] text-muted-foreground">
+            Project name
+          </label>
           <Input
             {...form.register("name")}
             onChange={(e) =>
@@ -201,7 +211,7 @@ export function ConfigureProjectStep({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs text-muted-foreground">
+          <label className="text-[0.8125rem] text-muted-foreground">
             Default branch
           </label>
           {branchesLoading ? (
@@ -246,21 +256,53 @@ export function ConfigureProjectStep({
           {healthCheckEnabled && (
             <div className="grid grid-cols-3 gap-3 pt-1">
               <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground">Port</label>
+                <label className="text-[0.8125rem] text-muted-foreground">
+                  Port
+                </label>
                 <Input type="number" {...form.register("healthCheckPort")} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground">Path</label>
+                <label className="text-[0.8125rem] text-muted-foreground">
+                  Path
+                </label>
                 <Input {...form.register("healthCheckPath")} />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground">
+                <label className="text-[0.8125rem] text-muted-foreground">
                   Timeout (s)
                 </label>
                 <Input type="number" {...form.register("healthCheckTimeout")} />
               </div>
             </div>
           )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border p-3">
+          <div className="space-y-1.5">
+            <label className="text-[0.8125rem] text-muted-foreground">
+              Build directory
+            </label>
+            <Input
+              {...form.register("buildDirectory")}
+              placeholder="e.g. apps/web"
+              className="font-mono"
+            />
+            {form.formState.errors.buildDirectory && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.buildDirectory.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[0.8125rem] text-muted-foreground">
+              Start command
+            </label>
+            <Input
+              {...form.register("startCommand")}
+              placeholder="Auto-detected if left blank"
+              className="font-mono"
+            />
+          </div>
         </div>
 
         <div className="space-y-3.5 px-1">
