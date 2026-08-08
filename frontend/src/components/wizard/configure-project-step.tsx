@@ -151,6 +151,7 @@ export function ConfigureProjectStep({
       });
 
       onCreated(project, environmentId, Object.keys(envVars).length);
+      toast.success(`Project "${project.name}" created successfully`);
     } catch {
       // error toast already surfaced by the API client
     } finally {

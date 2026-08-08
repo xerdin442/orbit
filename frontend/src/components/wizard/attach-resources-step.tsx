@@ -6,7 +6,7 @@ import { Database, Info } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { credentialKeySchema } from "@/lib/schema";
+import { credentialKeySchema, resourceNameSchema } from "@/lib/schema";
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,6 +32,10 @@ export function AttachResourcesStep({
   onDone,
 }: AttachResourcesStepProps) {
   const [selected, setSelected] = useState<Set<ResourceType>>(new Set());
+  const [names, setNames] = useState<Partial<Record<ResourceType, string>>>({});
+  const [nameErrors, setNameErrors] = useState<
+    Partial<Record<ResourceType, string>>
+  >({});
   const [keyOverrides, setKeyOverrides] = useState<
     Partial<Record<ResourceType, Record<string, string>>>
   >({});
@@ -46,12 +50,28 @@ export function AttachResourcesStep({
   });
 
   const toggleType = (type: ResourceType) => {
+    const wasSelected = selected.has(type);
+
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
+      if (wasSelected) next.delete(type);
       else next.add(type);
       return next;
     });
+
+    if (wasSelected) {
+      setNameErrors((prev) => ({ ...prev, [type]: "" }));
+    }
+  };
+
+  const updateName = (type: ResourceType, value: string) => {
+    setNames((prev) => ({ ...prev, [type]: value }));
+
+    const result = resourceNameSchema.safeParse(value);
+    setNameErrors((prev) => ({
+      ...prev,
+      [type]: result.success ? "" : result.error.issues[0].message,
+    }));
   };
 
   const updateKey = (type: ResourceType, defaultKey: string, value: string) => {
@@ -74,6 +94,10 @@ export function AttachResourcesStep({
     Object.values(keyErrors[type] ?? {}).some((message) => !!message),
   );
 
+  const hasInvalidNames = Array.from(selected).some(
+    (type) => !resourceNameSchema.safeParse(names[type] ?? "").success,
+  );
+
   const handleAttach = async () => {
     setSubmitting(true);
     try {
@@ -86,7 +110,7 @@ export function AttachResourcesStep({
 
         await api.resources.create(environmentId, {
           type,
-          name: type,
+          name: (names[type] ?? "").toLowerCase(),
           credentials,
         });
       }
@@ -129,6 +153,30 @@ export function AttachResourcesStep({
                   <Database className="size-4 text-muted-foreground" />
                   {label}
                 </label>
+
+                {isSelected && (
+                  <div className="mt-3 space-y-1.25 pl-6">
+                    <div className="flex items-center gap-2">
+                      <span className="w-40 shrink-0 text-xs text-muted-foreground">
+                        Resource Name
+                      </span>
+                      <Input
+                        className={cn(
+                          "font-mono text-xs",
+                          nameErrors[type] && "border-destructive",
+                        )}
+                        placeholder="my-database"
+                        value={names[type] ?? ""}
+                        onChange={(e) => updateName(type, e.target.value)}
+                      />
+                    </div>
+                    {nameErrors[type] && (
+                      <p className="pl-42 text-xs text-destructive">
+                        {nameErrors[type]}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {isSelected && keys.length > 0 && (
                   <div className="mt-3 space-y-2 pl-6">
@@ -191,7 +239,7 @@ export function AttachResourcesStep({
         <LoadingButton
           onClick={handleAttach}
           loading={submitting}
-          disabled={selected.size === 0 || hasInvalidKeys}
+          disabled={selected.size === 0 || hasInvalidKeys || hasInvalidNames}
         >
           Attach{selected.size > 0 ? ` (${selected.size})` : ""}
         </LoadingButton>

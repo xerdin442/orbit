@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const projectNameSchema = z
   .string()
-  .min(1, "Project name is required")
+  .min(3, "Project name must be at least 3 characters")
   .regex(
     /^[a-z0-9]+(-[a-z0-9]+)*$/,
     "Lowercase letters, numbers, and hyphens only",
@@ -34,6 +34,11 @@ export const editProjectSchema = z.object({
 
 export type EditProjectFormInput = z.input<typeof editProjectSchema>;
 export type EditProjectFormOutput = z.output<typeof editProjectSchema>;
+
+export const resourceNameSchema = z
+  .string()
+  .min(3, "Resource name must be at least 3 characters")
+  .regex(/^[a-z]+(-[a-z]+)*$/, "Lowercase letters and hyphens only");
 
 export type CredentialCategory =
   | "url"

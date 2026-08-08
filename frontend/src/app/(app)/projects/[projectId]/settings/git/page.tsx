@@ -49,8 +49,8 @@ export default function GitSettingsPage() {
       queryClient.invalidateQueries({ queryKey: ["environments", projectId] });
       toast.success(
         connecting
-          ? `Branch ${updated.branch} is now connected for automatic deployments`
-          : `Automatic deployments have been disabled for branch ${updated.branch}`,
+          ? `Branch "${updated.branch}" is now connected for automatic deployments`
+          : `Automatic deployments have been disabled for branch "${updated.branch}"`,
       );
     } catch {
       // error toast already surfaced by the API client
