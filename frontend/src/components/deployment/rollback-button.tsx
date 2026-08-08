@@ -65,6 +65,7 @@ export function RollbackButton({
         title="Roll back to this version?"
         description={`This creates a new deployment from commit "${commitSha.slice(0, 7)}", and reuses its existing build image.`}
         confirmLabel={submitting ? "Rolling back..." : "Rollback"}
+        loading={submitting}
         onConfirm={handleConfirm}
         onCancel={() => !submitting && setOpen(false)}
       />

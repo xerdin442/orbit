@@ -155,16 +155,22 @@ export const api = {
     installUrl: () =>
       request<{ url: string }>("/github/install").then((r) => r.url),
     installations: () => request<GitHubInstallation[]>("/github/installations"),
+    remove: (installationId: number) =>
+      request<void>(`/github/installations/${installationId}`, {
+        method: "DELETE",
+      }),
     repositories: (installationId: number) =>
-      request<GitHubRepository[]>(`/github/${installationId}/repositories`),
+      request<GitHubRepository[]>(
+        `/github/installations/${installationId}/repositories`,
+      ),
     branches: (installationId: number, repoFullName: string) =>
       request<GitHubBranch[]>(
-        `/github/branches?installationId=${installationId}&repo=${repoFullName}`,
+        `/github/installations/${installationId}/branches?repo=${repoFullName}`,
       ),
     updateAccessUrl: (installationId: number) =>
-      request<{ url: string }>(`/github/${installationId}/update-access`).then(
-        (r) => r.url,
-      ),
+      request<{ url: string }>(
+        `/github/installations/${installationId}/update-access`,
+      ).then((r) => r.url),
   },
 
   slack: {

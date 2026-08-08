@@ -26,7 +26,7 @@ export function ProjectSwitcher({
     return (
       <button
         onClick={onNewProject}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-sidebar-accent transition-colors"
+        className="w-full flex items-center cursor-pointer gap-2 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-sidebar-accent transition-colors"
       >
         <FolderOpen className="size-4 shrink-0" />
         New Project
