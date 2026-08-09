@@ -37,6 +37,11 @@ export class DomainsController {
     return this.domains.findOne(id, req.user.id);
   }
 
+  @Get('domains/:id/instructions')
+  getInstructions(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.domains.getInstructions(id, req.user.id);
+  }
+
   @Delete('domains/:id')
   deleteDomain(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.domains.deleteDomain(id, req.user.id);

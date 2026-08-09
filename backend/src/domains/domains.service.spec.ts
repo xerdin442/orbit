@@ -185,4 +185,67 @@ describe('DomainsService', () => {
       expect(result).toEqual(domain);
     });
   });
+
+  describe('getInstructions', () => {
+    it('throws if not found', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(service.getInstructions('d1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('throws if domain is active', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        hostname: 'api.example.com',
+        status: DomainStatus.active,
+      });
+      await expect(service.getInstructions('d1', 'user-1')).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('throws if domain has failed', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        hostname: 'api.example.com',
+        status: DomainStatus.failed,
+      });
+      await expect(service.getInstructions('d1', 'user-1')).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('returns CNAME instructions for a pending subdomain', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        hostname: 'api.example.com',
+        status: DomainStatus.pending,
+      });
+
+      const result = await service.getInstructions('d1', 'user-1');
+
+      expect(result).toEqual({
+        recordType: 'CNAME',
+        host: 'api',
+        value: '192.168.1.55.sslip.io',
+      });
+    });
+
+    it('returns A record instructions for a verifying apex domain', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        hostname: 'example.com',
+        status: DomainStatus.verifying,
+      });
+
+      const result = await service.getInstructions('d1', 'user-1');
+
+      expect(result).toEqual({
+        recordType: 'A',
+        host: '@',
+        value: '192.168.1.55',
+      });
+    });
+  });
 });

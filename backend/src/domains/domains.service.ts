@@ -76,6 +76,21 @@ export class DomainsService {
     return domain;
   }
 
+  async getInstructions(id: string, userId: string) {
+    const domain = await this.findOne(id, userId);
+
+    if (
+      domain.status === DomainStatus.active ||
+      domain.status === DomainStatus.failed
+    ) {
+      throw new ConflictException(
+        'DNS instructions are only available for domains pending verification',
+      );
+    }
+
+    return this.getDnsInstructions(domain.hostname);
+  }
+
   async deleteDomain(id: string, userId: string) {
     const domain = await this.db.domain.findFirst({
       where: { id, environment: { project: { ownerId: userId } } },
