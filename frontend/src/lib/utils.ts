@@ -3,6 +3,7 @@ import { twMerge } from "tailwind-merge";
 import type {
   BuildStatus,
   DeploymentLog,
+  DomainStatus,
   LogLevel,
   ResourceType,
   VariableEntry,
@@ -23,6 +24,20 @@ export function buildStatusBadgeVariant(
   if (status === "failed") return "failed";
   if (status === "building" || status === "pending") return "building";
   return "inactive";
+}
+
+export function domainSslVariant(
+  status: DomainStatus,
+): "ready" | "pending" | "failed" {
+  if (status === "active") return "ready";
+  if (status === "failed") return "failed";
+  return "pending";
+}
+
+export function domainSslLabel(status: DomainStatus): string {
+  if (status === "active") return "Issued";
+  if (status === "failed") return "Not issued";
+  return "Pending";
 }
 
 export function isBuildInProgress(status: BuildStatus): boolean {
