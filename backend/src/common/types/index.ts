@@ -96,6 +96,9 @@ export interface RequestLogEntry extends ParsedAccessLogLine {
   timestamp: Date;
 }
 
+export const STATUS_CLASSES = ['2xx', '3xx', '4xx', '5xx'] as const;
+export type StatusClass = (typeof STATUS_CLASSES)[number];
+
 export interface DeploymentJob {
   deployment: Deployment;
   skipImageBuild?: boolean;
