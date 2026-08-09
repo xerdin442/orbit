@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  UnauthorizedException,
   Inject,
 } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
@@ -63,6 +64,18 @@ export class DomainsService {
     });
   }
 
+  async findOne(id: string, userId: string) {
+    const domain = await this.db.domain.findFirst({
+      where: { id, environment: { project: { ownerId: userId } } },
+    });
+
+    if (!domain) {
+      throw new NotFoundException('Domain not found');
+    }
+
+    return domain;
+  }
+
   async deleteDomain(id: string, userId: string) {
     const domain = await this.db.domain.findFirst({
       where: { id, environment: { project: { ownerId: userId } } },
@@ -73,7 +86,7 @@ export class DomainsService {
     }
 
     if (domain.type === DomainType.managed) {
-      throw new ConflictException('Managed hostnames cannot be deleted');
+      throw new UnauthorizedException('Managed hostnames cannot be deleted');
     }
 
     await this.db.domain.delete({ where: { id } });
