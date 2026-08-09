@@ -3,7 +3,11 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { DomainsService } from './domains.service';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { DomainType, DomainStatus } from '@generated/client';
 
 describe('DomainsService', () => {
@@ -124,7 +128,7 @@ describe('DomainsService', () => {
         type: DomainType.managed,
       });
       await expect(service.deleteDomain('d1', 'user-1')).rejects.toThrow(
-        ConflictException,
+        UnauthorizedException,
       );
     });
 
@@ -152,6 +156,33 @@ describe('DomainsService', () => {
         where: { environmentId: 'env-1' },
         orderBy: { createdAt: 'asc' },
       });
+    });
+  });
+
+  describe('findOne', () => {
+    it('throws if not found', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(service.findOne('d1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('returns the domain when owned by the user', async () => {
+      const domain = {
+        id: 'd1',
+        type: DomainType.custom,
+        hostname: 'api.example.com',
+        status: DomainStatus.active,
+        environmentId: 'env-1',
+      };
+      db.domain.findFirst = jest.fn().mockResolvedValue(domain);
+
+      const result = await service.findOne('d1', 'user-1');
+
+      expect(db.domain.findFirst).toHaveBeenCalledWith({
+        where: { id: 'd1', environment: { project: { ownerId: 'user-1' } } },
+      });
+      expect(result).toEqual(domain);
     });
   });
 });
