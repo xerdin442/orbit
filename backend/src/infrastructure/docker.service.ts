@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import Docker from 'dockerode';
+import { PassThrough } from 'stream';
 import { Secrets } from '@src/common/secrets';
 
 @Injectable()
@@ -34,15 +35,18 @@ export class DockerService {
     return container.inspect();
   }
 
-  async containerLogs(containerId: string, options?: { tail?: number }) {
+  async followContainerLogs(containerId: string): Promise<PassThrough> {
     const container = this.docker.getContainer(containerId);
-    const stream = await container.logs({
-      follow: false as const,
-      tail: options?.tail,
+    const rawStream = await container.logs({
+      follow: true as const,
+      tail: 0,
       stdout: true,
       stderr: true,
     });
-    return stream;
+
+    const merged = new PassThrough();
+    this.docker.modem.demuxStream(rawStream, merged, merged);
+    return merged;
   }
 
   async inspectImage(imageTag: string) {
