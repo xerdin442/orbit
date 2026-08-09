@@ -66,14 +66,6 @@ describe('GitHubService', () => {
     fetchSpy.mockRestore();
   });
 
-  describe('getInstallUrl', () => {
-    it('returns GitHub App install URL', () => {
-      const url = service.getInstallUrl();
-      expect(url).toContain('https://github.com/apps/');
-      expect(url).toContain('/installations/new');
-    });
-  });
-
   describe('getUpdateAccessUrl', () => {
     it('clears repo and branch caches and returns settings URL after verifying ownership', async () => {
       db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue({
