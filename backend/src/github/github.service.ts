@@ -31,10 +31,6 @@ export class GitHubService {
     private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
 
-  getInstallUrl(): string {
-    return `https://github.com/apps/${Secrets.GITHUB_APP_ID}/installations/new`;
-  }
-
   async getUpdateAccessUrl(
     installationId: number,
     userId: string,
