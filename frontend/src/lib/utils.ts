@@ -101,8 +101,11 @@ export const RESOURCE_TYPE_LOGOS: Record<ResourceType, string> = {
   mongo: "/mongo.png",
 };
 
-// Redis has no query/table browsing driver in the workbench.
-const WORKBENCH_SUPPORTED_TYPES: ResourceType[] = ["postgres", "mysql", "mongo"];
+const WORKBENCH_SUPPORTED_TYPES: ResourceType[] = [
+  "postgres",
+  "mysql",
+  "mongo",
+];
 
 export function supportsWorkbench(type: ResourceType): boolean {
   return WORKBENCH_SUPPORTED_TYPES.includes(type);

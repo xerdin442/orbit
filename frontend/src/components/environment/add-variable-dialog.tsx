@@ -22,6 +22,7 @@ interface AddVariableDialogProps {
   onOpenChange: (open: boolean) => void;
   projectId: string;
   environmentId: string;
+  onImportInstead?: () => void;
 }
 
 export function AddVariableDialog({
@@ -29,6 +30,7 @@ export function AddVariableDialog({
   onOpenChange,
   projectId,
   environmentId,
+  onImportInstead,
 }: AddVariableDialogProps) {
   const [key, setKey] = useState("");
   const [value, setValue] = useState("");
@@ -46,6 +48,12 @@ export function AddVariableDialog({
     if (pendingAction) return;
     if (!next) reset();
     onOpenChange(next);
+  };
+
+  const handleImportInstead = () => {
+    reset();
+    onOpenChange(false);
+    onImportInstead?.();
   };
 
   const handleApply = async (skipRedeploy: boolean) => {
@@ -84,7 +92,7 @@ export function AddVariableDialog({
           <DialogTitle>Add new variable</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
+        <div className="space-y-1">
           <div className="space-y-1.25">
             <label className="inline-block text-xs text-muted-foreground">
               Key
@@ -96,6 +104,15 @@ export function AddVariableDialog({
               className="font-mono"
               autoFocus
             />
+            {onImportInstead && (
+              <button
+                type="button"
+                onClick={handleImportInstead}
+                className="block ml-auto cursor-pointer text-xs text-primary hover:underline hover:underline-offset-2"
+              >
+                Import from a file instead?
+              </button>
+            )}
           </div>
           <div className="space-y-1.25">
             <label className="inline-block text-xs text-muted-foreground">
