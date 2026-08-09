@@ -55,6 +55,7 @@ export const ModelName = {
   Project: 'Project',
   Source: 'Source',
   Environment: 'Environment',
+  RequestLog: 'RequestLog',
   Deployment: 'Deployment',
   DeploymentLog: 'DeploymentLog',
   Resource: 'Resource',
@@ -134,6 +135,20 @@ export const EnvironmentScalarFieldEnum = {
 } as const
 
 export type EnvironmentScalarFieldEnum = (typeof EnvironmentScalarFieldEnum)[keyof typeof EnvironmentScalarFieldEnum]
+
+
+export const RequestLogScalarFieldEnum = {
+  id: 'id',
+  timestamp: 'timestamp',
+  method: 'method',
+  uri: 'uri',
+  statusCode: 'statusCode',
+  durationMs: 'durationMs',
+  hostname: 'hostname',
+  environmentId: 'environmentId'
+} as const
+
+export type RequestLogScalarFieldEnum = (typeof RequestLogScalarFieldEnum)[keyof typeof RequestLogScalarFieldEnum]
 
 
 export const DeploymentScalarFieldEnum = {

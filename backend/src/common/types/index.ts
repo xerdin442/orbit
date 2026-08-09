@@ -83,6 +83,19 @@ export interface LogEntry {
   message: string;
 }
 
+export interface ParsedAccessLogLine {
+  method: string;
+  uri: string;
+  hostname: string;
+  statusCode: number;
+  durationMs: number;
+}
+
+export interface RequestLogEntry extends ParsedAccessLogLine {
+  environmentId: string;
+  timestamp: Date;
+}
+
 export interface DeploymentJob {
   deployment: Deployment;
   skipImageBuild?: boolean;

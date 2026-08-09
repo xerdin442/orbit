@@ -211,6 +211,7 @@ export type EnvironmentWhereInput = {
   resources?: Prisma.ResourceListRelationFilter
   variables?: Prisma.EnvironmentVariableListRelationFilter
   domains?: Prisma.DomainListRelationFilter
+  requestLogs?: Prisma.RequestLogListRelationFilter
 }
 
 export type EnvironmentOrderByWithRelationInput = {
@@ -227,6 +228,7 @@ export type EnvironmentOrderByWithRelationInput = {
   resources?: Prisma.ResourceOrderByRelationAggregateInput
   variables?: Prisma.EnvironmentVariableOrderByRelationAggregateInput
   domains?: Prisma.DomainOrderByRelationAggregateInput
+  requestLogs?: Prisma.RequestLogOrderByRelationAggregateInput
 }
 
 export type EnvironmentWhereUniqueInput = Prisma.AtLeast<{
@@ -247,6 +249,7 @@ export type EnvironmentWhereUniqueInput = Prisma.AtLeast<{
   resources?: Prisma.ResourceListRelationFilter
   variables?: Prisma.EnvironmentVariableListRelationFilter
   domains?: Prisma.DomainListRelationFilter
+  requestLogs?: Prisma.RequestLogListRelationFilter
 }, "id" | "projectId_name">
 
 export type EnvironmentOrderByWithAggregationInput = {
@@ -290,6 +293,7 @@ export type EnvironmentCreateInput = {
   resources?: Prisma.ResourceCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateInput = {
@@ -305,6 +309,7 @@ export type EnvironmentUncheckedCreateInput = {
   resources?: Prisma.ResourceUncheckedCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableUncheckedCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainUncheckedCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUpdateInput = {
@@ -320,6 +325,7 @@ export type EnvironmentUpdateInput = {
   resources?: Prisma.ResourceUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateInput = {
@@ -335,6 +341,7 @@ export type EnvironmentUncheckedUpdateInput = {
   resources?: Prisma.ResourceUncheckedUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUncheckedUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUncheckedUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateManyInput = {
@@ -464,6 +471,20 @@ export type EnvironmentUncheckedUpdateManyWithoutProjectNestedInput = {
   deleteMany?: Prisma.EnvironmentScalarWhereInput | Prisma.EnvironmentScalarWhereInput[]
 }
 
+export type EnvironmentCreateNestedOneWithoutRequestLogsInput = {
+  create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutRequestLogsInput, Prisma.EnvironmentUncheckedCreateWithoutRequestLogsInput>
+  connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutRequestLogsInput
+  connect?: Prisma.EnvironmentWhereUniqueInput
+}
+
+export type EnvironmentUpdateOneRequiredWithoutRequestLogsNestedInput = {
+  create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutRequestLogsInput, Prisma.EnvironmentUncheckedCreateWithoutRequestLogsInput>
+  connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutRequestLogsInput
+  upsert?: Prisma.EnvironmentUpsertWithoutRequestLogsInput
+  connect?: Prisma.EnvironmentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EnvironmentUpdateToOneWithWhereWithoutRequestLogsInput, Prisma.EnvironmentUpdateWithoutRequestLogsInput>, Prisma.EnvironmentUncheckedUpdateWithoutRequestLogsInput>
+}
+
 export type EnvironmentCreateNestedOneWithoutDeploymentsInput = {
   create?: Prisma.XOR<Prisma.EnvironmentCreateWithoutDeploymentsInput, Prisma.EnvironmentUncheckedCreateWithoutDeploymentsInput>
   connectOrCreate?: Prisma.EnvironmentCreateOrConnectWithoutDeploymentsInput
@@ -532,6 +553,7 @@ export type EnvironmentCreateWithoutProjectInput = {
   resources?: Prisma.ResourceCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutProjectInput = {
@@ -546,6 +568,7 @@ export type EnvironmentUncheckedCreateWithoutProjectInput = {
   resources?: Prisma.ResourceUncheckedCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableUncheckedCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainUncheckedCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutProjectInput = {
@@ -588,6 +611,82 @@ export type EnvironmentScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Environment"> | Date | string
 }
 
+export type EnvironmentCreateWithoutRequestLogsInput = {
+  id?: string
+  name: string
+  branch: string
+  autoDeploy?: boolean
+  currentDeploymentId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  project: Prisma.ProjectCreateNestedOneWithoutEnvironmentsInput
+  deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
+  resources?: Prisma.ResourceCreateNestedManyWithoutEnvironmentInput
+  variables?: Prisma.EnvironmentVariableCreateNestedManyWithoutEnvironmentInput
+  domains?: Prisma.DomainCreateNestedManyWithoutEnvironmentInput
+}
+
+export type EnvironmentUncheckedCreateWithoutRequestLogsInput = {
+  id?: string
+  name: string
+  branch: string
+  autoDeploy?: boolean
+  currentDeploymentId?: string | null
+  projectId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
+  resources?: Prisma.ResourceUncheckedCreateNestedManyWithoutEnvironmentInput
+  variables?: Prisma.EnvironmentVariableUncheckedCreateNestedManyWithoutEnvironmentInput
+  domains?: Prisma.DomainUncheckedCreateNestedManyWithoutEnvironmentInput
+}
+
+export type EnvironmentCreateOrConnectWithoutRequestLogsInput = {
+  where: Prisma.EnvironmentWhereUniqueInput
+  create: Prisma.XOR<Prisma.EnvironmentCreateWithoutRequestLogsInput, Prisma.EnvironmentUncheckedCreateWithoutRequestLogsInput>
+}
+
+export type EnvironmentUpsertWithoutRequestLogsInput = {
+  update: Prisma.XOR<Prisma.EnvironmentUpdateWithoutRequestLogsInput, Prisma.EnvironmentUncheckedUpdateWithoutRequestLogsInput>
+  create: Prisma.XOR<Prisma.EnvironmentCreateWithoutRequestLogsInput, Prisma.EnvironmentUncheckedCreateWithoutRequestLogsInput>
+  where?: Prisma.EnvironmentWhereInput
+}
+
+export type EnvironmentUpdateToOneWithWhereWithoutRequestLogsInput = {
+  where?: Prisma.EnvironmentWhereInput
+  data: Prisma.XOR<Prisma.EnvironmentUpdateWithoutRequestLogsInput, Prisma.EnvironmentUncheckedUpdateWithoutRequestLogsInput>
+}
+
+export type EnvironmentUpdateWithoutRequestLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  branch?: Prisma.StringFieldUpdateOperationsInput | string
+  autoDeploy?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  currentDeploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.ProjectUpdateOneRequiredWithoutEnvironmentsNestedInput
+  deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
+  resources?: Prisma.ResourceUpdateManyWithoutEnvironmentNestedInput
+  variables?: Prisma.EnvironmentVariableUpdateManyWithoutEnvironmentNestedInput
+  domains?: Prisma.DomainUpdateManyWithoutEnvironmentNestedInput
+}
+
+export type EnvironmentUncheckedUpdateWithoutRequestLogsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  branch?: Prisma.StringFieldUpdateOperationsInput | string
+  autoDeploy?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  currentDeploymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
+  resources?: Prisma.ResourceUncheckedUpdateManyWithoutEnvironmentNestedInput
+  variables?: Prisma.EnvironmentVariableUncheckedUpdateManyWithoutEnvironmentNestedInput
+  domains?: Prisma.DomainUncheckedUpdateManyWithoutEnvironmentNestedInput
+}
+
 export type EnvironmentCreateWithoutDeploymentsInput = {
   id?: string
   name: string
@@ -600,6 +699,7 @@ export type EnvironmentCreateWithoutDeploymentsInput = {
   resources?: Prisma.ResourceCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutDeploymentsInput = {
@@ -614,6 +714,7 @@ export type EnvironmentUncheckedCreateWithoutDeploymentsInput = {
   resources?: Prisma.ResourceUncheckedCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableUncheckedCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainUncheckedCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutDeploymentsInput = {
@@ -644,6 +745,7 @@ export type EnvironmentUpdateWithoutDeploymentsInput = {
   resources?: Prisma.ResourceUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutDeploymentsInput = {
@@ -658,6 +760,7 @@ export type EnvironmentUncheckedUpdateWithoutDeploymentsInput = {
   resources?: Prisma.ResourceUncheckedUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUncheckedUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUncheckedUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateWithoutResourcesInput = {
@@ -672,6 +775,7 @@ export type EnvironmentCreateWithoutResourcesInput = {
   deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutResourcesInput = {
@@ -686,6 +790,7 @@ export type EnvironmentUncheckedCreateWithoutResourcesInput = {
   deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableUncheckedCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainUncheckedCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutResourcesInput = {
@@ -716,6 +821,7 @@ export type EnvironmentUpdateWithoutResourcesInput = {
   deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutResourcesInput = {
@@ -730,6 +836,7 @@ export type EnvironmentUncheckedUpdateWithoutResourcesInput = {
   deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUncheckedUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUncheckedUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateWithoutVariablesInput = {
@@ -744,6 +851,7 @@ export type EnvironmentCreateWithoutVariablesInput = {
   deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
   resources?: Prisma.ResourceCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutVariablesInput = {
@@ -758,6 +866,7 @@ export type EnvironmentUncheckedCreateWithoutVariablesInput = {
   deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
   resources?: Prisma.ResourceUncheckedCreateNestedManyWithoutEnvironmentInput
   domains?: Prisma.DomainUncheckedCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutVariablesInput = {
@@ -788,6 +897,7 @@ export type EnvironmentUpdateWithoutVariablesInput = {
   deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
   resources?: Prisma.ResourceUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutVariablesInput = {
@@ -802,6 +912,7 @@ export type EnvironmentUncheckedUpdateWithoutVariablesInput = {
   deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
   resources?: Prisma.ResourceUncheckedUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUncheckedUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateWithoutDomainsInput = {
@@ -816,6 +927,7 @@ export type EnvironmentCreateWithoutDomainsInput = {
   deployments?: Prisma.DeploymentCreateNestedManyWithoutEnvironmentInput
   resources?: Prisma.ResourceCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentUncheckedCreateWithoutDomainsInput = {
@@ -830,6 +942,7 @@ export type EnvironmentUncheckedCreateWithoutDomainsInput = {
   deployments?: Prisma.DeploymentUncheckedCreateNestedManyWithoutEnvironmentInput
   resources?: Prisma.ResourceUncheckedCreateNestedManyWithoutEnvironmentInput
   variables?: Prisma.EnvironmentVariableUncheckedCreateNestedManyWithoutEnvironmentInput
+  requestLogs?: Prisma.RequestLogUncheckedCreateNestedManyWithoutEnvironmentInput
 }
 
 export type EnvironmentCreateOrConnectWithoutDomainsInput = {
@@ -860,6 +973,7 @@ export type EnvironmentUpdateWithoutDomainsInput = {
   deployments?: Prisma.DeploymentUpdateManyWithoutEnvironmentNestedInput
   resources?: Prisma.ResourceUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutDomainsInput = {
@@ -874,6 +988,7 @@ export type EnvironmentUncheckedUpdateWithoutDomainsInput = {
   deployments?: Prisma.DeploymentUncheckedUpdateManyWithoutEnvironmentNestedInput
   resources?: Prisma.ResourceUncheckedUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUncheckedUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentCreateManyProjectInput = {
@@ -898,6 +1013,7 @@ export type EnvironmentUpdateWithoutProjectInput = {
   resources?: Prisma.ResourceUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateWithoutProjectInput = {
@@ -912,6 +1028,7 @@ export type EnvironmentUncheckedUpdateWithoutProjectInput = {
   resources?: Prisma.ResourceUncheckedUpdateManyWithoutEnvironmentNestedInput
   variables?: Prisma.EnvironmentVariableUncheckedUpdateManyWithoutEnvironmentNestedInput
   domains?: Prisma.DomainUncheckedUpdateManyWithoutEnvironmentNestedInput
+  requestLogs?: Prisma.RequestLogUncheckedUpdateManyWithoutEnvironmentNestedInput
 }
 
 export type EnvironmentUncheckedUpdateManyWithoutProjectInput = {
@@ -934,6 +1051,7 @@ export type EnvironmentCountOutputType = {
   resources: number
   variables: number
   domains: number
+  requestLogs: number
 }
 
 export type EnvironmentCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -941,6 +1059,7 @@ export type EnvironmentCountOutputTypeSelect<ExtArgs extends runtime.Types.Exten
   resources?: boolean | EnvironmentCountOutputTypeCountResourcesArgs
   variables?: boolean | EnvironmentCountOutputTypeCountVariablesArgs
   domains?: boolean | EnvironmentCountOutputTypeCountDomainsArgs
+  requestLogs?: boolean | EnvironmentCountOutputTypeCountRequestLogsArgs
 }
 
 /**
@@ -981,6 +1100,13 @@ export type EnvironmentCountOutputTypeCountDomainsArgs<ExtArgs extends runtime.T
   where?: Prisma.DomainWhereInput
 }
 
+/**
+ * EnvironmentCountOutputType without action
+ */
+export type EnvironmentCountOutputTypeCountRequestLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RequestLogWhereInput
+}
+
 
 export type EnvironmentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -996,6 +1122,7 @@ export type EnvironmentSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   resources?: boolean | Prisma.Environment$resourcesArgs<ExtArgs>
   variables?: boolean | Prisma.Environment$variablesArgs<ExtArgs>
   domains?: boolean | Prisma.Environment$domainsArgs<ExtArgs>
+  requestLogs?: boolean | Prisma.Environment$requestLogsArgs<ExtArgs>
   _count?: boolean | Prisma.EnvironmentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["environment"]>
 
@@ -1041,6 +1168,7 @@ export type EnvironmentInclude<ExtArgs extends runtime.Types.Extensions.Internal
   resources?: boolean | Prisma.Environment$resourcesArgs<ExtArgs>
   variables?: boolean | Prisma.Environment$variablesArgs<ExtArgs>
   domains?: boolean | Prisma.Environment$domainsArgs<ExtArgs>
+  requestLogs?: boolean | Prisma.Environment$requestLogsArgs<ExtArgs>
   _count?: boolean | Prisma.EnvironmentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EnvironmentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1058,6 +1186,7 @@ export type $EnvironmentPayload<ExtArgs extends runtime.Types.Extensions.Interna
     resources: Prisma.$ResourcePayload<ExtArgs>[]
     variables: Prisma.$EnvironmentVariablePayload<ExtArgs>[]
     domains: Prisma.$DomainPayload<ExtArgs>[]
+    requestLogs: Prisma.$RequestLogPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1467,6 +1596,7 @@ export interface Prisma__EnvironmentClient<T, Null = never, ExtArgs extends runt
   resources<T extends Prisma.Environment$resourcesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$resourcesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ResourcePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   variables<T extends Prisma.Environment$variablesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$variablesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EnvironmentVariablePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   domains<T extends Prisma.Environment$domainsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$domainsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DomainPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  requestLogs<T extends Prisma.Environment$requestLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Environment$requestLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RequestLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1998,6 +2128,30 @@ export type Environment$domainsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.DomainScalarFieldEnum | Prisma.DomainScalarFieldEnum[]
+}
+
+/**
+ * Environment.requestLogs
+ */
+export type Environment$requestLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RequestLog
+   */
+  select?: Prisma.RequestLogSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RequestLog
+   */
+  omit?: Prisma.RequestLogOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RequestLogInclude<ExtArgs> | null
+  where?: Prisma.RequestLogWhereInput
+  orderBy?: Prisma.RequestLogOrderByWithRelationInput | Prisma.RequestLogOrderByWithRelationInput[]
+  cursor?: Prisma.RequestLogWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RequestLogScalarFieldEnum | Prisma.RequestLogScalarFieldEnum[]
 }
 
 /**

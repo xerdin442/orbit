@@ -60,6 +60,11 @@ export type Source = Prisma.SourceModel
  */
 export type Environment = Prisma.EnvironmentModel
 /**
+ * Model RequestLog
+ * 
+ */
+export type RequestLog = Prisma.RequestLogModel
+/**
  * Model Deployment
  * 
  */
