@@ -141,5 +141,45 @@ describe('RequestLogsService', () => {
         }),
       );
     });
+
+    it('applies a statusClass filter as a range', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.requestLog.findMany = jest.fn().mockResolvedValue([]);
+      db.requestLog.count = jest.fn().mockResolvedValue(0);
+
+      await service.findByEnvironment('env-1', 'user-1', {
+        statusClass: '4xx',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(db.requestLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            environmentId: 'env-1',
+            statusCode: { gte: 400, lt: 500 },
+          },
+        }),
+      );
+    });
+
+    it('prefers an exact statusCode over statusClass when both are given', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.requestLog.findMany = jest.fn().mockResolvedValue([]);
+      db.requestLog.count = jest.fn().mockResolvedValue(0);
+
+      await service.findByEnvironment('env-1', 'user-1', {
+        statusCode: 404,
+        statusClass: '5xx',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(db.requestLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { environmentId: 'env-1', statusCode: 404 },
+        }),
+      );
+    });
   });
 });
