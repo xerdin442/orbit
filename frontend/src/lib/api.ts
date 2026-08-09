@@ -352,6 +352,9 @@ export const api = {
   domains: {
     list: (environmentId: string) =>
       request<Domain[]>(`/environments/${environmentId}/domains`),
+    get: (id: string) => request<Domain>(`/domains/${id}`),
+    instructions: (id: string) =>
+      request<DNSInstructions>(`/domains/${id}/instructions`),
     add: (environmentId: string, payload: AddDomainPayload) =>
       request<DNSInstructions>(`/environments/${environmentId}/domains`, {
         method: "POST",

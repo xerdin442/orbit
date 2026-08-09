@@ -52,6 +52,15 @@ export const resourceNameSchema = z
   .min(3, "Resource name must be at least 3 characters")
   .regex(/^[a-z]+(-[a-z]+)*$/, "Lowercase letters and hyphens only");
 
+export const hostnameSchema = z
+  .string()
+  .min(3, "Enter a valid hostname")
+  .max(253, "Hostname is too long")
+  .regex(
+    /^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$/i,
+    "Enter a valid domain, e.g. app.example.com",
+  );
+
 export type CredentialCategory =
   | "url"
   | "host"
