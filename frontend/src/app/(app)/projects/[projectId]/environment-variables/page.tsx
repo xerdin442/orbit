@@ -183,18 +183,16 @@ export default function EnvironmentVariablesPage() {
           className="hidden"
           onChange={handleImportFile}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-        >
+        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
           <FileText className="size-3.25" />
           Import
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="size-3.5" />
-          Add Variable
-        </Button>
+        {variables && variables.length > 0 && (
+          <Button variant="outline" onClick={() => setAddOpen(true)}>
+            <Plus className="size-3.5" />
+            Add Variable
+          </Button>
+        )}
       </PageHeader>
 
       {!isLoading && selectedEnvironment && variables?.length === 0 ? (
@@ -228,6 +226,7 @@ export default function EnvironmentVariablesPage() {
             onOpenChange={setAddOpen}
             projectId={projectId}
             environmentId={selectedEnvironment.id}
+            onImportInstead={() => fileInputRef.current?.click()}
           />
           <EditVariableDialog
             open={!!editing}

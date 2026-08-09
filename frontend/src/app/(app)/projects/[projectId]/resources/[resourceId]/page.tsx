@@ -9,6 +9,7 @@ import {
   DatabaseX,
   Eye,
   EyeOff,
+  Loader2,
   Table2,
   LaptopMinimal,
   Trash2,
@@ -35,6 +36,10 @@ import {
 const TABS = ["overview", "tables", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
+function ProvisioningIcon({ className }: { className?: string }) {
+  return <Loader2 className={cn(className, "animate-spin")} />;
+}
+
 const PAGE_SIZE = 20;
 
 export default function ResourceDetailPage() {
@@ -58,11 +63,14 @@ export default function ResourceDetailPage() {
   });
 
   const workbenchSupported = !!resource && supportsWorkbench(resource.type);
+  const tablesTabVisible = !!resource && resource.status !== "unhealthy";
+  const visibleTabs = TABS.filter((t) => t !== "tables" || tablesTabVisible);
 
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["workbench", "tables", resourceId],
     queryFn: () => api.workbench.tables(resourceId),
-    enabled: tab === "tables" && workbenchSupported,
+    enabled:
+      tab === "tables" && workbenchSupported && resource?.status === "ready",
   });
 
   const { data: tableData, isLoading: tableDataLoading } = useQuery({
@@ -123,6 +131,7 @@ export default function ResourceDetailPage() {
         {workbenchSupported && resource.status === "ready" && (
           <Button
             size="sm"
+            disabled={(tables ?? []).length <= 0}
             onClick={() =>
               router.push(
                 `/projects/${projectId}/resources/${resourceId}/workbench`,
@@ -146,7 +155,7 @@ export default function ResourceDetailPage() {
 
       <div className="mb-6 border-b border-border">
         <nav className="flex items-center gap-1">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -243,11 +252,19 @@ export default function ResourceDetailPage() {
       )}
 
       {tab === "tables" &&
-        (!workbenchSupported ? (
+        tablesTabVisible &&
+        (resource.status === "provisioning" ? (
+          <EmptyState
+            icon={ProvisioningIcon}
+            title="Preparing table data"
+            description="This resource is still provisioning. Table data will be available once it's ready."
+            className="py-16"
+          />
+        ) : !workbenchSupported ? (
           <EmptyState
             icon={Table2}
             title="Not supported"
-            description={`${RESOURCE_TYPE_LABELS[resource.type]} resources don't support table browsing.`}
+            description={`Table browsing is not supported for ${RESOURCE_TYPE_LABELS[resource.type]} resources.`}
             className="py-16"
           />
         ) : (
@@ -255,7 +272,7 @@ export default function ResourceDetailPage() {
             <div className="space-y-1 rounded-lg border border-border p-2">
               {tablesLoading && <Skeleton className="h-8 w-full" />}
               {!tablesLoading && (tables ?? []).length === 0 && (
-                <p className="p-2 text-xs text-muted-foreground">
+                <p className="pl-2 pt-3 text-[0.8125rem] text-muted-foreground">
                   No tables found.
                 </p>
               )}
@@ -264,7 +281,7 @@ export default function ResourceDetailPage() {
                   key={t.name}
                   onClick={() => selectTable(t.name)}
                   className={cn(
-                    "w-full truncate cursor-pointer rounded-md px-2 py-1.5 text-left font-mono text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                    "w-full truncate cursor-pointer rounded-md px-2 py-1.5 text-left font-mono font-medium text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
                     selectedTable === t.name && "bg-muted text-foreground",
                   )}
                 >

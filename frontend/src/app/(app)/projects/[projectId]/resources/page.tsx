@@ -51,10 +51,16 @@ export default function ResourcesPage() {
   return (
     <div>
       <PageHeader title="Resources">
-        <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-3.5" />
-          Add Resource
-        </Button>
+        {resources && resources.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Add Resource
+          </Button>
+        )}
       </PageHeader>
 
       {isLoading || !selectedEnvironment ? (
@@ -67,7 +73,7 @@ export default function ResourcesPage() {
         <EmptyState
           icon={Database}
           title="No resources yet"
-          description="Attach a managed database to this environment to get started."
+          description="Attach a managed database to this environment."
           action={{ label: "Add Resource", onClick: () => setCreateOpen(true) }}
           className="py-16"
         />

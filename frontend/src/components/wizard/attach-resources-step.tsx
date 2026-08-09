@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Database, Info } from "lucide-react";
+import Image from "next/image";
+import { Info } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, RESOURCE_TYPE_LABELS, RESOURCE_TYPE_LOGOS } from "@/lib/utils";
 import { credentialKeySchema, resourceNameSchema } from "@/lib/schema";
 import { SectionCard } from "@/components/shared/section-card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,7 @@ import { LoadingButton } from "@/components/shared/loading-button";
 import { Skeleton } from "@/components/shared/skeleton";
 import type { ResourceType } from "@/lib/types";
 
-const RESOURCE_TYPES: { type: ResourceType; label: string }[] = [
-  { type: "postgres", label: "PostgreSQL" },
-  { type: "mysql", label: "MySQL" },
-  { type: "redis", label: "Redis" },
-  { type: "mongo", label: "MongoDB" },
-];
+const RESOURCE_TYPES = Object.keys(RESOURCE_TYPE_LABELS) as ResourceType[];
 
 interface AttachResourcesStepProps {
   environmentId: string;
@@ -46,7 +42,7 @@ export function AttachResourcesStep({
 
   const { data: defaults, isLoading } = useQuery({
     queryKey: ["resources", "defaults"],
-    queryFn: () => api.resources.defaults(RESOURCE_TYPES.map((r) => r.type)),
+    queryFn: () => api.resources.defaults(RESOURCE_TYPES),
   });
 
   const toggleType = (type: ResourceType) => {
@@ -60,7 +56,10 @@ export function AttachResourcesStep({
     });
 
     if (wasSelected) {
+      setNames((prev) => ({ ...prev, [type]: "" }));
       setNameErrors((prev) => ({ ...prev, [type]: "" }));
+      setKeyOverrides((prev) => ({ ...prev, [type]: {} }));
+      setKeyErrors((prev) => ({ ...prev, [type]: {} }));
     }
   };
 
@@ -140,17 +139,29 @@ export function AttachResourcesStep({
 
       {!isLoading && (
         <div className="space-y-3">
-          {RESOURCE_TYPES.map(({ type, label }) => {
+          {RESOURCE_TYPES.map((type) => {
+            const label = RESOURCE_TYPE_LABELS[type];
             const keys = defaults?.[type] ?? [];
             const isSelected = selected.has(type);
             return (
-              <div key={type} className="rounded-lg border border-border p-3">
+              <div
+                key={type}
+                className="rounded-lg border border-border px-3 py-2"
+              >
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => toggleType(type)}
                   />
-                  <Database className="size-4 text-muted-foreground" />
+                  <div className="relative size-8 shrink-0">
+                    <Image
+                      src={RESOURCE_TYPE_LOGOS[type]}
+                      alt=""
+                      fill
+                      sizes="(min-width: 768px) 50vw, 100vw"
+                      className="rounded-xs object-contain"
+                    />
+                  </div>
                   {label}
                 </label>
 
@@ -158,7 +169,8 @@ export function AttachResourcesStep({
                   <div className="mt-3 space-y-1.25 pl-6">
                     <div className="flex items-center gap-2">
                       <span className="w-40 shrink-0 text-xs text-muted-foreground">
-                        Resource Name
+                        Resource Name{" "}
+                        <span className="text-destructive text-sm">*</span>
                       </span>
                       <Input
                         className={cn(
