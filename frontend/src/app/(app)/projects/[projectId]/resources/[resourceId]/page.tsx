@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowLeft,
   DatabaseX,
@@ -20,12 +19,12 @@ import { SectionCard } from "@/components/shared/section-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { TimestampDisplay } from "@/components/shared/timestamp-display";
 import { CopyToClipboardButton } from "@/components/shared/copy-to-clipboard-button";
-import { DataTable } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Skeleton } from "@/components/shared/skeleton";
 import { Button } from "@/components/ui/button";
 import { DeleteResourceDialog } from "@/components/resource/delete-resource-dialog";
 import { ClearResourceDialog } from "@/components/resource/clear-resource-dialog";
+import { ResourceTableData } from "@/components/resource/resource-table-data";
 import {
   cn,
   maskValue,
@@ -66,11 +65,12 @@ export default function ResourceDetailPage() {
   const tablesTabVisible = !!resource && resource.status !== "unhealthy";
   const visibleTabs = TABS.filter((t) => t !== "tables" || tablesTabVisible);
 
-  const { data: tables, isLoading: tablesLoading } = useQuery({
+  const { data: tablesResponse, isLoading: tablesLoading } = useQuery({
     queryKey: ["workbench", "tables", resourceId],
     queryFn: () => api.workbench.tables(resourceId),
     enabled: workbenchSupported && resource?.status === "ready",
   });
+  const tables = tablesResponse?.tables ?? [];
 
   const { data: tableData, isLoading: tableDataLoading } = useQuery({
     queryKey: ["workbench", "table-data", resourceId, selectedTable, tablePage],
@@ -105,20 +105,6 @@ export default function ResourceDetailPage() {
     );
   }
 
-  const columns: ColumnDef<Record<string, unknown>>[] = (
-    tableData?.columns ?? []
-  ).map((col) => ({
-    accessorKey: col.name,
-    header: col.name,
-    cell: ({ row }) => (
-      <span className="font-mono text-xs text-foreground">
-        {row.original[col.name] === null || row.original[col.name] === undefined
-          ? "—"
-          : String(row.original[col.name])}
-      </span>
-    ),
-  }));
-
   const credentials = resource.credentials
     ? Object.entries(resource.credentials)
     : [];
@@ -130,7 +116,7 @@ export default function ResourceDetailPage() {
         {workbenchSupported && resource.status === "ready" && (
           <Button
             size="sm"
-            disabled={(tables ?? []).length <= 0}
+            disabled={tables.length <= 0}
             onClick={() =>
               router.push(
                 `/projects/${projectId}/resources/${resourceId}/workbench`,
@@ -270,12 +256,12 @@ export default function ResourceDetailPage() {
           <div className="grid grid-cols-[200px_1fr] gap-4">
             <div className="space-y-1 rounded-lg border border-border p-2">
               {tablesLoading && <Skeleton className="h-8 w-full" />}
-              {!tablesLoading && (tables ?? []).length === 0 && (
+              {!tablesLoading && tables.length === 0 && (
                 <p className="pl-2 pt-3 text-[0.8125rem] text-muted-foreground">
                   No tables found.
                 </p>
               )}
-              {(tables ?? []).map((t) => (
+              {tables.map((t) => (
                 <button
                   key={t.name}
                   onClick={() => selectTable(t.name)}
@@ -298,16 +284,16 @@ export default function ResourceDetailPage() {
                   className="py-16"
                 />
               ) : (
-                <DataTable
-                  columns={columns}
-                  data={tableData?.rows ?? []}
+                <ResourceTableData
+                  columns={tableData?.columns ?? []}
+                  rows={tableData?.rows ?? []}
                   isLoading={tableDataLoading}
-                  totalCount={tableData?.total ?? 0}
-                  pageSize={PAGE_SIZE}
-                  pageIndex={tablePage}
-                  onPageChange={setTablePage}
-                  emptyMessage="No rows to see here."
-                  stickyHeader
+                  pagination={{
+                    totalCount: tableData?.meta.total ?? 0,
+                    pageSize: PAGE_SIZE,
+                    pageIndex: tablePage,
+                    onPageChange: setTablePage,
+                  }}
                 />
               )}
             </div>

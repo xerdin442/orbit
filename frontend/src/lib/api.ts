@@ -14,8 +14,8 @@ import type {
   GitHubRepository,
   GitHubBranch,
   ActivityLog,
-  SchemaNode,
-  TableInfo,
+  DatabaseSchema,
+  TableObject,
   TableData,
   QueryResult,
   PaginatedResult,
@@ -328,9 +328,11 @@ export const api = {
 
   workbench: {
     schema: (resourceId: string) =>
-      request<SchemaNode[]>(`/resources/${resourceId}/schema`),
+      request<{ databases: DatabaseSchema[] }>(
+        `/resources/${resourceId}/schema`,
+      ),
     tables: (resourceId: string) =>
-      request<TableInfo[]>(`/resources/${resourceId}/tables`),
+      request<{ tables: TableObject[] }>(`/resources/${resourceId}/tables`),
     tableData: (
       resourceId: string,
       tableName: string,
