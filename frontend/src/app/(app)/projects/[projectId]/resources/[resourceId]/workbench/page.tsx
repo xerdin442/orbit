@@ -201,7 +201,7 @@ export default function WorkbenchPage() {
         </Button>
       </PageHeader>
 
-      <div className="min-h-0 flex-1 rounded-lg border border-border">
+      <div className="min-h-0 min-w-0 flex-1 rounded-lg border border-border">
         <ResizablePanelGroup orientation="horizontal">
           <ResizablePanel defaultSize="22" minSize="15" maxSize="40">
             <div className="custom-scrollbar h-full space-y-1 overflow-y-auto p-2">
@@ -241,7 +241,7 @@ export default function WorkbenchPage() {
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize="78">
+          <ResizablePanel defaultSize="78" className="min-w-0">
             <ResizablePanelGroup orientation="vertical">
               <ResizablePanel defaultSize="45" minSize="20">
                 <div className="flex h-full flex-col">
@@ -287,7 +287,7 @@ export default function WorkbenchPage() {
 
               <ResizableHandle withHandle />
 
-              <ResizablePanel defaultSize="55" minSize="20">
+              <ResizablePanel defaultSize="55" minSize="20" className="min-w-0">
                 <div
                   className={cn(
                     "custom-scrollbar h-full overflow-auto",
