@@ -60,7 +60,7 @@ describe('AuthService', () => {
 
   describe('getGitHubOAuthUrl', () => {
     it('returns a valid GitHub OAuth URL without state when no redirect_uri', async () => {
-      const { url } = await service.getGitHubOAuthUrl();
+      const url = await service.getGitHubOAuthUrl();
 
       expect(url).toContain('https://github.com/login/oauth/authorize');
       expect(url).toContain('client_id=');
@@ -71,7 +71,7 @@ describe('AuthService', () => {
     });
 
     it('stores redirect_uri in Redis and includes state in URL', async () => {
-      const { url } = await service.getGitHubOAuthUrl(
+      const url = await service.getGitHubOAuthUrl(
         'http://localhost:9090/callback',
       );
 
@@ -84,7 +84,7 @@ describe('AuthService', () => {
     });
 
     it('accepts https localhost redirect_uri', async () => {
-      const { url } = await service.getGitHubOAuthUrl(
+      const url = await service.getGitHubOAuthUrl(
         'https://localhost:3000/callback',
       );
 
@@ -93,7 +93,7 @@ describe('AuthService', () => {
     });
 
     it('accepts FRONTEND_URL as redirect_uri', async () => {
-      const { url } = await service.getGitHubOAuthUrl('http://frontend.local');
+      const url = await service.getGitHubOAuthUrl('http://frontend.local');
 
       expect(url).toContain('state=');
       expect(redis.set).toHaveBeenCalled();

@@ -20,7 +20,7 @@ export class AuthService {
     @Inject(REDIS_CLIENT) private readonly redis: RedisClientType,
   ) {}
 
-  async getGitHubOAuthUrl(redirectUri?: string): Promise<{ url: string }> {
+  async getGitHubOAuthUrl(redirectUri?: string): Promise<string> {
     const params = new URLSearchParams({
       client_id: Secrets.GITHUB_CLIENT_ID,
       redirect_uri: Secrets.GITHUB_REDIRECT_URI,
@@ -37,9 +37,7 @@ export class AuthService {
       params.set('state', state);
     }
 
-    return {
-      url: `https://github.com/login/oauth/authorize?${params.toString()}`,
-    };
+    return `https://github.com/login/oauth/authorize?${params.toString()}`;
   }
 
   async handleGitHubCallback(code: string, state?: string): Promise<string> {
