@@ -46,6 +46,8 @@ export function TopNav() {
     initialized.current = false;
   }, [selectedProject?.id]);
 
+  if (pathname.includes("/workbench")) return null;
+
   return (
     <header className="flex items-center gap-3 h-16 px-6 border-b border-border bg-background shrink-0">
       <span className="text-sm font-medium text-foreground">

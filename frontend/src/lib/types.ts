@@ -217,33 +217,35 @@ export interface ActivityLog {
   createdAt: string;
 }
 
-export interface SchemaNode {
-  name: string;
-  type: "database" | "schema" | "table";
-  children?: SchemaNode[];
-}
-
-export interface TableInfo {
-  name: string;
-  schema?: string;
-}
-
 export interface TableColumn {
   name: string;
   type: string;
+  nullable?: boolean;
+  default?: string | null;
+  primaryKey?: boolean;
+}
+
+export interface TableObject {
+  name: string;
+  type: "table" | "collection" | "key";
+  schema?: string;
+}
+
+export interface DatabaseSchema {
+  name: string;
+  objects: TableObject[];
 }
 
 export interface TableData {
   columns: TableColumn[];
   rows: Record<string, unknown>[];
-  total: number;
-  page: number;
-  limit: number;
+  meta: PaginatedMeta;
 }
 
 export interface QueryResult {
-  columns: TableColumn[];
+  columns: { name: string; type?: string }[];
   rows: Record<string, unknown>[];
+  rowCount: number;
 }
 
 export interface PaginatedMeta {
