@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import Editor, { type OnMount } from "@monaco-editor/react";
-import type * as Monaco from "monaco-editor";
 import { ArrowLeft, Database, Play, Table2 } from "lucide-react";
 import {
   ResizableHandle,
@@ -20,7 +19,8 @@ import { Button } from "@/components/ui/button";
 import { ResourceTableData } from "@/components/resource/resource-table-data";
 import { api } from "@/lib/api";
 import { cn, RESOURCE_TYPE_LABELS, supportsWorkbench } from "@/lib/utils";
-import { SQL_KEYWORDS, extractReferencedTables } from "@/lib/sql-completion";
+import { registerSqlCompletionProvider } from "@/lib/sql-completion";
+import { registerMongoCompletionProvider } from "@/lib/mongo-completion";
 import type {
   DatabaseSchema,
   QueryResult,
@@ -30,16 +30,12 @@ import type {
 } from "@/lib/types";
 
 function monacoLanguage(resourceType: ResourceType): string {
-  return resourceType === "mongo" ? "json" : "sql";
+  return resourceType === "mongo" ? "javascript" : "sql";
 }
 
 function starterQuery(resourceType: ResourceType, table: TableObject): string {
   if (resourceType === "mongo") {
-    return JSON.stringify(
-      { operation: "find", collection: table.name, filter: {} },
-      null,
-      2,
-    );
+    return `db.${table.name}.find({})`;
   }
 
   const identifier = table.schema
@@ -161,69 +157,20 @@ export default function WorkbenchPage() {
     });
 
     if (resource && monacoLanguage(resource.type) === "sql") {
-      const disposable = monaco.languages.registerCompletionItemProvider(
-        "sql",
-        {
-          triggerCharacters: [" ", ".", ","],
-          provideCompletionItems: async (
-            model: Monaco.editor.ITextModel,
-            position: Monaco.Position,
-          ) => {
-            const textBeforeCursor = model.getValueInRange({
-              startLineNumber: 1,
-              startColumn: 1,
-              endLineNumber: position.lineNumber,
-              endColumn: position.column,
-            });
+      const disposable = registerSqlCompletionProvider(monaco, {
+        getTableNames: () =>
+          databasesRef.current.flatMap((db) => db.objects.map((o) => o.name)),
+        getColumnsForTable,
+      });
 
-            const word = model.getWordUntilPosition(position);
-            const range = {
-              startLineNumber: position.lineNumber,
-              endLineNumber: position.lineNumber,
-              startColumn: word.startColumn,
-              endColumn: word.endColumn,
-            };
+      completionDisposables.current.push(disposable);
+    }
 
-            const tableNames = databasesRef.current.flatMap((db) =>
-              db.objects.map((o) => o.name),
-            );
-
-            const suggestions: Monaco.languages.CompletionItem[] = [
-              ...SQL_KEYWORDS.map((keyword) => ({
-                label: keyword,
-                kind: monaco.languages.CompletionItemKind.Keyword,
-                insertText: keyword,
-                range,
-              })),
-              ...tableNames.map((name) => ({
-                label: name,
-                kind: monaco.languages.CompletionItemKind.Class,
-                insertText: name,
-                range,
-              })),
-            ];
-
-            const referencedTables = extractReferencedTables(
-              textBeforeCursor,
-            ).filter((name) => tableNames.includes(name));
-
-            for (const table of referencedTables) {
-              const columns = await getColumnsForTable(table);
-              for (const column of columns) {
-                suggestions.push({
-                  label: column.name,
-                  kind: monaco.languages.CompletionItemKind.Field,
-                  detail: column.type,
-                  insertText: column.name,
-                  range,
-                });
-              }
-            }
-
-            return { suggestions };
-          },
-        },
-      );
+    if (resource && monacoLanguage(resource.type) === "javascript") {
+      const disposable = registerMongoCompletionProvider(monaco, {
+        getCollectionNames: () =>
+          databasesRef.current.flatMap((db) => db.objects.map((o) => o.name)),
+      });
 
       completionDisposables.current.push(disposable);
     }
@@ -240,7 +187,7 @@ export default function WorkbenchPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title={`${resource.name} Workbench`}>
+      <PageHeader title={`${resource.name}`}>
         <Button
           variant="ghost"
           size="sm"
@@ -303,7 +250,7 @@ export default function WorkbenchPage() {
                       {RESOURCE_TYPE_LABELS[resource.type]} —{" "}
                       {monacoLanguage(resource.type) === "sql"
                         ? "read-only SQL"
-                        : "read-only query (JSON)"}
+                        : "read-only MongoDB shell"}
                     </span>
                     <LoadingButton
                       size="sm"
