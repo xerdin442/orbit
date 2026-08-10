@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import { Prisma } from '@generated/client';
+import { Prisma, type RequestLog } from '@generated/client';
 import { DbService } from '@src/db/db.service';
 import type {
   PaginatedResult,
-  RequestLogEntry,
+  ParsedAccessLogLine,
   StatusClass,
 } from '@src/common/types';
 import type { FilterRequestLogsDto } from './dto/request-log.dto';
@@ -19,19 +19,23 @@ function statusClassRange(statusClass: StatusClass): {
 
 @Injectable()
 export class RequestLogsService {
-  private readonly streams = new Map<string, Subject<RequestLogEntry>>();
+  private readonly streams = new Map<string, Subject<RequestLog>>();
 
   constructor(private readonly db: DbService) {}
 
-  async append(entry: RequestLogEntry): Promise<RequestLogEntry> {
+  async append(
+    environmentId: string,
+    entry: ParsedAccessLogLine,
+  ): Promise<RequestLog> {
     const created = await this.db.requestLog.create({
       data: {
+        environmentId,
         ...entry,
         method: entry.method.toUpperCase(),
       },
     });
 
-    const stream = this.streams.get(entry.environmentId);
+    const stream = this.streams.get(environmentId);
     if (stream) stream.next(created);
 
     return created;
@@ -40,7 +44,7 @@ export class RequestLogsService {
   async subscribeForUser(
     environmentId: string,
     userId: string,
-  ): Promise<Subject<RequestLogEntry>> {
+  ): Promise<Subject<RequestLog>> {
     await this.verifyEnvironmentOwnership(environmentId, userId);
     return this.subscribe(environmentId);
   }
@@ -49,7 +53,7 @@ export class RequestLogsService {
     environmentId: string,
     userId: string,
     filters: FilterRequestLogsDto,
-  ): Promise<PaginatedResult<RequestLogEntry>> {
+  ): Promise<PaginatedResult<RequestLog>> {
     await this.verifyEnvironmentOwnership(environmentId, userId);
 
     const page = filters?.page ?? 1;
@@ -90,11 +94,11 @@ export class RequestLogsService {
     };
   }
 
-  private subscribe(environmentId: string): Subject<RequestLogEntry> {
+  private subscribe(environmentId: string): Subject<RequestLog> {
     const existing = this.streams.get(environmentId);
     if (existing) return existing;
 
-    const stream = new Subject<RequestLogEntry>();
+    const stream = new Subject<RequestLog>();
     this.streams.set(environmentId, stream);
     return stream;
   }

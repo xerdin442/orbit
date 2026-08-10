@@ -3,7 +3,7 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import jwt from 'jsonwebtoken';
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import { Secrets } from '@src/common/secrets';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
@@ -19,17 +19,33 @@ import {
   GitHubRepositoryList,
   DeploymentJob,
 } from '@src/common/types';
+import type { RedisClientType } from 'redis';
+import { REDIS_CLIENT } from '@src/common/cache';
+import { Logger } from '@src/common/logger';
 
 @Injectable()
 export class GitHubService {
+  private readonly STATE_TTL_SECONDS = 600;
+  private readonly logger = Logger(GitHubService.name);
+
   constructor(
     private readonly db: DbService,
     private readonly activity: ActivityService,
     private readonly cleanup: CleanupService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    @Inject(REDIS_CLIENT) private readonly redis: RedisClientType,
     @InjectQueue('deployments')
     private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
+
+  async getInstallUrl(userId: string) {
+    const state = randomUUID();
+    await this.redis.set(this.getStateKey(state), userId, {
+      expiration: { type: 'EX', value: this.STATE_TTL_SECONDS },
+    });
+
+    return `https://github.com/apps/${Secrets.GITHUB_APP_ID}/installations/new?state=${state}`;
+  }
 
   async getUpdateAccessUrl(
     installationId: number,
@@ -56,11 +72,30 @@ export class GitHubService {
     return `https://github.com/settings/installations/${installationId}`;
   }
 
-  async handleInstallCallback(installationId: number, userId: string) {
+  async handleInstallCallback(installationId: number, state?: string) {
+    const failureUrl = `${Secrets.FRONTEND_URL}/settings?github_install=error`;
+
+    if (!state) {
+      this.logger.warn('Missing state in GitHub install callback');
+      return failureUrl;
+    }
+
+    const stateKey = this.getStateKey(state);
+    const userId = await this.redis.get(stateKey);
+
+    if (!userId) {
+      this.logger.warn('State not found or expired');
+      return failureUrl;
+    }
+
+    await this.redis.del(stateKey);
+
     const existing = await this.db.gitHubInstallation.findFirst({
       where: { installationId },
     });
-    if (existing) return existing;
+    if (existing) {
+      return `${Secrets.FRONTEND_URL}/settings?github_install=connected`;
+    }
 
     const token = this.generateAppJwt();
     const response = await fetch(
@@ -81,7 +116,7 @@ export class GitHubService {
 
     const data = (await response.json()) as GitHubAccountResponse;
 
-    const install = await this.db.gitHubInstallation.create({
+    await this.db.gitHubInstallation.create({
       data: {
         installationId,
         accountLogin: data.account.login,
@@ -95,7 +130,7 @@ export class GitHubService {
       accountLogin: data.account.login,
     });
 
-    return install;
+    return `${Secrets.FRONTEND_URL}/settings?github_install=connected`;
   }
 
   async listInstallations(userId: string) {
@@ -275,6 +310,10 @@ export class GitHubService {
 
       await this.deployQueue.add('webhook', { deployment });
     }
+  }
+
+  private getStateKey(state: string): string {
+    return `github:install:state:${createHash('sha256').update(state).digest('hex')}`;
   }
 
   private generateAppJwt(): string {

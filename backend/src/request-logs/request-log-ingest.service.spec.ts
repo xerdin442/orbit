@@ -80,8 +80,8 @@ describe('RequestLogIngestService', () => {
       await service.handleLine(line);
 
       expect(requestLogs.append).toHaveBeenCalledWith(
+        'env-1',
         expect.objectContaining({
-          environmentId: 'env-1',
           method: 'GET',
           uri: '/health',
           statusCode: 200,

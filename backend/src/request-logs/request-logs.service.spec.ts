@@ -2,7 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { RequestLogsService } from './request-logs.service';
 import { DbService } from '@src/db/db.service';
-import type { RequestLogEntry } from '@src/common/types';
+import type { ParsedAccessLogLine } from '@src/common/types';
+import type { RequestLog } from '@generated/client';
 
 describe('RequestLogsService', () => {
   let service: RequestLogsService;
@@ -25,9 +26,7 @@ describe('RequestLogsService', () => {
     service = module.get(RequestLogsService);
   });
 
-  const entry: RequestLogEntry = {
-    environmentId: 'env-1',
-    timestamp: new Date(),
+  const line: ParsedAccessLogLine = {
     method: 'GET',
     uri: '/api/users',
     statusCode: 200,
@@ -35,36 +34,44 @@ describe('RequestLogsService', () => {
     hostname: 'app.example.com',
   };
 
+  const created: RequestLog = {
+    id: 'req-1',
+    environmentId: 'env-1',
+    timestamp: new Date(),
+    ...line,
+  };
+
   describe('append', () => {
     it('persists to DB and emits to subscribers', async () => {
-      db.requestLog.create = jest.fn().mockResolvedValue(entry);
+      db.requestLog.create = jest.fn().mockResolvedValue(created);
       db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
 
-      const received: RequestLogEntry[] = [];
+      const received: RequestLog[] = [];
       const subscribed = await service.subscribeForUser('env-1', 'user-1');
       subscribed.subscribe((e) => received.push(e));
 
-      await service.append(entry);
+      await service.append('env-1', line);
 
       expect(db.requestLog.create).toHaveBeenCalledWith({
-        data: { ...entry, method: 'GET' },
+        data: { environmentId: 'env-1', ...line, method: 'GET' },
       });
       expect(received).toHaveLength(1);
       expect(received[0].uri).toBe('/api/users');
+      expect(received[0].id).toBe('req-1');
     });
 
     it('does not throw when no one is subscribed', async () => {
-      db.requestLog.create = jest.fn().mockResolvedValue(entry);
-      await expect(service.append(entry)).resolves.toBeDefined();
+      db.requestLog.create = jest.fn().mockResolvedValue(created);
+      await expect(service.append('env-1', line)).resolves.toBeDefined();
     });
 
     it('uppercases the method before persisting', async () => {
-      db.requestLog.create = jest.fn().mockResolvedValue(entry);
+      db.requestLog.create = jest.fn().mockResolvedValue(created);
 
-      await service.append({ ...entry, method: 'get' });
+      await service.append('env-1', { ...line, method: 'get' });
 
       expect(db.requestLog.create).toHaveBeenCalledWith({
-        data: { ...entry, method: 'GET' },
+        data: { environmentId: 'env-1', ...line, method: 'GET' },
       });
     });
   });
@@ -95,7 +102,7 @@ describe('RequestLogsService', () => {
 
     it('paginates and returns meta', async () => {
       db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
-      db.requestLog.findMany = jest.fn().mockResolvedValue([entry]);
+      db.requestLog.findMany = jest.fn().mockResolvedValue([created]);
       db.requestLog.count = jest.fn().mockResolvedValue(1);
 
       const result = await service.findByEnvironment('env-1', 'user-1', {

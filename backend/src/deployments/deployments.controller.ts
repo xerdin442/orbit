@@ -15,13 +15,10 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import { Observable, map } from 'rxjs';
+import type { DeploymentLog } from '@generated/client';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
-import type {
-  LogEntry,
-  DeploymentJob,
-  AuthenticatedRequest,
-} from '@src/common/types';
+import type { DeploymentJob, AuthenticatedRequest } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { FilterDeploymentsDto, AbortDeploymentDto } from './dto/deployment.dto';
 
@@ -124,7 +121,7 @@ export class DeploymentsController {
   async streamLogs(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-  ): Promise<Observable<{ data: LogEntry }>> {
+  ): Promise<Observable<{ data: DeploymentLog }>> {
     await this.deployments.findById(id, req.user.id);
 
     return this.logService

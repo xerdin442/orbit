@@ -8,8 +8,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
+import type { RequestLog } from '@generated/client';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
-import type { AuthenticatedRequest, RequestLogEntry } from '@src/common/types';
+import type { AuthenticatedRequest } from '@src/common/types';
 import { RequestLogsService } from './request-logs.service';
 import { FilterRequestLogsDto } from './dto/request-log.dto';
 
@@ -31,7 +32,7 @@ export class RequestLogsController {
   async stream(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-  ): Promise<Observable<{ data: RequestLogEntry }>> {
+  ): Promise<Observable<{ data: RequestLog }>> {
     const stream = await this.requestLogs.subscribeForUser(id, req.user.id);
     return stream.pipe(map((entry) => ({ data: entry })));
   }
