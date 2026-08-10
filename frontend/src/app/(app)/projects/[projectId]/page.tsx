@@ -348,6 +348,7 @@ export default function ProjectOverviewPage() {
           onOpenChange={logsDialog.setIsOpen}
           projectId={projectId}
           deploymentId={latestDeployment.id}
+          buildStatus={latestDeployment.buildStatus}
         />
       )}
     </div>

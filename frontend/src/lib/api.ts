@@ -27,6 +27,8 @@ import type {
   CreateResourcePayload,
   AddDomainPayload,
   ResourceType,
+  RequestLog,
+  StatusClass,
 } from "@/lib/types";
 import { resolveMock } from "@/mocks/handler";
 import { toast } from "sonner";
@@ -43,6 +45,12 @@ function getAuthToken(): string | null {
 
 export function setAuthToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+}
+
+function withAuthToken(url: string): string {
+  const token = getAuthToken();
+  if (!token) return url;
+  return `${url}?token=${encodeURIComponent(token)}`;
 }
 
 export function clearAuthToken(): void {
@@ -292,7 +300,8 @@ export const api = {
         body: JSON.stringify({ marked_resources: markedResources ?? [] }),
       }),
     logs: (id: string) => request<DeploymentLog[]>(`/deployments/${id}/logs`),
-    logsStreamUrl: (id: string) => `${API_URL}/deployments/${id}/logs/stream`,
+    logsStreamUrl: (id: string) =>
+      withAuthToken(`${API_URL}/deployments/${id}/logs/stream`),
   },
 
   resources: {
@@ -362,6 +371,31 @@ export const api = {
       }),
     delete: (id: string) =>
       request<void>(`/domains/${id}`, { method: "DELETE" }),
+  },
+
+  requestLogs: {
+    list: (
+      environmentId: string,
+      params?: {
+        page?: number;
+        limit?: number;
+        method?: string;
+        statusClass?: StatusClass;
+      },
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set("page", String(params.page));
+      if (params?.limit) searchParams.set("limit", String(params.limit));
+      if (params?.method) searchParams.set("method", params.method);
+      if (params?.statusClass)
+        searchParams.set("statusClass", params.statusClass);
+      const qs = searchParams.toString();
+      return request<PaginatedResult<RequestLog>>(
+        `/environments/${environmentId}/requests${qs ? `?${qs}` : ""}`,
+      );
+    },
+    streamUrl: (environmentId: string) =>
+      withAuthToken(`${API_URL}/environments/${environmentId}/requests/stream`),
   },
 
   activity: {
