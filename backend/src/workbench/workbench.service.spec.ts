@@ -153,9 +153,9 @@ describe('WorkbenchService', () => {
       rowCount: 0,
     });
 
-    await service.executeQuery('r1', 'user-1', 'find users');
+    await service.executeQuery('r1', 'user-1', 'db.users.find({})');
 
-    expect(mockDriver.execute).toHaveBeenCalledWith('find users');
+    expect(mockDriver.execute).toHaveBeenCalledWith('db.users.find({})');
   });
 
   it('rejects mutating Mongo commands', async () => {
@@ -164,7 +164,7 @@ describe('WorkbenchService', () => {
       .mockResolvedValue(mockResource(ResourceType.mongo));
 
     await expect(
-      service.executeQuery('r1', 'user-1', 'insert users'),
+      service.executeQuery('r1', 'user-1', 'db.users.insertOne({})'),
     ).rejects.toThrow(BadRequestException);
   });
 

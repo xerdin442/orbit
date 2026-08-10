@@ -69,23 +69,14 @@ export const SQL_QUERY_WHITELIST: QueryWhitelist = {
 export const MONGO_QUERY_WHITELIST: QueryWhitelist = {
   resourceType: 'mongo',
   pattern:
-    /^\s*(find|aggregate|count|countDocuments|estimatedDocumentCount|distinct|findOne|explain)\b/i,
-  description: 'read-only MongoDB operations',
+    /^\s*db\.\w+\.(find|findOne|aggregate|count|countDocuments|estimatedDocumentCount|distinct|explain)\s*\(/i,
+  description:
+    'read-only MongoDB shell queries, e.g. db.<collection>.find({ ... })',
 };
 
 export interface PgField {
   name: string;
   dataTypeID: number;
-}
-
-export interface MongoQueryCommand {
-  collection: string;
-  operation:
-    'find' | 'aggregate' | 'count' | 'countDocuments' | 'distinct' | 'findOne';
-  filter?: Record<string, unknown>;
-  pipeline?: unknown[];
-  options?: Record<string, unknown>;
-  field?: string;
 }
 
 export interface MongoIndex {

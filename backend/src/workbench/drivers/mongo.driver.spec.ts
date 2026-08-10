@@ -186,16 +186,127 @@ describe('MongoDriver', () => {
 
     mockToArray.mockResolvedValue([{ _id: '1', email: 'a@example.com' }]);
 
-    const result = await driver.execute(
-      JSON.stringify({
-        collection: 'users',
-        operation: 'find',
-        filter: {},
-      }),
-    );
+    const result = await driver.execute('db.users.find({})');
 
+    expect(mockDb.collection).toHaveBeenCalledWith('users');
+    expect(mockCollection.find).toHaveBeenCalledWith({});
     expect(result.rowCount).toBe(1);
     expect(result.rows).toEqual([{ _id: '1', email: 'a@example.com' }]);
+  });
+
+  it('executes a find command with a filter', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockToArray.mockResolvedValue([{ _id: '1', age: 30 }]);
+
+    await driver.execute('db.users.find({ age: { $gt: 21 } })');
+
+    expect(mockCollection.find).toHaveBeenCalledWith({ age: { $gt: 21 } });
+  });
+
+  it('executes a findOne command', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockCollection.findOne.mockResolvedValue({ _id: '1' });
+
+    const result = await driver.execute(
+      'db.users.findOne({ email: "a@example.com" })',
+    );
+
+    expect(mockCollection.findOne).toHaveBeenCalledWith({
+      email: 'a@example.com',
+    });
+    expect(result.rows).toEqual([{ _id: '1' }]);
+  });
+
+  it('executes an aggregate pipeline', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockToArray.mockResolvedValue([{ _id: '1', total: 42 }]);
+
+    await driver.execute(
+      'db.orders.aggregate([{ $match: { status: "paid" } }, { $group: { _id: "$status", total: { $sum: "$amount" } } }])',
+    );
+
+    expect(mockCollection.aggregate).toHaveBeenCalledWith([
+      { $match: { status: 'paid' } },
+      { $group: { _id: '$status', total: { $sum: '$amount' } } },
+    ]);
+  });
+
+  it('executes a distinct command', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockCollection.distinct = jest.fn().mockResolvedValue(['NY', 'CA']);
+
+    const result = await driver.execute('db.users.distinct("state", {})');
+
+    expect(mockCollection.distinct).toHaveBeenCalledWith('state', {});
+    expect(result.rows).toEqual(['NY', 'CA']);
+  });
+
+  it('executes a countDocuments command', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    mockCollection.countDocuments.mockResolvedValue(7);
+
+    const result = await driver.execute('db.users.countDocuments({})');
+
+    expect(result.rows).toEqual([7]);
+  });
+
+  it('rejects queries that are not in db.<collection>.<method>() shell syntax', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    await expect(
+      driver.execute(JSON.stringify({ operation: 'find', collection: 'x' })),
+    ).rejects.toThrow(/Invalid query/);
+  });
+
+  it('rejects aggregate pipelines containing $merge', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    await expect(
+      driver.execute('db.orders.aggregate([{ $merge: { into: "other" } }])'),
+    ).rejects.toThrow(/\$merge/);
+
+    expect(mockCollection.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('rejects aggregate pipelines containing $out', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    await expect(
+      driver.execute('db.orders.aggregate([{ $out: "copy" }])'),
+    ).rejects.toThrow(/\$out/);
+  });
+
+  it('rejects filters using $where', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    await expect(
+      driver.execute('db.users.find({ $where: "this.age > 21" })'),
+    ).rejects.toThrow(/\$where/);
+  });
+
+  it('rejects pipelines using $function nested in another stage', async () => {
+    const driver = new MongoDriver(credentials);
+    await driver.connect();
+
+    await expect(
+      driver.execute(
+        'db.users.aggregate([{ $match: { $expr: { $function: { body: "function() {}", args: [], lang: "js" } } } }])',
+      ),
+    ).rejects.toThrow(/\$function/);
   });
 
   it('closes the connection', async () => {
