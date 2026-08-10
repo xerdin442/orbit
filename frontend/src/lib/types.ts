@@ -138,6 +138,21 @@ export interface DNSInstructions {
   value: string;
 }
 
+export type StatusClass = "2xx" | "3xx" | "4xx" | "5xx";
+
+export const STATUS_CLASSES: StatusClass[] = ["2xx", "3xx", "4xx", "5xx"];
+
+export interface RequestLog {
+  id: string;
+  environmentId: string;
+  timestamp: string;
+  method: string;
+  uri: string;
+  statusCode: number;
+  durationMs: number;
+  hostname: string;
+}
+
 export interface EnvironmentVariable {
   id: string;
   key: string;
