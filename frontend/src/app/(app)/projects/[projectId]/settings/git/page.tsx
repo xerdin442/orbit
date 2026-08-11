@@ -18,6 +18,7 @@ export default function GitSettingsPage() {
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
   const [pendingBranch, setPendingBranch] = useState<string | null>(null);
+  const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -57,6 +58,19 @@ export default function GitSettingsPage() {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const handleConnectionButtonClick = () => {
+    if (selectedEnvironment?.autoDeploy) {
+      setConfirmingDisconnect(true);
+    } else {
+      void handleToggleConnection();
+    }
+  };
+
+  const handleConfirmDisconnect = async () => {
+    await handleToggleConnection();
+    setConfirmingDisconnect(false);
   };
 
   const handleBranchSelect = (branch: string | null) => {
@@ -127,7 +141,7 @@ export default function GitSettingsPage() {
         }
         isUpdating={isUpdating}
         onBranchChange={handleBranchSelect}
-        onToggleConnection={handleToggleConnection}
+        onToggleConnection={handleConnectionButtonClick}
       />
 
       <ConfirmationDialog
@@ -142,6 +156,18 @@ export default function GitSettingsPage() {
         confirmLabel="Change branch"
         onConfirm={handleConfirmBranchChange}
         onCancel={() => !isUpdating && setPendingBranch(null)}
+      />
+
+      <ConfirmationDialog
+        open={confirmingDisconnect}
+        onOpenChange={(open) => !open && !isUpdating && setConfirmingDisconnect(false)}
+        title="Disconnect repository?"
+        description={`Automatic deployments will stop for branch "${selectedEnvironment?.branch ?? ""}". You can reconnect at any time.`}
+        confirmLabel="Disconnect"
+        variant="destructive"
+        loading={isUpdating}
+        onConfirm={handleConfirmDisconnect}
+        onCancel={() => !isUpdating && setConfirmingDisconnect(false)}
       />
     </>
   );

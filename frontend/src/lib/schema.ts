@@ -52,6 +52,15 @@ export const resourceNameSchema = z
   .min(3, "Resource name must be at least 3 characters")
   .regex(/^[a-z]+(-[a-z]+)*$/, "Lowercase letters and hyphens only");
 
+export const environmentNameSchema = z
+  .string()
+  .min(3, "Environment name must be at least 3 characters")
+  .max(72, "Environment name is too long")
+  .regex(
+    /^[a-z0-9]+(-[a-z0-9]+)*$/,
+    "Lowercase letters, numbers, and hyphens only",
+  );
+
 export const hostnameSchema = z
   .string()
   .min(3, "Enter a valid hostname")
