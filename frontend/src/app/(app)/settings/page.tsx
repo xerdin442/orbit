@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -9,11 +9,13 @@ import { useUIStore } from "@/lib/store";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { InstallationList } from "@/components/github/installation-list";
+import { GitHubInstallErrorDialog } from "@/components/github/install-error-dialog";
 import { ConfirmationDialog } from "@/components/shared/confirmation-dialog";
 import type { GitHubInstallation } from "@/lib/types";
 
 export default function AccountSettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const {
     userProfile: user,
@@ -22,6 +24,31 @@ export default function AccountSettingsPage() {
   } = useUIStore();
   const [removing, setRemoving] = useState<GitHubInstallation | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [installError, setInstallError] = useState(
+    () => searchParams.get("github_install") === "error",
+  );
+  const handledInstallParam = useRef(false);
+
+  useEffect(() => {
+    if (handledInstallParam.current) return;
+
+    const githubInstall = searchParams.get("github_install");
+    if (!githubInstall) return;
+
+    handledInstallParam.current = true;
+
+    if (githubInstall === "connected") {
+      toast.success("GitHub connected successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["github", "installations"],
+      });
+    }
+
+    const params = new URLSearchParams(searchParams);
+    params.delete("github_install");
+    const qs = params.toString();
+    router.replace(`/settings${qs ? `?${qs}` : ""}`);
+  }, [searchParams, router, queryClient]);
 
   const {
     data: installations,
@@ -123,6 +150,12 @@ export default function AccountSettingsPage() {
         loading={isRemoving}
         onConfirm={handleConfirmRemove}
         onCancel={() => setRemoving(null)}
+      />
+
+      <GitHubInstallErrorDialog
+        open={installError}
+        onOpenChange={setInstallError}
+        onRetry={handleConnect}
       />
     </div>
   );
