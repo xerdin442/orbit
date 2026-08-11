@@ -15,13 +15,15 @@ const healthCheckFieldsSchema = {
   healthCheckTimeout: z.coerce.number().int().min(1),
 };
 
+export const buildDirectorySchema = z
+  .string()
+  .optional()
+  .refine((value) => !value || !value.split("/").includes(".."), {
+    message: 'Build directory cannot contain ".." segments',
+  });
+
 const buildConfigFieldsSchema = {
-  buildDirectory: z
-    .string()
-    .optional()
-    .refine((value) => !value || !value.split("/").includes(".."), {
-      message: 'Build directory cannot contain ".." segments',
-    }),
+  buildDirectory: buildDirectorySchema,
   startCommand: z.string().optional(),
 };
 

@@ -70,6 +70,7 @@ export function ConfigureProjectStep({
     ConfigureProjectFormOutput
   >({
     resolver: zodResolver(configureProjectSchema),
+    mode: "onBlur",
     defaultValues: {
       name: repository.name.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
       defaultBranch: "",
