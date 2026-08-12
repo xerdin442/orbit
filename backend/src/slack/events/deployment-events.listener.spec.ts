@@ -4,7 +4,14 @@ import {
   DeploymentCompletedEvent,
   DeploymentTerminatedEvent,
 } from './deployment.events';
-import { DeploymentTrigger, BuildStatus } from '@generated/client';
+import {
+  DeploymentTrigger,
+  BuildStatus,
+  type Deployment,
+  type Project,
+  type Environment,
+} from '@generated/client';
+import type { SlackApiService } from '@src/slack/slack-api.service';
 
 describe('SlackDeploymentEventsListener', () => {
   let listener: SlackDeploymentEventsListener;
@@ -16,10 +23,16 @@ describe('SlackDeploymentEventsListener', () => {
     commitMessage: 'Initial commit',
     trigger: DeploymentTrigger.manual,
     completedAt: new Date('2026-07-31T12:01:30Z'),
-  } as any;
+  } as unknown as Deployment;
 
-  const mockProject = { id: 'project-1', name: 'my-project' } as any;
-  const mockEnvironment = { id: 'env-1', name: 'production' } as any;
+  const mockProject = {
+    id: 'project-1',
+    name: 'my-project',
+  } as unknown as Project;
+  const mockEnvironment = {
+    id: 'env-1',
+    name: 'production',
+  } as unknown as Environment;
 
   const slackMetadata = {
     teamId: 'T123',
@@ -31,7 +44,9 @@ describe('SlackDeploymentEventsListener', () => {
 
   beforeEach(() => {
     slackApi = { enqueue: jest.fn().mockResolvedValue(undefined) };
-    listener = new SlackDeploymentEventsListener(slackApi as any);
+    listener = new SlackDeploymentEventsListener(
+      slackApi as unknown as SlackApiService,
+    );
   });
 
   it('updates the card on deployment.status.changed', async () => {

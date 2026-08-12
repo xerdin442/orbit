@@ -1,4 +1,6 @@
 import { rm } from 'fs/promises';
+import type { Job } from 'bullmq';
+import type { EventEmitter2 } from '@nestjs/event-emitter';
 import { DeploymentProcessor } from './deployment.processor';
 import {
   BuildStatus,
@@ -6,7 +8,14 @@ import {
   ActivityType,
   ResourceStatus,
 } from '@generated/enums';
-import { DeploymentStepExecutionError } from '@src/common/types';
+import { DeploymentJob, DeploymentStepExecutionError } from '@src/common/types';
+import type { DockerService } from '@src/infrastructure/docker.service';
+import type { CommandService } from '@src/infrastructure/command.service';
+import type { CaddyService } from '@src/infrastructure/caddy.service';
+import type { DbService } from '@src/db/db.service';
+import type { LogService } from '@src/infrastructure/log.service';
+import type { DeploymentsService } from './deployments.service';
+import type { ActivityService } from '@src/activity/activity.service';
 
 jest.mock('fs/promises', () => ({
   rm: jest.fn().mockResolvedValue(undefined),
@@ -23,7 +32,8 @@ const mockExecuteConfigureProxy = jest.fn().mockResolvedValue(undefined);
 const mockExecuteCleanup = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('./pipeline', () => {
-  const { DeploymentStepName: Names } = jest.requireActual('@src/common/types');
+  const { DeploymentStepName: Names } =
+    jest.requireActual<typeof import('@src/common/types')>('@src/common/types');
   const mockStep = (name: string, getExecute: () => jest.Mock) =>
     function () {
       return { name, execute: getExecute() };
@@ -63,7 +73,7 @@ const DEPLOYMENT_ID = 'deployment-1';
 const ENVIRONMENT_ID = 'environment-1';
 const OWNER_ID = 'owner-1';
 
-function buildJob(overrides: Partial<any> = {}): any {
+function buildJob(overrides: Partial<DeploymentJob> = {}): Job<DeploymentJob> {
   return {
     data: {
       deployment: {
@@ -77,10 +87,10 @@ function buildJob(overrides: Partial<any> = {}): any {
       resourceCount: 0,
       ...overrides,
     },
-  };
+  } as unknown as Job<DeploymentJob>;
 }
 
-function buildEnv(overrides: Partial<any> = {}) {
+function buildEnv(overrides: Record<string, unknown> = {}) {
   return {
     id: ENVIRONMENT_ID,
     project: {
@@ -168,14 +178,14 @@ describe('DeploymentProcessor', () => {
     };
 
     processor = new DeploymentProcessor(
-      docker as any,
-      command as any,
-      caddy as any,
-      db as any,
-      logService as any,
-      deployments as any,
-      activity as any,
-      eventEmitter as any,
+      docker as unknown as DockerService,
+      command as unknown as CommandService,
+      caddy as unknown as CaddyService,
+      db as unknown as DbService,
+      logService as unknown as LogService,
+      deployments as unknown as DeploymentsService,
+      activity as unknown as ActivityService,
+      eventEmitter as unknown as EventEmitter2,
     );
 
     // default: every step succeeds

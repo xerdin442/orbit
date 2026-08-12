@@ -20,7 +20,11 @@ describe('CleanupService', () => {
   beforeEach(async () => {
     db = {
       project: { findFirst: jest.fn(), delete: jest.fn() },
-      environment: { findMany: jest.fn(), findUnique: jest.fn(), delete: jest.fn() },
+      environment: {
+        findMany: jest.fn(),
+        findUnique: jest.fn(),
+        delete: jest.fn(),
+      },
     } as unknown as jest.Mocked<Pick<DbService, 'project' | 'environment'>>;
     activity = { log: jest.fn() };
     cache = { del: jest.fn() };
@@ -41,7 +45,10 @@ describe('CleanupService', () => {
 
   describe('enqueueProjectCleanup', () => {
     it('deletes the project, logs activity, invalidates cache, and enqueues infra cleanup', async () => {
-      db.project.findFirst.mockResolvedValue({ id: 'proj-1', ownerId: 'user-1' });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
       db.environment.findMany.mockResolvedValue([
         {
           id: 'env-1',
@@ -52,14 +59,16 @@ describe('CleanupService', () => {
 
       await service.enqueueProjectCleanup('proj-1', 'user-1');
 
-      expect(db.project.delete).toHaveBeenCalledWith({ where: { id: 'proj-1' } });
-      expect(activity.log).toHaveBeenCalledWith(
-        'project_deleted',
-        'user-1',
-        { projectId: 'proj-1' },
-      );
+      expect(db.project.delete).toHaveBeenCalledWith({
+        where: { id: 'proj-1' },
+      });
+      expect(activity.log).toHaveBeenCalledWith('project_deleted', 'user-1', {
+        projectId: 'proj-1',
+      });
       expect(cache.del).toHaveBeenCalledWith('/api/projects/proj-1');
-      expect(cache.del).toHaveBeenCalledWith('/api/projects/proj-1/environments');
+      expect(cache.del).toHaveBeenCalledWith(
+        '/api/projects/proj-1/environments',
+      );
       expect(queue.add).toHaveBeenCalledWith('project-cleanup', {
         projectId: 'proj-1',
         deploymentContainerIds: ['dep-c1'],
@@ -92,7 +101,9 @@ describe('CleanupService', () => {
 
       await service.enqueueEnvironmentCleanup('env-1', 'user-1');
 
-      expect(db.environment.delete).toHaveBeenCalledWith({ where: { id: 'env-1' } });
+      expect(db.environment.delete).toHaveBeenCalledWith({
+        where: { id: 'env-1' },
+      });
       expect(activity.log).toHaveBeenCalledWith(
         'environment_deleted',
         'user-1',

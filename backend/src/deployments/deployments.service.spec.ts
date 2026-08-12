@@ -50,9 +50,9 @@ describe('DeploymentsService', () => {
   describe('createDeployment', () => {
     it('throws if environment not found', async () => {
       db.environment.findFirst = jest.fn().mockResolvedValue(null);
-      await expect(
-        service.createDeployment('env-1', 'user-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.createDeployment('env-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws if active deployment exists', async () => {
@@ -62,9 +62,9 @@ describe('DeploymentsService', () => {
       });
       db.deployment.findFirst = jest.fn().mockResolvedValue({ id: 'dep-1' });
 
-      await expect(
-        service.createDeployment('env-1', 'user-1'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.createDeployment('env-1', 'user-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('creates deployment with pending status', async () => {

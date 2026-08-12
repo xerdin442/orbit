@@ -8,7 +8,9 @@ describe('ActivityService', () => {
   let service: ActivityService;
   let db: jest.Mocked<Pick<DbService, 'activity'>>;
 
-  function dto(overrides: Partial<FilterActivityLogsDto> = {}): FilterActivityLogsDto {
+  function dto(
+    overrides: Partial<FilterActivityLogsDto> = {},
+  ): FilterActivityLogsDto {
     return Object.assign(new FilterActivityLogsDto(), overrides);
   }
 
@@ -78,10 +80,7 @@ describe('ActivityService', () => {
 
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {
-          AND: [
-            { actorId: 'user-1' },
-            { type: { equals: 'project_created' } },
-          ],
+          AND: [{ actorId: 'user-1' }, { type: { equals: 'project_created' } }],
         },
         orderBy: { createdAt: 'desc' },
         skip: 0,
@@ -94,10 +93,7 @@ describe('ActivityService', () => {
 
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {
-          AND: [
-            { actorId: 'user-1' },
-            { type: { startsWith: 'slack_' } },
-          ],
+          AND: [{ actorId: 'user-1' }, { type: { startsWith: 'slack_' } }],
         },
         orderBy: { createdAt: 'desc' },
         skip: 0,
@@ -122,10 +118,13 @@ describe('ActivityService', () => {
     });
 
     it('filters by multiple criteria', async () => {
-      await service.findLogs('user-1', dto({
-        type: 'deployment_*',
-        projectId: 'proj-1',
-      }));
+      await service.findLogs(
+        'user-1',
+        dto({
+          type: 'deployment_*',
+          projectId: 'proj-1',
+        }),
+      );
 
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {
@@ -142,11 +141,14 @@ describe('ActivityService', () => {
     });
 
     it('filters by multiple entity criteria simultaneously', async () => {
-      await service.findLogs('user-1', dto({
-        projectId: 'proj-1',
-        environmentId: 'env-1',
-        deploymentId: 'dep-1',
-      }));
+      await service.findLogs(
+        'user-1',
+        dto({
+          projectId: 'proj-1',
+          environmentId: 'env-1',
+          deploymentId: 'dep-1',
+        }),
+      );
 
       expect(db.activity.findMany).toHaveBeenCalledWith({
         where: {
@@ -175,11 +177,22 @@ describe('ActivityService', () => {
     });
 
     it('returns paginated result with data and meta', async () => {
-      const logs = [{ id: 'a1', type: ActivityType.project_created, actorId: 'user-1', metadata: null, createdAt: new Date() }];
+      const logs = [
+        {
+          id: 'a1',
+          type: ActivityType.project_created,
+          actorId: 'user-1',
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ];
       db.activity.findMany.mockResolvedValue(logs);
       db.activity.count.mockResolvedValue(25);
 
-      const result = await service.findLogs('user-1', dto({ page: 2, limit: 10 }));
+      const result = await service.findLogs(
+        'user-1',
+        dto({ page: 2, limit: 10 }),
+      );
 
       expect(result).toEqual({
         data: logs,
@@ -198,7 +211,10 @@ describe('ActivityService', () => {
       db.activity.findMany.mockResolvedValue([]);
       db.activity.count.mockResolvedValue(20);
 
-      const result = await service.findLogs('user-1', dto({ page: 1, limit: 20 }));
+      const result = await service.findLogs(
+        'user-1',
+        dto({ page: 1, limit: 20 }),
+      );
 
       expect(result.meta.hasNextPage).toBe(false);
     });

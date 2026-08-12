@@ -83,9 +83,9 @@ describe('SlackInstallationStore', () => {
     it('throws when metadata (userId) is missing', async () => {
       const install = { ...mockInstallation, metadata: undefined };
 
-      await expect(store.storeInstallation(install as any)).rejects.toThrow(
-        'userId is required',
-      );
+      await expect(
+        store.storeInstallation(install as unknown as Installation),
+      ).rejects.toThrow('userId is required');
     });
 
     it('throws when bot token is missing', async () => {
@@ -94,9 +94,9 @@ describe('SlackInstallationStore', () => {
         bot: undefined,
       };
 
-      await expect(store.storeInstallation(install as any)).rejects.toThrow(
-        'bot token is required',
-      );
+      await expect(
+        store.storeInstallation(install as unknown as Installation),
+      ).rejects.toThrow('bot token is required');
     });
   });
 

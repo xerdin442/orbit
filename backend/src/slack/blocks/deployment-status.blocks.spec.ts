@@ -41,7 +41,9 @@ describe('buildDeploymentStatusBlocks', () => {
 
     const context = blocks.find((b) => b.type === 'context');
     expect(context).toBeDefined();
-    expect((context as any).elements[0].text).toBe(':twisted_rightwards_arrows: `abcdef1` Initial commit');
+    expect((context as any).elements[0].text).toBe(
+      ':twisted_rightwards_arrows: `abcdef1` Initial commit',
+    );
   });
 
   it('renders triggered by and started at context', () => {
@@ -75,7 +77,9 @@ describe('buildDeploymentStatusBlocks', () => {
 
     const context = blocks.find((b) => b.type === 'context');
     expect(context).toBeDefined();
-    expect((context as any).elements[1].text).toBe(':stopwatch: *Duration:* 1m 30s');
+    expect((context as any).elements[1].text).toBe(
+      ':stopwatch: *Duration:* 1m 30s',
+    );
   });
 
   it('renders an Open Deployment button when url is provided', () => {

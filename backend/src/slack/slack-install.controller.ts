@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Delete,
   Query,
   Req,
   UseGuards,
@@ -12,6 +13,7 @@ import { WebClient } from '@slack/web-api';
 import type { RedisClientType } from 'redis';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { SlackInstallationStore } from './slack-installation.store';
+import { SlackApiService } from './slack-api.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { REDIS_CLIENT } from '@src/common/cache';
 import { Secrets } from '@src/common/secrets';
@@ -27,6 +29,7 @@ export class SlackInstallController {
 
   constructor(
     private readonly installationStore: SlackInstallationStore,
+    private readonly slackApi: SlackApiService,
     private readonly activity: ActivityService,
     @Inject(REDIS_CLIENT) private readonly redis: RedisClientType,
   ) {}
@@ -132,6 +135,16 @@ export class SlackInstallController {
       );
       return { url: failureUrl };
     }
+  }
+
+  @Delete('installation')
+  @UseGuards(JwtAuthGuard)
+  async disconnect(@Req() req: AuthenticatedRequest) {
+    await this.slackApi.disconnect(req.user.id);
+    await this.activity.log(
+      ActivityType.slack_installation_removed,
+      req.user.id,
+    );
   }
 
   private getStateKey(state: string): string {
