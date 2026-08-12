@@ -39,6 +39,7 @@ export function CopyToClipboardButton({
   return (
     <button
       onClick={handleCopy}
+      aria-label={copied ? "Copied" : "Copy to clipboard"}
       className={cn(
         "inline-flex items-center justify-center cursor-pointer h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors",
         className,

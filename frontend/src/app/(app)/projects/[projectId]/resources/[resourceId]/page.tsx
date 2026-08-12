@@ -72,7 +72,12 @@ export default function ResourceDetailPage() {
   });
   const tables = tablesResponse?.tables ?? [];
 
-  const { data: tableData, isLoading: tableDataLoading } = useQuery({
+  const {
+    data: tableData,
+    isLoading: tableDataLoading,
+    isError: tableDataError,
+    refetch: refetchTableData,
+  } = useQuery({
     queryKey: ["workbench", "table-data", resourceId, selectedTable, tablePage],
     queryFn: () =>
       api.workbench.tableData(resourceId, selectedTable as string, {
@@ -218,6 +223,7 @@ export default function ResourceDetailPage() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        aria-label={isRevealed ? "Hide value" : "Reveal value"}
                         onClick={() => toggleReveal(key)}
                       >
                         {isRevealed ? (
@@ -288,6 +294,8 @@ export default function ResourceDetailPage() {
                   columns={tableData?.columns ?? []}
                   rows={tableData?.rows ?? []}
                   isLoading={tableDataLoading}
+                  isError={tableDataError}
+                  onRetry={() => refetchTableData()}
                   pagination={{
                     totalCount: tableData?.meta.total ?? 0,
                     pageSize: PAGE_SIZE,

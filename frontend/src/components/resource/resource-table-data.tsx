@@ -5,6 +5,8 @@ interface ResourceTableDataProps {
   columns: { name: string }[];
   rows: Record<string, unknown>[];
   isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   emptyMessage?: string;
   pagination?: {
     totalCount: number;
@@ -18,6 +20,8 @@ export function ResourceTableData({
   columns,
   rows,
   isLoading,
+  isError,
+  onRetry,
   emptyMessage = "No rows to see here.",
   pagination,
 }: ResourceTableDataProps) {
@@ -41,6 +45,8 @@ export function ResourceTableData({
       columns={tableColumns}
       data={rows}
       isLoading={isLoading}
+      isError={isError}
+      onRetry={onRetry}
       totalCount={pagination?.totalCount ?? rows.length}
       pageSize={pagination?.pageSize ?? Math.max(rows.length, 1)}
       pageIndex={pagination?.pageIndex ?? 0}

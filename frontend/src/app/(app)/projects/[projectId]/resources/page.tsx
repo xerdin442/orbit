@@ -9,6 +9,7 @@ import { Database, Plus, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { SkeletonCard } from "@/components/shared/skeleton";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,12 @@ export default function ResourcesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleting, setDeleting] = useState<Resource | null>(null);
 
-  const { data: resources, isLoading } = useQuery({
+  const {
+    data: resources,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["resources", selectedEnvironment?.id],
     queryFn: () =>
       selectedEnvironment ? api.resources.list(selectedEnvironment.id) : null,
@@ -69,6 +75,13 @@ export default function ResourcesPage() {
           <SkeletonCard />
           <SkeletonCard />
         </div>
+      ) : isError ? (
+        <ErrorState
+          title="Failed to load resources"
+          description="Something went wrong while fetching resources."
+          onRetry={() => refetch()}
+          className="py-16"
+        />
       ) : resources && resources.length === 0 ? (
         <EmptyState
           icon={Database}
@@ -117,6 +130,7 @@ export default function ResourcesPage() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
+                  aria-label="Delete resource"
                   className="text-muted-foreground hover:text-destructive"
                   onClick={(e) => {
                     e.preventDefault();

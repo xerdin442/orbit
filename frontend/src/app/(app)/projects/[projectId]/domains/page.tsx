@@ -39,7 +39,12 @@ export default function DomainsPage() {
   );
   const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
 
-  const { data: domains, isLoading } = useQuery({
+  const {
+    data: domains,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["domains", selectedEnvironment?.id],
     queryFn: () =>
       selectedEnvironment ? api.domains.list(selectedEnvironment.id) : null,
@@ -127,6 +132,7 @@ export default function DomainsPage() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        aria-label="View DNS instructions"
                         onClick={() => setViewingInstructions(row.original)}
                       >
                         <NotebookPen className="size-4" />
@@ -142,6 +148,7 @@ export default function DomainsPage() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      aria-label="Refresh status"
                       disabled={refreshing}
                       onClick={() => handleRefresh(row.original.id)}
                     >
@@ -161,6 +168,7 @@ export default function DomainsPage() {
                         variant="ghost"
                         className="text-muted-foreground hover:text-destructive"
                         size="icon-sm"
+                        aria-label="Delete domain"
                         onClick={() => setDeleting(row.original)}
                       >
                         <Trash2 className="size-4" />
@@ -206,6 +214,8 @@ export default function DomainsPage() {
           columns={columns}
           data={pagedDomains}
           isLoading={isLoading || !selectedEnvironment}
+          isError={isError}
+          onRetry={() => refetch()}
           totalCount={domains?.length ?? 0}
           pageSize={PAGE_SIZE}
           pageIndex={pageIndex}

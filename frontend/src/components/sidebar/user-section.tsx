@@ -44,6 +44,9 @@ export function UserSection({
         <Tooltip>
           <TooltipTrigger
             onClick={onToggleMenu}
+            aria-label={username}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
             className="flex items-center justify-center cursor-pointer p-1.5 mx-auto rounded-md hover:bg-sidebar-accent transition-colors"
           >
             {avatar}
@@ -81,6 +84,8 @@ export function UserSection({
     <div className="relative" ref={menuRef}>
       <button
         onClick={onToggleMenu}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
         className="flex items-center cursor-pointer gap-3 px-3 py-2 w-full rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
       >
         {avatar}

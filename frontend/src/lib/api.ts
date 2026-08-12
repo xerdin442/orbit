@@ -119,6 +119,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
+    } else if (res.status === 403) {
+      if (typeof window !== "undefined") {
+        window.location.href = "/403";
+      }
     } else {
       showRequestError(message);
     }

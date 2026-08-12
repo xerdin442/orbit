@@ -46,7 +46,12 @@ export default function LogsPage() {
     setStreamedEntries([]);
   }
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [
       "requests",
       selectedEnvironment?.id,
@@ -239,6 +244,8 @@ export default function LogsPage() {
           columns={columns}
           data={rows}
           isLoading={isLoading || !selectedEnvironment}
+          isError={isError}
+          onRetry={() => refetch()}
           totalCount={data?.meta.total ?? 0}
           pageSize={PAGE_SIZE}
           pageIndex={pageIndex}

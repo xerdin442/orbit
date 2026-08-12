@@ -45,7 +45,12 @@ export default function EnvironmentVariablesPage() {
   const [importedVars, setImportedVars] = useState<VariableEntry[]>([]);
   const [importOpen, setImportOpen] = useState(false);
 
-  const { data: variables, isLoading } = useQuery({
+  const {
+    data: variables,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["variables", selectedEnvironment?.id],
     queryFn: () =>
       selectedEnvironment
@@ -122,6 +127,7 @@ export default function EnvironmentVariablesPage() {
               <Button
                 variant="ghost"
                 size="icon-sm"
+                aria-label={isRevealed ? "Hide value" : "Reveal value"}
                 onClick={() => toggleReveal(v.id)}
               >
                 {isRevealed ? (
@@ -153,6 +159,7 @@ export default function EnvironmentVariablesPage() {
           <Button
             variant="ghost"
             size="icon-sm"
+            aria-label="Edit variable"
             onClick={() => setEditing(row.original)}
           >
             <Pencil className="size-3.5" />
@@ -160,6 +167,7 @@ export default function EnvironmentVariablesPage() {
           <Button
             variant="ghost"
             size="icon-sm"
+            aria-label="Delete variable"
             onClick={() => setDeleting(row.original)}
           >
             <Trash2 className="size-3.5 text-muted-foreground" />
@@ -208,6 +216,8 @@ export default function EnvironmentVariablesPage() {
           columns={columns}
           data={pagedVariables}
           isLoading={isLoading || !selectedEnvironment}
+          isError={isError}
+          onRetry={() => refetch()}
           totalCount={variables?.length ?? 0}
           pageSize={PAGE_SIZE}
           pageIndex={pageIndex}
