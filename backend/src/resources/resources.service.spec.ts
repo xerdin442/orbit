@@ -117,12 +117,10 @@ describe('ResourcesService', () => {
 
   describe('findByEnvironment', () => {
     it('returns resources scoped to the environment and owner', async () => {
-      db.resource.findMany = jest
-        .fn()
-        .mockResolvedValue([
-          { id: 'res-1', environmentId: 'env-1' },
-          { id: 'res-2', environmentId: 'env-1' },
-        ]);
+      db.resource.findMany = jest.fn().mockResolvedValue([
+        { id: 'res-1', environmentId: 'env-1' },
+        { id: 'res-2', environmentId: 'env-1' },
+      ]);
 
       const result = await service.findByEnvironment('env-1', 'user-1');
 

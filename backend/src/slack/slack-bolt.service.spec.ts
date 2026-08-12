@@ -1,5 +1,13 @@
 import { SlackBoltService } from './slack-bolt.service';
 import { App, ExpressReceiver } from '@slack/bolt';
+import type { Queue } from 'bullmq';
+import type { RedisClientType } from 'redis';
+import type { DbService } from '@src/db/db.service';
+import type { ActivityService } from '@src/activity/activity.service';
+import type { DeploymentsService } from '@src/deployments/deployments.service';
+import type { SlackInstallationStore } from './slack-installation.store';
+import type { SlackApiService } from './slack-api.service';
+import type { DeploymentJob } from '@src/common/types';
 
 const appMock = {
   use: jest.fn(),
@@ -74,13 +82,13 @@ describe('SlackBoltService', () => {
     (App as unknown as jest.Mock).mockImplementation(() => appMock);
 
     service = new SlackBoltService(
-      mockInstallationStore as any,
-      mockSlackApi as any,
-      mockActivity as any,
-      mockDb as any,
-      mockDeployments as any,
-      mockRedis as any,
-      mockQueue as any,
+      mockInstallationStore as unknown as SlackInstallationStore,
+      mockSlackApi as unknown as SlackApiService,
+      mockActivity as unknown as ActivityService,
+      mockDb as unknown as DbService,
+      mockDeployments as unknown as DeploymentsService,
+      mockRedis as unknown as RedisClientType,
+      mockQueue as unknown as Queue<DeploymentJob>,
     );
   });
 

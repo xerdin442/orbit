@@ -1,7 +1,9 @@
 import { SlackApiService } from './slack-api.service';
 import { WebClient } from '@slack/web-api';
+import type { Queue } from 'bullmq';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
+import type { SlackApiJob } from '@src/common/types';
 
 jest.mock('@slack/web-api', () => ({
   WebClient: jest.fn(),
@@ -22,6 +24,7 @@ describe('SlackApiService', () => {
     db = {
       slackInstallation: {
         findFirst: jest.fn(),
+        update: jest.fn(),
       },
     } as unknown as jest.Mocked<Pick<DbService, 'slackInstallation'>>;
 
@@ -35,7 +38,7 @@ describe('SlackApiService', () => {
     service = new SlackApiService(
       db as unknown as DbService,
       encryption as unknown as EncryptionService,
-      queue as any,
+      queue as unknown as Queue<SlackApiJob>,
     );
   });
 
@@ -90,6 +93,66 @@ describe('SlackApiService', () => {
     await expect(service.call('T123', 'chat.postMessage', {})).rejects.toThrow(
       'No active Slack installation for team T123',
     );
+  });
+
+  describe('disconnect', () => {
+    const installation = {
+      id: 'inst-1',
+      userId: 'user-1',
+      teamId: 'T123',
+      botToken: 'encrypted:xoxb-token',
+      isActive: true,
+    };
+
+    it('uninstalls via the Slack API, deactivates the row, and invalidates the client', async () => {
+      db.slackInstallation.findFirst.mockResolvedValue(installation as any);
+      db.slackInstallation.update.mockResolvedValue(installation as any);
+
+      await service.disconnect('user-1');
+
+      expect(db.slackInstallation.findFirst).toHaveBeenCalledWith({
+        where: { userId: 'user-1', isActive: true },
+      });
+
+      const client = (WebClient as unknown as jest.Mock).mock.results[0]
+        .value as { apiCall: jest.Mock };
+      expect(client.apiCall).toHaveBeenCalledWith('apps.uninstall', {
+        client_id: 'test-slack-client-id',
+        client_secret: 'test-slack-client-secret',
+      });
+
+      expect(db.slackInstallation.update).toHaveBeenCalledWith({
+        where: { id: 'inst-1' },
+        data: { isActive: false },
+      });
+
+      // client cache was invalidated, so the next call re-resolves it
+      await service.call('T123', 'chat.postMessage', { channel: 'C1' });
+      expect(WebClient).toHaveBeenCalledTimes(2);
+    });
+
+    it('throws when there is no active installation for the user', async () => {
+      db.slackInstallation.findFirst.mockResolvedValue(null);
+
+      await expect(service.disconnect('user-1')).rejects.toThrow(
+        'No active Slack installation found',
+      );
+      expect(db.slackInstallation.update).not.toHaveBeenCalled();
+    });
+
+    it('leaves the installation active when the Slack API call fails', async () => {
+      db.slackInstallation.findFirst.mockResolvedValue(installation as any);
+      (WebClient as unknown as jest.Mock).mockImplementation(() => ({
+        apiCall: jest
+          .fn()
+          .mockResolvedValue({ ok: false, error: 'token_revoked' }),
+      }));
+
+      await expect(service.disconnect('user-1')).rejects.toThrow(
+        'Failed to uninstall Slack app: token_revoked',
+      );
+      expect(db.slackInstallation.update).not.toHaveBeenCalled();
+    });
   });
 
   it('enqueues slack api jobs', async () => {
