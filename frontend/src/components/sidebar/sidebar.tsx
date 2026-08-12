@@ -215,7 +215,7 @@ export function Sidebar({ projects, user }: SidebarProps) {
 
         <div className="p-3">
           <UserSection
-            username={user.githubUsername}
+            user={user}
             collapsed={sidebarCollapsed}
             menuOpen={userMenuOpen}
             onToggleMenu={() => setUserMenuOpen((v) => !v)}

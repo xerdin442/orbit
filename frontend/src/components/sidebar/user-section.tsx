@@ -6,10 +6,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { UserRound, UserRoundCog, LogOut } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { UserRoundCog, LogOut } from "lucide-react";
+import type { User as UserType } from "@/lib/types";
 
 interface UserSectionProps {
-  username: string;
+  user: UserType;
   collapsed: boolean;
   menuOpen: boolean;
   onToggleMenu: () => void;
@@ -19,7 +21,7 @@ interface UserSectionProps {
 }
 
 export function UserSection({
-  username,
+  user,
   collapsed,
   menuOpen,
   onToggleMenu,
@@ -27,15 +29,24 @@ export function UserSection({
   onLogout,
   menuRef,
 }: UserSectionProps) {
+  const { avatarUrl, email, githubUsername: username } = user;
+
+  const avatar = (
+    <Avatar className="shrink-0">
+      {avatarUrl && <AvatarImage src={avatarUrl} alt={username} />}
+      <AvatarFallback>{username.slice(0, 1).toUpperCase()}</AvatarFallback>
+    </Avatar>
+  );
+
   if (collapsed) {
     return (
-      <div className="relative" ref={menuRef}>
+      <div className="relative flex items-center justify-center" ref={menuRef}>
         <Tooltip>
           <TooltipTrigger
             onClick={onToggleMenu}
-            className="flex items-center justify-center cursor-pointer h-9 w-9 mx-auto rounded-md text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+            className="flex items-center justify-center cursor-pointer p-1.5 mx-auto rounded-md hover:bg-sidebar-accent transition-colors"
           >
-            <UserRound className="size-4" />
+            {avatar}
           </TooltipTrigger>
           <TooltipContent side="right">{username}</TooltipContent>
         </Tooltip>
@@ -72,8 +83,13 @@ export function UserSection({
         onClick={onToggleMenu}
         className="flex items-center cursor-pointer gap-3 px-3 py-2 w-full rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
       >
-        <UserRound className="size-4 shrink-0" />
-        <span className="flex-1 text-left truncate">{username}</span>
+        {avatar}
+        <div className="flex-1 min-w-0 text-left">
+          <p className="truncate text-sidebar-foreground">{username}</p>
+          <p className="truncate text-xs font-normal text-sidebar-foreground/60">
+            {email ?? "No email on file"}
+          </p>
+        </div>
       </button>
 
       {menuOpen && (
