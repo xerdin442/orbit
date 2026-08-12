@@ -107,6 +107,7 @@ export function ResourceVariablesSection({
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        aria-label={isRevealed ? "Hide value" : "Reveal value"}
                         onClick={() => toggleReveal(rowKey)}
                       >
                         {isRevealed ? (

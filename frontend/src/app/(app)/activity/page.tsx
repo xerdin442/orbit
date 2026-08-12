@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { PageHeader } from "@/components/shared/page-header";
 import { SectionCard } from "@/components/shared/section-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/shared/skeleton";
 import { ActivityItem } from "@/components/shared/activity-item";
 
@@ -40,7 +41,12 @@ export default function ActivityPage() {
 
   const activeFilterKey = FILTER_KEYS.find((key) => searchParams.get(key));
 
-  const { data: activity, isLoading } = useQuery({
+  const {
+    data: activity,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["activity", filters],
     queryFn: () => api.activity.list(filters),
   });
@@ -73,6 +79,13 @@ export default function ActivityPage() {
               <Skeleton key={i} className="h-8 w-full" />
             ))}
           </div>
+        ) : isError ? (
+          <ErrorState
+            title="Failed to load activity"
+            description="Something went wrong while fetching activity."
+            onRetry={() => refetch()}
+            className="py-16"
+          />
         ) : activity && activity.length > 0 ? (
           <div className="space-y-3">
             {activity.map((a) => (

@@ -40,7 +40,12 @@ export default function DeploymentsListPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [deploying, setDeploying] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["deployments", selectedEnvironment?.id, pageIndex],
     queryFn: () =>
       selectedEnvironment
@@ -160,6 +165,7 @@ export default function DeploymentsListPage() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      aria-label="Inspect deployment"
                       onClick={() =>
                         router.push(
                           `/projects/${projectId}/deployments/${d.id}`,
@@ -199,6 +205,8 @@ export default function DeploymentsListPage() {
           columns={columns}
           data={data?.data ?? []}
           isLoading={isLoading || !selectedEnvironment}
+          isError={isError}
+          onRetry={() => refetch()}
           totalCount={data?.meta.total ?? 0}
           pageSize={PAGE_SIZE}
           pageIndex={pageIndex}

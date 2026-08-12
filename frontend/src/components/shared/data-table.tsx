@@ -21,11 +21,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./skeleton";
+import { ErrorState } from "./error-state";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   isLoading?: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   totalCount?: number;
   pageSize?: number;
   pageIndex?: number;
@@ -40,6 +43,8 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   isLoading,
+  isError,
+  onRetry,
   totalCount = 0,
   pageSize = 20,
   pageIndex = 0,
@@ -77,6 +82,17 @@ export function DataTable<TData, TValue>({
           <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorState
+        title="Failed to load"
+        description="Something went wrong while fetching this data."
+        onRetry={onRetry}
+        className="py-16"
+      />
     );
   }
 
@@ -156,6 +172,7 @@ export function DataTable<TData, TValue>({
             <Button
               variant="outline"
               size="icon"
+              aria-label="Previous page"
               onClick={() => onPageChange(pageIndex - 1)}
               disabled={pageIndex === 0}
             >
@@ -164,6 +181,7 @@ export function DataTable<TData, TValue>({
             <Button
               variant="outline"
               size="icon"
+              aria-label="Next page"
               onClick={() => onPageChange(pageIndex + 1)}
               disabled={pageIndex >= totalPages - 1}
             >

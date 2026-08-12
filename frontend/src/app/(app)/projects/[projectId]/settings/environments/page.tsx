@@ -92,6 +92,7 @@ export default function EnvironmentsSettingsPage() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
+                    aria-label="Edit environment"
                     onClick={() => setDialogEnvironment(env)}
                   >
                     <Pencil className="size-3.5" />
@@ -99,6 +100,7 @@ export default function EnvironmentsSettingsPage() {
                   <Button
                     variant="ghost"
                     size="icon-sm"
+                    aria-label="Delete environment"
                     onClick={() => setDeletingEnvironment(env)}
                   >
                     <Trash2 className="size-3.5 text-destructive" />
