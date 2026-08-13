@@ -141,15 +141,17 @@ describe('SlackApiService', () => {
     });
 
     it('leaves the installation active when the Slack API call fails', async () => {
+      // client.apiCall() rejects on ok:false rather than resolving falsy —
+      // see WebClient.js's `throw new WebAPIPlatformError(result)`.
       db.slackInstallation.findFirst.mockResolvedValue(installation as any);
       (WebClient as unknown as jest.Mock).mockImplementation(() => ({
         apiCall: jest
           .fn()
-          .mockResolvedValue({ ok: false, error: 'token_revoked' }),
+          .mockRejectedValue(new Error('An API error occurred: token_revoked')),
       }));
 
       await expect(service.disconnect('user-1')).rejects.toThrow(
-        'Failed to uninstall Slack app: token_revoked',
+        'An API error occurred: token_revoked',
       );
       expect(db.slackInstallation.update).not.toHaveBeenCalled();
     });
