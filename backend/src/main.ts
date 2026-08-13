@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import type { Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { SlackBoltService } from './slack/slack-bolt.service';
 import helmet from 'helmet';
@@ -33,6 +34,10 @@ async function bootstrap() {
 
   const slackBolt = app.get(SlackBoltService);
   app.use('/slack/events', slackBolt.receiver.router);
+
+  app.getHttpAdapter().get('/', (_req: Request, res: Response) => {
+    res.send('Orbit API is running!');
+  });
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
