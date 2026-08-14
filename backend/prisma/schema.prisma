@@ -60,6 +60,11 @@ enum DomainStatus {
   failed
 }
 
+enum ExternalProvider {
+  railway
+  vercel
+}
+
 enum DomainType {
   managed
   custom
@@ -94,6 +99,10 @@ enum ActivityType {
   slack_installation_added
   slack_installation_removed
   slack_token_revoked
+  external_connection_added
+  external_connection_removed
+  railway_project_imported
+  vercel_project_imported
 }
 
 model User {
@@ -107,6 +116,7 @@ model User {
   projects            Project[]
   githubInstallations GitHubInstallation[]
   slackInstallation   SlackInstallation?
+  externalConnections ExternalConnection[]
 }
 
 model Project {
@@ -281,7 +291,7 @@ model GitHubInstallation {
 }
 
 model SlackInstallation {
-  id                     String   @id @default(cuid())
+  id                     String   @id @default(uuid())
   teamId                 String   @unique
   teamName               String?
   enterpriseId           String?
@@ -302,6 +312,21 @@ model SlackInstallation {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([teamId])
+  @@index([userId])
+}
+
+model ExternalConnection {
+  id          String           @id @default(uuid())
+  provider    ExternalProvider
+  accessToken String
+  label       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
   @@index([userId])
 }
 

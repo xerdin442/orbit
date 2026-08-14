@@ -440,6 +440,23 @@ export type JsonWithAggregatesFilterBase<$PrismaModel = never> = {
   _max?: Prisma.NestedJsonFilter<$PrismaModel>
 }
 
+export type EnumExternalProviderFilter<$PrismaModel = never> = {
+  equals?: $Enums.ExternalProvider | Prisma.EnumExternalProviderFieldRefInput<$PrismaModel>
+  in?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumExternalProviderFilter<$PrismaModel> | $Enums.ExternalProvider
+}
+
+export type EnumExternalProviderWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ExternalProvider | Prisma.EnumExternalProviderFieldRefInput<$PrismaModel>
+  in?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumExternalProviderWithAggregatesFilter<$PrismaModel> | $Enums.ExternalProvider
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumExternalProviderFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumExternalProviderFilter<$PrismaModel>
+}
+
 export type EnumActivityTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.ActivityType | Prisma.EnumActivityTypeFieldRefInput<$PrismaModel>
   in?: $Enums.ActivityType[] | Prisma.ListEnumActivityTypeFieldRefInput<$PrismaModel>
@@ -840,6 +857,23 @@ export type NestedJsonFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type NestedEnumExternalProviderFilter<$PrismaModel = never> = {
+  equals?: $Enums.ExternalProvider | Prisma.EnumExternalProviderFieldRefInput<$PrismaModel>
+  in?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumExternalProviderFilter<$PrismaModel> | $Enums.ExternalProvider
+}
+
+export type NestedEnumExternalProviderWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.ExternalProvider | Prisma.EnumExternalProviderFieldRefInput<$PrismaModel>
+  in?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  notIn?: $Enums.ExternalProvider[] | Prisma.ListEnumExternalProviderFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumExternalProviderWithAggregatesFilter<$PrismaModel> | $Enums.ExternalProvider
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumExternalProviderFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumExternalProviderFilter<$PrismaModel>
 }
 
 export type NestedEnumActivityTypeFilter<$PrismaModel = never> = {

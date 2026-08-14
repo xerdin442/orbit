@@ -78,6 +78,11 @@ export type GitHubInstallation = Prisma.GitHubInstallationModel
  */
 export type SlackInstallation = Prisma.SlackInstallationModel
 /**
+ * Model ExternalConnection
+ * 
+ */
+export type ExternalConnection = Prisma.ExternalConnectionModel
+/**
  * Model Activity
  * 
  */
