@@ -409,6 +409,7 @@ export const ModelName = {
   Domain: 'Domain',
   GitHubInstallation: 'GitHubInstallation',
   SlackInstallation: 'SlackInstallation',
+  ExternalConnection: 'ExternalConnection',
   Activity: 'Activity'
 } as const
 
@@ -425,7 +426,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "project" | "source" | "environment" | "requestLog" | "deployment" | "deploymentLog" | "resource" | "environmentVariable" | "domain" | "gitHubInstallation" | "slackInstallation" | "activity"
+    modelProps: "user" | "project" | "source" | "environment" | "requestLog" | "deployment" | "deploymentLog" | "resource" | "environmentVariable" | "domain" | "gitHubInstallation" | "slackInstallation" | "externalConnection" | "activity"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1317,6 +1318,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ExternalConnection: {
+      payload: Prisma.$ExternalConnectionPayload<ExtArgs>
+      fields: Prisma.ExternalConnectionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ExternalConnectionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ExternalConnectionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>
+        }
+        findFirst: {
+          args: Prisma.ExternalConnectionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ExternalConnectionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>
+        }
+        findMany: {
+          args: Prisma.ExternalConnectionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>[]
+        }
+        create: {
+          args: Prisma.ExternalConnectionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>
+        }
+        createMany: {
+          args: Prisma.ExternalConnectionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ExternalConnectionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>[]
+        }
+        delete: {
+          args: Prisma.ExternalConnectionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>
+        }
+        update: {
+          args: Prisma.ExternalConnectionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ExternalConnectionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ExternalConnectionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ExternalConnectionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>[]
+        }
+        upsert: {
+          args: Prisma.ExternalConnectionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalConnectionPayload>
+        }
+        aggregate: {
+          args: Prisma.ExternalConnectionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateExternalConnection>
+        }
+        groupBy: {
+          args: Prisma.ExternalConnectionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExternalConnectionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ExternalConnectionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExternalConnectionCountAggregateOutputType> | number
+        }
+      }
+    }
     Activity: {
       payload: Prisma.$ActivityPayload<ExtArgs>
       fields: Prisma.ActivityFieldRefs
@@ -1609,6 +1684,19 @@ export const SlackInstallationScalarFieldEnum = {
 export type SlackInstallationScalarFieldEnum = (typeof SlackInstallationScalarFieldEnum)[keyof typeof SlackInstallationScalarFieldEnum]
 
 
+export const ExternalConnectionScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  accessToken: 'accessToken',
+  label: 'label',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId'
+} as const
+
+export type ExternalConnectionScalarFieldEnum = (typeof ExternalConnectionScalarFieldEnum)[keyof typeof ExternalConnectionScalarFieldEnum]
+
+
 export const ActivityScalarFieldEnum = {
   id: 'id',
   type: 'type',
@@ -1850,6 +1938,20 @@ export type ListEnumDomainStatusFieldRefInput<$PrismaModel> = FieldRefInputType<
 
 
 /**
+ * Reference to a field of type 'ExternalProvider'
+ */
+export type EnumExternalProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExternalProvider'>
+    
+
+
+/**
+ * Reference to a field of type 'ExternalProvider[]'
+ */
+export type ListEnumExternalProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExternalProvider[]'>
+    
+
+
+/**
  * Reference to a field of type 'ActivityType'
  */
 export type EnumActivityTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ActivityType'>
@@ -2039,6 +2141,7 @@ export type GlobalOmitConfig = {
   domain?: Prisma.DomainOmit
   gitHubInstallation?: Prisma.GitHubInstallationOmit
   slackInstallation?: Prisma.SlackInstallationOmit
+  externalConnection?: Prisma.ExternalConnectionOmit
   activity?: Prisma.ActivityOmit
 }
 

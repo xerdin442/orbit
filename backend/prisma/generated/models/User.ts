@@ -227,6 +227,7 @@ export type UserWhereInput = {
   projects?: Prisma.ProjectListRelationFilter
   githubInstallations?: Prisma.GitHubInstallationListRelationFilter
   slackInstallation?: Prisma.XOR<Prisma.SlackInstallationNullableScalarRelationFilter, Prisma.SlackInstallationWhereInput> | null
+  externalConnections?: Prisma.ExternalConnectionListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -239,6 +240,7 @@ export type UserOrderByWithRelationInput = {
   projects?: Prisma.ProjectOrderByRelationAggregateInput
   githubInstallations?: Prisma.GitHubInstallationOrderByRelationAggregateInput
   slackInstallation?: Prisma.SlackInstallationOrderByWithRelationInput
+  externalConnections?: Prisma.ExternalConnectionOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -254,6 +256,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   projects?: Prisma.ProjectListRelationFilter
   githubInstallations?: Prisma.GitHubInstallationListRelationFilter
   slackInstallation?: Prisma.XOR<Prisma.SlackInstallationNullableScalarRelationFilter, Prisma.SlackInstallationWhereInput> | null
+  externalConnections?: Prisma.ExternalConnectionListRelationFilter
 }, "id" | "githubUserId">
 
 export type UserOrderByWithAggregationInput = {
@@ -292,6 +295,7 @@ export type UserCreateInput = {
   projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
   githubInstallations?: Prisma.GitHubInstallationCreateNestedManyWithoutUserInput
   slackInstallation?: Prisma.SlackInstallationCreateNestedOneWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -304,6 +308,7 @@ export type UserUncheckedCreateInput = {
   projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
   githubInstallations?: Prisma.GitHubInstallationUncheckedCreateNestedManyWithoutUserInput
   slackInstallation?: Prisma.SlackInstallationUncheckedCreateNestedOneWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -316,6 +321,7 @@ export type UserUpdateInput = {
   projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
   githubInstallations?: Prisma.GitHubInstallationUpdateManyWithoutUserNestedInput
   slackInstallation?: Prisma.SlackInstallationUpdateOneWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -328,6 +334,7 @@ export type UserUncheckedUpdateInput = {
   projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
   githubInstallations?: Prisma.GitHubInstallationUncheckedUpdateManyWithoutUserNestedInput
   slackInstallation?: Prisma.SlackInstallationUncheckedUpdateOneWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -459,6 +466,20 @@ export type UserUpdateOneRequiredWithoutSlackInstallationNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSlackInstallationInput, Prisma.UserUpdateWithoutSlackInstallationInput>, Prisma.UserUncheckedUpdateWithoutSlackInstallationInput>
 }
 
+export type UserCreateNestedOneWithoutExternalConnectionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutExternalConnectionsInput, Prisma.UserUncheckedCreateWithoutExternalConnectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutExternalConnectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutExternalConnectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutExternalConnectionsInput, Prisma.UserUncheckedCreateWithoutExternalConnectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutExternalConnectionsInput
+  upsert?: Prisma.UserUpsertWithoutExternalConnectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutExternalConnectionsInput, Prisma.UserUpdateWithoutExternalConnectionsInput>, Prisma.UserUncheckedUpdateWithoutExternalConnectionsInput>
+}
+
 export type UserCreateWithoutProjectsInput = {
   id?: string
   githubUserId: number
@@ -468,6 +489,7 @@ export type UserCreateWithoutProjectsInput = {
   createdAt?: Date | string
   githubInstallations?: Prisma.GitHubInstallationCreateNestedManyWithoutUserInput
   slackInstallation?: Prisma.SlackInstallationCreateNestedOneWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutProjectsInput = {
@@ -479,6 +501,7 @@ export type UserUncheckedCreateWithoutProjectsInput = {
   createdAt?: Date | string
   githubInstallations?: Prisma.GitHubInstallationUncheckedCreateNestedManyWithoutUserInput
   slackInstallation?: Prisma.SlackInstallationUncheckedCreateNestedOneWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutProjectsInput = {
@@ -506,6 +529,7 @@ export type UserUpdateWithoutProjectsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   githubInstallations?: Prisma.GitHubInstallationUpdateManyWithoutUserNestedInput
   slackInstallation?: Prisma.SlackInstallationUpdateOneWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutProjectsInput = {
@@ -517,6 +541,7 @@ export type UserUncheckedUpdateWithoutProjectsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   githubInstallations?: Prisma.GitHubInstallationUncheckedUpdateManyWithoutUserNestedInput
   slackInstallation?: Prisma.SlackInstallationUncheckedUpdateOneWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutGithubInstallationsInput = {
@@ -528,6 +553,7 @@ export type UserCreateWithoutGithubInstallationsInput = {
   createdAt?: Date | string
   projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
   slackInstallation?: Prisma.SlackInstallationCreateNestedOneWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutGithubInstallationsInput = {
@@ -539,6 +565,7 @@ export type UserUncheckedCreateWithoutGithubInstallationsInput = {
   createdAt?: Date | string
   projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
   slackInstallation?: Prisma.SlackInstallationUncheckedCreateNestedOneWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutGithubInstallationsInput = {
@@ -566,6 +593,7 @@ export type UserUpdateWithoutGithubInstallationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
   slackInstallation?: Prisma.SlackInstallationUpdateOneWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutGithubInstallationsInput = {
@@ -577,6 +605,7 @@ export type UserUncheckedUpdateWithoutGithubInstallationsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
   slackInstallation?: Prisma.SlackInstallationUncheckedUpdateOneWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSlackInstallationInput = {
@@ -588,6 +617,7 @@ export type UserCreateWithoutSlackInstallationInput = {
   createdAt?: Date | string
   projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
   githubInstallations?: Prisma.GitHubInstallationCreateNestedManyWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSlackInstallationInput = {
@@ -599,6 +629,7 @@ export type UserUncheckedCreateWithoutSlackInstallationInput = {
   createdAt?: Date | string
   projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
   githubInstallations?: Prisma.GitHubInstallationUncheckedCreateNestedManyWithoutUserInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSlackInstallationInput = {
@@ -626,6 +657,7 @@ export type UserUpdateWithoutSlackInstallationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
   githubInstallations?: Prisma.GitHubInstallationUpdateManyWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSlackInstallationInput = {
@@ -637,6 +669,71 @@ export type UserUncheckedUpdateWithoutSlackInstallationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
   githubInstallations?: Prisma.GitHubInstallationUncheckedUpdateManyWithoutUserNestedInput
+  externalConnections?: Prisma.ExternalConnectionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutExternalConnectionsInput = {
+  id?: string
+  githubUserId: number
+  githubUsername: string
+  email?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  projects?: Prisma.ProjectCreateNestedManyWithoutOwnerInput
+  githubInstallations?: Prisma.GitHubInstallationCreateNestedManyWithoutUserInput
+  slackInstallation?: Prisma.SlackInstallationCreateNestedOneWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutExternalConnectionsInput = {
+  id?: string
+  githubUserId: number
+  githubUsername: string
+  email?: string | null
+  avatarUrl?: string | null
+  createdAt?: Date | string
+  projects?: Prisma.ProjectUncheckedCreateNestedManyWithoutOwnerInput
+  githubInstallations?: Prisma.GitHubInstallationUncheckedCreateNestedManyWithoutUserInput
+  slackInstallation?: Prisma.SlackInstallationUncheckedCreateNestedOneWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutExternalConnectionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutExternalConnectionsInput, Prisma.UserUncheckedCreateWithoutExternalConnectionsInput>
+}
+
+export type UserUpsertWithoutExternalConnectionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutExternalConnectionsInput, Prisma.UserUncheckedUpdateWithoutExternalConnectionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutExternalConnectionsInput, Prisma.UserUncheckedCreateWithoutExternalConnectionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutExternalConnectionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutExternalConnectionsInput, Prisma.UserUncheckedUpdateWithoutExternalConnectionsInput>
+}
+
+export type UserUpdateWithoutExternalConnectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  githubUserId?: Prisma.IntFieldUpdateOperationsInput | number
+  githubUsername?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  projects?: Prisma.ProjectUpdateManyWithoutOwnerNestedInput
+  githubInstallations?: Prisma.GitHubInstallationUpdateManyWithoutUserNestedInput
+  slackInstallation?: Prisma.SlackInstallationUpdateOneWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutExternalConnectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  githubUserId?: Prisma.IntFieldUpdateOperationsInput | number
+  githubUsername?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  projects?: Prisma.ProjectUncheckedUpdateManyWithoutOwnerNestedInput
+  githubInstallations?: Prisma.GitHubInstallationUncheckedUpdateManyWithoutUserNestedInput
+  slackInstallation?: Prisma.SlackInstallationUncheckedUpdateOneWithoutUserNestedInput
 }
 
 
@@ -647,11 +744,13 @@ export type UserUncheckedUpdateWithoutSlackInstallationInput = {
 export type UserCountOutputType = {
   projects: number
   githubInstallations: number
+  externalConnections: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   projects?: boolean | UserCountOutputTypeCountProjectsArgs
   githubInstallations?: boolean | UserCountOutputTypeCountGithubInstallationsArgs
+  externalConnections?: boolean | UserCountOutputTypeCountExternalConnectionsArgs
 }
 
 /**
@@ -678,6 +777,13 @@ export type UserCountOutputTypeCountGithubInstallationsArgs<ExtArgs extends runt
   where?: Prisma.GitHubInstallationWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountExternalConnectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ExternalConnectionWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -689,6 +795,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   githubInstallations?: boolean | Prisma.User$githubInstallationsArgs<ExtArgs>
   slackInstallation?: boolean | Prisma.User$slackInstallationArgs<ExtArgs>
+  externalConnections?: boolean | Prisma.User$externalConnectionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -724,6 +831,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   githubInstallations?: boolean | Prisma.User$githubInstallationsArgs<ExtArgs>
   slackInstallation?: boolean | Prisma.User$slackInstallationArgs<ExtArgs>
+  externalConnections?: boolean | Prisma.User$externalConnectionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -735,6 +843,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     projects: Prisma.$ProjectPayload<ExtArgs>[]
     githubInstallations: Prisma.$GitHubInstallationPayload<ExtArgs>[]
     slackInstallation: Prisma.$SlackInstallationPayload<ExtArgs> | null
+    externalConnections: Prisma.$ExternalConnectionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1140,6 +1249,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   projects<T extends Prisma.User$projectsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$projectsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   githubInstallations<T extends Prisma.User$githubInstallationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$githubInstallationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GitHubInstallationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   slackInstallation<T extends Prisma.User$slackInstallationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$slackInstallationArgs<ExtArgs>>): Prisma.Prisma__SlackInstallationClient<runtime.Types.Result.GetResult<Prisma.$SlackInstallationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  externalConnections<T extends Prisma.User$externalConnectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$externalConnectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExternalConnectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1632,6 +1742,30 @@ export type User$slackInstallationArgs<ExtArgs extends runtime.Types.Extensions.
    */
   include?: Prisma.SlackInstallationInclude<ExtArgs> | null
   where?: Prisma.SlackInstallationWhereInput
+}
+
+/**
+ * User.externalConnections
+ */
+export type User$externalConnectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ExternalConnection
+   */
+  select?: Prisma.ExternalConnectionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ExternalConnection
+   */
+  omit?: Prisma.ExternalConnectionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExternalConnectionInclude<ExtArgs> | null
+  where?: Prisma.ExternalConnectionWhereInput
+  orderBy?: Prisma.ExternalConnectionOrderByWithRelationInput | Prisma.ExternalConnectionOrderByWithRelationInput[]
+  cursor?: Prisma.ExternalConnectionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ExternalConnectionScalarFieldEnum | Prisma.ExternalConnectionScalarFieldEnum[]
 }
 
 /**

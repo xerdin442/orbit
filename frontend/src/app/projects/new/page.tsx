@@ -5,18 +5,23 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { WizardProgress } from "@/components/wizard/wizard-progress";
+import { SelectImportSourceStep } from "@/components/wizard/select-import-source-step";
+import { SelectExternalProjectStep } from "@/components/wizard/select-external-project-step";
 import { SelectInstallationStep } from "@/components/wizard/select-installation-step";
 import { SelectRepositoryStep } from "@/components/wizard/select-repository-step";
 import { ConfigureProjectStep } from "@/components/wizard/configure-project-step";
 import { AttachResourcesStep } from "@/components/wizard/attach-resources-step";
 import { DeploySummaryStep } from "@/components/wizard/deploy-summary-step";
 import type {
+  ExternalProjectDetail,
+  ExternalProvider,
   GitHubInstallation,
   GitHubRepository,
   Project,
 } from "@/lib/types";
 
 const STEP_LABELS = [
+  "Source",
   "Installation",
   "Repository",
   "Configure",
@@ -26,6 +31,8 @@ const STEP_LABELS = [
 
 interface WizardState {
   step: number;
+  importProvider: ExternalProvider | null;
+  importedDetail: ExternalProjectDetail | null;
   installation: GitHubInstallation | null;
   repository: GitHubRepository | null;
   project: Project | null;
@@ -36,6 +43,8 @@ interface WizardState {
 
 const initialState: WizardState = {
   step: 1,
+  importProvider: null,
+  importedDetail: null,
   installation: null,
   repository: null,
   project: null,
@@ -62,55 +71,87 @@ export default function NewProjectWizardPage() {
       </header>
 
       <main className="mx-auto max-w-2xl px-6 py-10">
-        {state.step === 1 && (
-          <SelectInstallationStep
-            onSelect={(installation) =>
-              setState((s) => ({ ...s, installation, step: 2 }))
+        {state.step === 1 && !state.importProvider && (
+          <SelectImportSourceStep
+            onScratch={() => setState((s) => ({ ...s, step: 2 }))}
+            onImport={(importProvider) =>
+              setState((s) => ({ ...s, importProvider }))
             }
           />
         )}
 
-        {state.step === 2 && state.installation && (
-          <SelectRepositoryStep
-            installation={state.installation}
-            onSelect={(repository) =>
-              setState((s) => ({ ...s, repository, step: 3 }))
+        {state.step === 1 && state.importProvider && (
+          <SelectExternalProjectStep
+            provider={state.importProvider}
+            onSelect={(importedDetail) =>
+              setState((s) => ({ ...s, importedDetail, step: 2 }))
+            }
+            onBack={() => setState((s) => ({ ...s, importProvider: null }))}
+          />
+        )}
+
+        {state.step === 2 && (
+          <SelectInstallationStep
+            prefillRepoFullName={state.importedDetail?.repoFullName ?? null}
+            onSelect={(installation) =>
+              setState((s) => ({ ...s, installation, step: 3 }))
             }
             onBack={() =>
-              setState((s) => ({ ...s, step: 1, installation: null }))
+              setState((s) => ({
+                ...s,
+                step: 1,
+                importProvider: null,
+                importedDetail: null,
+              }))
             }
           />
         )}
 
-        {state.step === 3 && state.installation && state.repository && (
+        {state.step === 3 && state.installation && (
+          <SelectRepositoryStep
+            installation={state.installation}
+            prefillRepoFullName={state.importedDetail?.repoFullName ?? null}
+            onSelect={(repository) =>
+              setState((s) => ({ ...s, repository, step: 4 }))
+            }
+            onBack={() =>
+              setState((s) => ({ ...s, step: 2, installation: null }))
+            }
+          />
+        )}
+
+        {state.step === 4 && state.installation && state.repository && (
           <ConfigureProjectStep
             installation={state.installation}
             repository={state.repository}
+            prefill={
+              state.importedDetail ? { ...state.importedDetail } : undefined
+            }
             onCreated={(project, environmentId, envVarCount) =>
               setState((s) => ({
                 ...s,
                 project,
                 environmentId,
                 envVarCount,
-                step: 4,
+                step: 5,
               }))
             }
             onBack={() =>
-              setState((s) => ({ ...s, step: 2, repository: null }))
+              setState((s) => ({ ...s, step: 3, repository: null }))
             }
           />
         )}
 
-        {state.step === 4 && state.environmentId && (
+        {state.step === 5 && state.environmentId && (
           <AttachResourcesStep
             environmentId={state.environmentId}
             onDone={(resourceCount) =>
-              setState((s) => ({ ...s, resourceCount, step: 5 }))
+              setState((s) => ({ ...s, resourceCount, step: 6 }))
             }
           />
         )}
 
-        {state.step === 5 &&
+        {state.step === 6 &&
           state.project &&
           state.repository &&
           state.environmentId && (
@@ -121,6 +162,7 @@ export default function NewProjectWizardPage() {
               environmentId={state.environmentId}
               envVarCount={state.envVarCount}
               resourceCount={state.resourceCount}
+              importedDomains={state.importedDetail?.domains ?? []}
             />
           )}
       </main>

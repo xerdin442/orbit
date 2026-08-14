@@ -47,6 +47,7 @@ describe('UsersService', () => {
         id: 'abc',
         githubUserId: 12345,
         slackInstallation: null,
+        externalConnections: [],
       };
       db.user.findUnique.mockResolvedValue(mockUser);
 
@@ -61,6 +62,13 @@ describe('UsersService', () => {
               teamName: true,
               installerSlackUserId: true,
               isActive: true,
+              createdAt: true,
+            },
+          },
+          externalConnections: {
+            select: {
+              provider: true,
+              label: true,
               createdAt: true,
             },
           },

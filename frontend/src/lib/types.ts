@@ -6,6 +6,14 @@ export interface UserSlackInstallation {
   createdAt: string;
 }
 
+export type ExternalProvider = "railway" | "vercel";
+
+export interface ExternalConnectionSummary {
+  provider: ExternalProvider;
+  label: string | null;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   githubUserId: number;
@@ -14,6 +22,7 @@ export interface User {
   avatarUrl: string | null;
   createdAt: string;
   slackInstallation: UserSlackInstallation | null;
+  externalConnections: ExternalConnectionSummary[];
 }
 
 export interface Source {
@@ -311,4 +320,19 @@ export interface AddDomainPayload {
 export interface VariableEntry {
   key: string;
   value: string;
+}
+
+export interface ExternalProjectSummary {
+  id: string;
+  name: string;
+  groupLabel?: string;
+  repoFullName: string | null;
+}
+
+export interface ExternalProjectDetail extends ExternalProjectSummary {
+  defaultBranch: string | null;
+  envVars: VariableEntry[];
+  domains: string[];
+  buildDirectory?: string;
+  startCommand?: string;
 }

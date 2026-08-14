@@ -82,10 +82,7 @@ export function InstallationList({
             >
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center h-8 w-8 rounded-md bg-muted shrink-0">
-                  <FontAwesomeIcon
-                    icon={faGithub}
-                    className="size-4 text-foreground"
-                  />
+                  <FontAwesomeIcon icon={faGithub} size="lg" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">

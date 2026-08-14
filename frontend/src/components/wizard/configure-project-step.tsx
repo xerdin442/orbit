@@ -33,9 +33,17 @@ import type {
 } from "@/lib/types";
 import { ENV_FILENAME_PATTERN, parseEnvFile } from "@/lib/utils";
 
+interface ConfigureProjectPrefill {
+  defaultBranch: string | null;
+  buildDirectory?: string;
+  startCommand?: string;
+  envVars: VariableEntry[];
+}
+
 interface ConfigureProjectStepProps {
   installation: GitHubInstallation;
   repository: GitHubRepository;
+  prefill?: ConfigureProjectPrefill;
   onCreated: (
     project: Project,
     environmentId: string,
@@ -47,6 +55,7 @@ interface ConfigureProjectStepProps {
 export function ConfigureProjectStep({
   installation,
   repository,
+  prefill,
   onCreated,
   onBack,
 }: ConfigureProjectStepProps) {
@@ -78,9 +87,9 @@ export function ConfigureProjectStep({
       healthCheckPort: 3000,
       healthCheckPath: "/health",
       healthCheckTimeout: 60,
-      buildDirectory: "",
-      startCommand: "",
-      envVars: [],
+      buildDirectory: prefill?.buildDirectory ?? "",
+      startCommand: prefill?.startCommand ?? "",
+      envVars: prefill?.envVars ?? [],
     },
   });
 
@@ -123,10 +132,18 @@ export function ConfigureProjectStep({
   };
 
   useEffect(() => {
-    if (branches && branches.length > 0 && !form.getValues("defaultBranch")) {
-      form.setValue("defaultBranch", branches[0].name);
+    if (!branches || branches.length === 0 || form.getValues("defaultBranch")) {
+      return;
     }
-  }, [branches, form]);
+
+    const preferred =
+      prefill?.defaultBranch &&
+      branches.some((b) => b.name === prefill.defaultBranch)
+        ? prefill.defaultBranch
+        : branches[0].name;
+
+    form.setValue("defaultBranch", preferred);
+  }, [branches, form, prefill]);
 
   const healthCheckEnabled = useWatch({
     control: form.control,
@@ -190,6 +207,13 @@ export function ConfigureProjectStep({
         </Button>
       }
     >
+      {prefill && (
+        <p className="mb-5 rounded-lg border border-blue-500/20 bg-blue-500/8 px-3 py-2 text-[0.8125rem] text-blue-400 leading-normal tracking-[-0.01em]">
+          Branch, build settings, and environment variables were pre-filled from
+          your import. Review before creating the project.
+        </p>
+      )}
+
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         <div className="space-y-1.5">
           <label className="text-[0.8125rem] text-muted-foreground">
