@@ -63,6 +63,7 @@ export const ModelName = {
   Domain: 'Domain',
   GitHubInstallation: 'GitHubInstallation',
   SlackInstallation: 'SlackInstallation',
+  ExternalConnection: 'ExternalConnection',
   Activity: 'Activity'
 } as const
 
@@ -259,6 +260,19 @@ export const SlackInstallationScalarFieldEnum = {
 } as const
 
 export type SlackInstallationScalarFieldEnum = (typeof SlackInstallationScalarFieldEnum)[keyof typeof SlackInstallationScalarFieldEnum]
+
+
+export const ExternalConnectionScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  accessToken: 'accessToken',
+  label: 'label',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  userId: 'userId'
+} as const
+
+export type ExternalConnectionScalarFieldEnum = (typeof ExternalConnectionScalarFieldEnum)[keyof typeof ExternalConnectionScalarFieldEnum]
 
 
 export const ActivityScalarFieldEnum = {

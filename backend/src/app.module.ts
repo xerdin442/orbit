@@ -21,6 +21,7 @@ import { WorkbenchModule } from '@src/workbench/workbench.module';
 import { CleanupModule } from '@src/cleanup/cleanup.module';
 import { SlackModule } from '@src/slack/slack.module';
 import { RequestLogsModule } from '@src/request-logs/request-logs.module';
+import { MigrationsModule } from '@src/migrations/migrations.module';
 import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import KeyvRedis from '@keyv/redis';
@@ -62,6 +63,7 @@ import KeyvRedis from '@keyv/redis';
     CleanupModule,
     SlackModule,
     RequestLogsModule,
+    MigrationsModule,
   ],
 
   providers: [
