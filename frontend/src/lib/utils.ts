@@ -4,6 +4,7 @@ import type {
   BuildStatus,
   DeploymentLog,
   DomainStatus,
+  ExternalProvider,
   LogLevel,
   ResourceType,
   VariableEntry,
@@ -123,6 +124,16 @@ export const RESOURCE_TYPE_LOGOS: Record<ResourceType, string> = {
   mysql: "/mysql.png",
   redis: "/redis.png",
   mongo: "/mongo.png",
+};
+
+export const PROVIDER_LABEL: Record<ExternalProvider, string> = {
+  railway: "Railway",
+  vercel: "Vercel",
+};
+
+export const PROVIDER_LOGOS: Record<ExternalProvider, string> = {
+  railway: "/railway.png",
+  vercel: "/vercel.png",
 };
 
 const WORKBENCH_SUPPORTED_TYPES: ResourceType[] = [

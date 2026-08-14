@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { InstallStatusHandler } from "@/components/settings/install-status-handler";
 import { GitInstallationsSection } from "@/components/settings/git-installations-section";
 import { SlackSection } from "@/components/settings/slack-section";
+import { MigrationsSection } from "@/components/settings/migrations-section";
 
 export default function AccountSettingsPage() {
   return (
@@ -12,6 +13,7 @@ export default function AccountSettingsPage() {
 
       <GitInstallationsSection />
       <SlackSection />
+      <MigrationsSection />
 
       <InstallStatusHandler />
     </div>
