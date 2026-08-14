@@ -10,6 +10,7 @@ interface SearchBarProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function SearchBar({
@@ -17,6 +18,7 @@ export function SearchBar({
   onChange,
   placeholder = "Search...",
   className,
+  disabled = false,
 }: SearchBarProps) {
   const [local, setLocal] = useState(value);
   const debounced = useDebounce(local);
@@ -32,7 +34,8 @@ export function SearchBar({
         value={local}
         onChange={(e) => setLocal(e.target.value)}
         placeholder={placeholder}
-        className="w-full h-9 rounded-md border border-input bg-transparent pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus-visible:border-ring transition-colors"
+        disabled={disabled}
+        className="w-full h-9 rounded-md border border-input bg-transparent pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus-visible:border-ring transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       />
     </div>
   );
