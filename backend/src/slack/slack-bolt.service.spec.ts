@@ -103,6 +103,7 @@ describe('SlackBoltService', () => {
     expect(App).toHaveBeenCalledWith(
       expect.objectContaining({
         receiver: expect.anything(),
+        authorize: expect.any(Function),
       }),
     );
     expect(service.receiver).toBeDefined();
@@ -116,8 +117,39 @@ describe('SlackBoltService', () => {
     expect(service.app.view).toHaveBeenCalledTimes(1);
   });
 
-  it('initializes the app on module init', async () => {
-    await service.onModuleInit();
-    expect(service.app.init).toHaveBeenCalled();
+  describe('authorize', () => {
+    it('resolves bot credentials via the installation store', async () => {
+      const authorizeFn = (App as unknown as jest.Mock).mock.calls[0][0]
+        .authorize as (source: {
+        teamId: string;
+        enterpriseId?: string;
+        isEnterpriseInstall: boolean;
+      }) => Promise<Record<string, unknown>>;
+
+      mockInstallationStore.fetchInstallation.mockResolvedValue({
+        bot: { token: 'xoxb-token', id: 'B1', userId: 'U-BOT' },
+        team: { id: 'T1' },
+        enterprise: undefined,
+      });
+
+      const result = await authorizeFn({
+        teamId: 'T1',
+        enterpriseId: undefined,
+        isEnterpriseInstall: false,
+      });
+
+      expect(mockInstallationStore.fetchInstallation).toHaveBeenCalledWith({
+        teamId: 'T1',
+        enterpriseId: undefined,
+        isEnterpriseInstall: false,
+      });
+      expect(result).toEqual({
+        botToken: 'xoxb-token',
+        botId: 'B1',
+        botUserId: 'U-BOT',
+        teamId: 'T1',
+        enterpriseId: undefined,
+      });
+    });
   });
 });
