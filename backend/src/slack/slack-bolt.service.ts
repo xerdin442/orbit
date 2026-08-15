@@ -342,7 +342,7 @@ export class SlackBoltService implements OnModuleInit {
       });
     });
 
-    this.app.command('/status', async (args) => {
+    this.app.command('/ping', async (args) => {
       await this.handleCommand(args, async ({ command, context, respond }) => {
         const parts = command.text.trim().split(/\s+/);
         const projectName = parts[0];
@@ -350,7 +350,7 @@ export class SlackBoltService implements OnModuleInit {
 
         if (!projectName) {
           await respond({
-            text: 'Usage: `/status <project> [environment]`',
+            text: 'Usage: `/ping <project> [environment]`',
             response_type: 'ephemeral',
           });
           return;
