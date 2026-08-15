@@ -1,6 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Inject } from '@nestjs/common';
 import {
   App,
   ExpressReceiver,
@@ -45,7 +44,7 @@ const RATE_LIMIT_MAX_COMMANDS = 10;
 const RATE_LIMIT_MAX_DEPLOYMENTS = 2;
 
 @Injectable()
-export class SlackBoltService implements OnModuleInit {
+export class SlackBoltService {
   private readonly logger = Logger(SlackBoltService.name);
   public readonly receiver: ExpressReceiver;
   public readonly app: App<SlackCommandContext>;
@@ -68,16 +67,27 @@ export class SlackBoltService implements OnModuleInit {
 
     this.app = new App<SlackCommandContext>({
       receiver: this.receiver,
+      authorize: async ({ teamId, enterpriseId, isEnterpriseInstall }) => {
+        const installation = await this.installationStore.fetchInstallation({
+          teamId,
+          enterpriseId,
+          isEnterpriseInstall,
+        });
+
+        return {
+          botToken: installation.bot?.token,
+          botId: installation.bot?.id,
+          botUserId: installation.bot?.userId,
+          teamId: installation.team?.id,
+          enterpriseId: installation.enterprise?.id,
+        };
+      },
     });
 
     this.registerMiddleware();
     this.registerLifecycleEvents();
     this.registerCommands();
     this.registerViewSubmissions();
-  }
-
-  async onModuleInit(): Promise<void> {
-    await this.app.init();
   }
 
   private registerMiddleware(): void {

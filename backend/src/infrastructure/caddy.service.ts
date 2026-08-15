@@ -16,6 +16,7 @@ export class CaddyService {
   async syncEnvironment(environmentId: string) {
     const env = await this.db.environment.findUniqueOrThrow({
       where: { id: environmentId },
+      include: { project: true },
     });
 
     if (!env.currentDeploymentId) {
@@ -48,7 +49,11 @@ export class CaddyService {
         handle: [
           {
             handler: 'reverse_proxy',
-            upstreams: [{ dial: `${deployment.containerId}:3000` }],
+            upstreams: [
+              {
+                dial: `${deployment.containerId}:${env.project.healthCheckPort}`,
+              },
+            ],
           },
         ],
       };
@@ -73,7 +78,10 @@ export class CaddyService {
   private async fetchCaddy(path: string, method: string, body?: unknown) {
     const options: RequestInit = {
       method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: this.adminUrl,
+      },
     };
 
     if (body) {
