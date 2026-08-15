@@ -67,12 +67,16 @@ export class CaddyService {
   }
 
   async enableAccessLogging(): Promise<void> {
-    await this.fetchCaddy('/config/logging/logs/default', 'PATCH', {
-      encoder: { format: 'json' },
-      include: ['http.log.access'],
+    await this.fetchCaddy('/config/logging', 'POST', {
+      logs: {
+        default: {
+          encoder: { format: 'json' },
+          include: ['http.log.access'],
+        },
+      },
     });
 
-    await this.fetchCaddy('/config/apps/http/servers/srv0/logs', 'PATCH', {});
+    await this.fetchCaddy('/config/apps/http/servers/srv0/logs', 'POST', {});
   }
 
   private async fetchCaddy(path: string, method: string, body?: unknown) {

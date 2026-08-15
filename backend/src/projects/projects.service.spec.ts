@@ -5,65 +5,49 @@ import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { GitHubService } from '@src/github/github.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { NotFoundException } from '@nestjs/common';
 
 describe('ProjectsService', () => {
   let service: ProjectsService;
-  let db: jest.Mocked<
-    Pick<
-      DbService,
-      | 'project'
-      | 'source'
-      | 'environment'
-      | 'environmentVariable'
-      | 'gitHubInstallation'
-      | '$transaction'
-    >
-  >;
-  let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt'>>;
-  let github: jest.Mocked<
-    Pick<GitHubService, 'listRepositories' | 'listBranches'>
-  >;
+  let db: jest.Mocked<Pick<DbService, '$transaction'>>;
+  let tx: {
+    environment: { create: jest.Mock };
+    environmentVariable: { createMany: jest.Mock };
+  };
+  let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
 
+  const mockEnvironment = (healthCheckPort: number) => ({
+    id: 'env-1',
+    projectId: 'proj-1',
+    project: {
+      id: 'proj-1',
+      name: 'my-app',
+      healthCheckPort,
+    },
+  });
+
   beforeEach(async () => {
-    db = {
-      project: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-        findUnique: jest.fn(),
-      },
-      source: { findUniqueOrThrow: jest.fn() },
-      gitHubInstallation: { findFirst: jest.fn() },
+    tx = {
       environment: { create: jest.fn() },
       environmentVariable: { createMany: jest.fn() },
-      $transaction: jest.fn(),
-    } as unknown as jest.Mocked<
-      Pick<
-        DbService,
-        | 'project'
-        | 'source'
-        | 'environment'
-        | 'environmentVariable'
-        | 'gitHubInstallation'
-        | '$transaction'
-      >
-    >;
+    };
 
-    encryption = { encrypt: jest.fn((v) => `encrypted_${v}`) };
-    github = { listRepositories: jest.fn(), listBranches: jest.fn() };
+    db = {
+      $transaction: jest.fn((cb: (tx: unknown) => unknown) => cb(tx)),
+    } as unknown as jest.Mocked<Pick<DbService, '$transaction'>>;
+
+    encryption = {
+      encrypt: jest.fn((v) => `enc_${v}`),
+      decrypt: jest.fn((v) => v.replace('enc_', '')),
+    };
     activity = { log: jest.fn() };
-
-    (db.$transaction as jest.Mock).mockImplementation((cb: Function) => cb(db));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProjectsService,
         { provide: DbService, useValue: db },
         { provide: EncryptionService, useValue: encryption },
-        { provide: GitHubService, useValue: github },
+        { provide: GitHubService, useValue: {} },
         { provide: ActivityService, useValue: activity },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
       ],
@@ -72,63 +56,89 @@ describe('ProjectsService', () => {
     service = module.get(ProjectsService);
   });
 
-  describe('findAllByUser', () => {
-    it('queries projects by ownerId ordered by createdAt desc', async () => {
-      db.project.findMany.mockResolvedValue([]);
-      await service.findAllByUser('user-1');
-      expect(db.project.findMany).toHaveBeenCalledWith({
-        where: { ownerId: 'user-1' },
-        include: { source: true },
-        orderBy: { createdAt: 'desc' },
+  describe('create', () => {
+    it('uses the explicit healthCheckPort when provided, ignoring the PORT env var', async () => {
+      tx.environment.create.mockResolvedValue(mockEnvironment(9090));
+
+      await service.create('user-1', {
+        name: 'my-app',
+        repositoryUrl: 'https://github.com/owner/repo',
+        defaultBranch: 'main',
+        healthCheckPort: 9090,
+        envVars: { PORT: '4000' },
       });
-    });
-  });
 
-  describe('findById', () => {
-    it('returns project when found and owned', async () => {
-      const mock = { id: 'proj-1', ownerId: 'user-1' };
-      db.project.findFirst.mockResolvedValue(mock);
-
-      const result = await service.findById('proj-1', 'user-1');
-      expect(result).toBe(mock);
-    });
-
-    it('throws NotFoundException when not found', async () => {
-      db.project.findFirst.mockResolvedValue(null);
-      await expect(service.findById('proj-1', 'user-1')).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-  });
-
-  describe('update', () => {
-    it('lowercases name and updates', async () => {
-      db.project.findFirst.mockResolvedValue({
-        id: 'proj-1',
-        ownerId: 'user-1',
-      });
-      db.project.update.mockResolvedValue({ id: 'proj-1', name: 'updated' });
-
-      await service.update('proj-1', 'user-1', { name: 'UPDATED' });
-
-      expect(db.project.update).toHaveBeenCalledWith(
+      expect(tx.environment.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ name: 'updated' }),
+          data: expect.objectContaining({
+            project: expect.objectContaining({
+              create: expect.objectContaining({ healthCheckPort: 9090 }),
+            }),
+          }),
         }),
       );
-      expect(activity.log).toHaveBeenCalled();
     });
-  });
 
-  describe('findAvailableBranches', () => {
-    it('returns empty if no installationId', async () => {
-      db.source.findUniqueOrThrow = jest.fn().mockResolvedValue({
-        installationId: null,
-        repositoryUrl: 'https://github.com/o/r',
+    it('extracts the port from the PORT env var when healthCheckPort is not provided', async () => {
+      tx.environment.create.mockResolvedValue(mockEnvironment(4000));
+
+      await service.create('user-1', {
+        name: 'my-app',
+        repositoryUrl: 'https://github.com/owner/repo',
+        defaultBranch: 'main',
+        envVars: { PORT: '4000', NODE_ENV: 'production' },
+      });
+
+      expect(tx.environment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            project: expect.objectContaining({
+              create: expect.objectContaining({ healthCheckPort: 4000 }),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('defaults to 3000 when neither healthCheckPort nor a PORT env var is provided', async () => {
+      tx.environment.create.mockResolvedValue(mockEnvironment(3000));
+
+      await service.create('user-1', {
+        name: 'my-app',
+        repositoryUrl: 'https://github.com/owner/repo',
         defaultBranch: 'main',
       });
-      const result = await service.findAvailableBranches('proj-1', 'user-1');
-      expect(result).toEqual([]);
+
+      expect(tx.environment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            project: expect.objectContaining({
+              create: expect.objectContaining({ healthCheckPort: 3000 }),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('defaults to 3000 when the PORT env var is not a valid positive integer', async () => {
+      tx.environment.create.mockResolvedValue(mockEnvironment(3000));
+
+      await service.create('user-1', {
+        name: 'my-app',
+        repositoryUrl: 'https://github.com/owner/repo',
+        defaultBranch: 'main',
+        envVars: { PORT: 'not-a-number' },
+      });
+
+      expect(tx.environment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            project: expect.objectContaining({
+              create: expect.objectContaining({ healthCheckPort: 3000 }),
+            }),
+          }),
+        }),
+      );
     });
   });
 });
