@@ -27,6 +27,9 @@ export class ProjectsService {
       );
     }
 
+    const healthCheckPort =
+      dto.healthCheckPort ?? this.resolvePortFromEnvVars(dto.envVars);
+
     const environment = await this.db.$transaction(async (tx) => {
       const env = await tx.environment.create({
         data: {
@@ -37,7 +40,7 @@ export class ProjectsService {
             create: {
               name: dto.name.toLowerCase(),
               healthCheck: dto.healthCheck ?? false,
-              healthCheckPort: dto.healthCheckPort ?? 3000,
+              healthCheckPort,
               healthCheckPath: dto.healthCheckPath ?? '/health',
               healthCheckTimeout: dto.healthCheckTimeout ?? 60,
               buildDirectory: dto.buildDirectory,
@@ -192,6 +195,14 @@ export class ProjectsService {
         `Branch "${defaultBranch}" not found in repository`,
       );
     }
+  }
+
+  private resolvePortFromEnvVars(envVars?: Record<string, string>): number {
+    const value = envVars?.PORT;
+    if (!value) return 3000;
+
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : 3000;
   }
 
   private async invalidateCache(projectId?: string) {

@@ -38,9 +38,9 @@ import KeyvRedis from '@keyv/redis';
       },
     }),
     CacheModule.registerAsync({
+      isGlobal: true,
       useFactory: () => {
         return {
-          isGlobal: true,
           ttl: 5_000,
           store: new KeyvRedis(Secrets.REDIS_URL),
         };
