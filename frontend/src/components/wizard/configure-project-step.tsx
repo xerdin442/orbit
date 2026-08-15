@@ -277,6 +277,10 @@ export function ConfigureProjectStep({
             />
             Enable health checks
           </label>
+          <p className="text-[0.8125rem] tracking-[-0.015em] text-muted-foreground -mt-1.25">
+            If a health check port isn&apos;t configured, the application port
+            is auto-detected from a PORT variable, or defaults to 3000.
+          </p>
 
           {healthCheckEnabled && (
             <div className="grid grid-cols-3 gap-3 pt-1">
