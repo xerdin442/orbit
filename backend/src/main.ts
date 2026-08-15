@@ -4,12 +4,15 @@ import { AppModule } from './app.module';
 import { SlackBoltService } from './slack/slack-bolt.service';
 import helmet from 'helmet';
 import { ValidationPipe } from '@nestjs/common';
+import { WinstonModule } from 'nest-winston';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { Logger } from './common/logger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
+    logger: WinstonModule.createLogger({ instance: Logger('Nest') }),
   });
 
   app.enableCors();
