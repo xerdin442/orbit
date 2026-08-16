@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { DbModule } from './db/db.module';
 import { RedisModule } from './common/cache';
 import { ConfigModule } from '@nestjs/config';
@@ -77,4 +78,8 @@ import KeyvRedis from '@keyv/redis';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+  }
+}
