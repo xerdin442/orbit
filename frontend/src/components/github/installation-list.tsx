@@ -47,8 +47,8 @@ export function InstallationList({
     >
       {isLoading && (
         <div className="space-y-3">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full bg-input" />
+          <Skeleton className="h-12 w-full bg-input" />
         </div>
       )}
 
