@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, FolderX } from "lucide-react";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { SectionCard } from "@/components/shared/section-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
@@ -54,6 +55,8 @@ export function SelectExternalProjectStep({
   const [search, setSearch] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [selectingId, setSelectingId] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
 
   const label = PROVIDER_LABEL[provider];
 
@@ -86,6 +89,12 @@ export function SelectExternalProjectStep({
   for (const p of filtered) {
     grouped.set(p.groupLabel, [...(grouped.get(p.groupLabel) ?? []), p]);
   }
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    setHasOverflow(el.scrollHeight > el.clientHeight);
+  }, [filtered]);
 
   const handleSelect = async (summary: ExternalProjectSummary) => {
     if (!summary.repoFullName || selectingId) return;
@@ -142,9 +151,9 @@ export function SelectExternalProjectStep({
 
       {isConnected && isLoading && (
         <div className="space-y-2">
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-9 w-full bg-input" />
+          <Skeleton className="h-14 w-full bg-input" />
+          <Skeleton className="h-14 w-full bg-input" />
         </div>
       )}
 
@@ -179,7 +188,13 @@ export function SelectExternalProjectStep({
           )}
 
           {filtered.length > 0 && (
-            <div className="max-h-96 space-y-4 overflow-y-auto">
+            <div
+              ref={listRef}
+              className={cn(
+                "max-h-96 space-y-4 overflow-y-auto custom-scrollbar",
+                hasOverflow && "pr-2",
+              )}
+            >
               {[...grouped.entries()].map(([groupLabel, items]) => (
                 <div key={groupLabel ?? "__ungrouped"} className="space-y-2">
                   {groupLabel && (

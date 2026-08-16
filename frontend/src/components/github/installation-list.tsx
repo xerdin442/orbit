@@ -68,7 +68,7 @@ export function InstallationList({
           <EmptyState
             icon={GitHubIcon}
             title="No GitHub installations"
-            description="Connect your GitHub account and install the Orbit app."
+            description="Connect and install the Orbit app in your GitHub account."
             className="py-10"
           />
         )}

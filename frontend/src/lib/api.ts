@@ -41,7 +41,7 @@ const MOCK_MODE = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 
 const TOKEN_KEY = "orbit_access_token";
 
-function getAuthToken(): string | null {
+export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
 }

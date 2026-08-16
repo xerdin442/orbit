@@ -57,14 +57,15 @@ export function SelectInstallationStep({
 
   useEffect(() => {
     if (autoSelected.current || !matchedInstallation) return;
-    autoSelected.current = true;
 
     const timeout = setTimeout(() => {
+      autoSelected.current = true;
       onSelectRef.current(matchedInstallation);
-    }, 1000);
+    }, 1200);
 
     return () => clearTimeout(timeout);
-  }, [matchedInstallation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchedInstallation?.installationId]);
 
   const handleConnect = async () => {
     const url = await api.github.installUrl();
@@ -105,8 +106,8 @@ export function SelectInstallationStep({
     >
       {isLoading && (
         <div className="space-y-2">
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full bg-input" />
+          <Skeleton className="h-14 w-full bg-input" />
         </div>
       )}
 
@@ -132,7 +133,7 @@ export function SelectInstallationStep({
           <EmptyState
             icon={GitHubIcon}
             title="No GitHub installations"
-            description="Connect your GitHub account and install the Orbit app."
+            description="Connect and install the Orbit app in your GitHub account."
             action={{ label: "Connect GitHub", onClick: handleConnect }}
             className="py-10"
           />

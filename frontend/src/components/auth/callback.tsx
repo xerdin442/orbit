@@ -16,12 +16,7 @@ export function AuthCallback({ children }: { children: React.ReactNode }) {
     if (token) {
       handled.current = true;
       setAuthToken(token);
-
-      const params = new URLSearchParams(searchParams);
-      params.delete("token");
-      params.delete("source");
-      const qs = params.toString();
-      router.replace(`/${qs ? `?${qs}` : ""}`);
+      router.replace("/projects");
     }
   }, [searchParams, router]);
 

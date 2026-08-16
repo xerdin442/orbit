@@ -86,7 +86,7 @@ export function UserSection({
         onClick={onToggleMenu}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        className="flex items-center cursor-pointer gap-3 px-3 py-2 w-full rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+        className="flex items-center cursor-pointer gap-2.5 px-3 py-2 w-full rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
       >
         {avatar}
         <div className="flex-1 min-w-0 text-left">
