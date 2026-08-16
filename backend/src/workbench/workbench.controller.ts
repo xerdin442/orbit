@@ -7,6 +7,8 @@ import {
   Query,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
@@ -47,6 +49,7 @@ export class WorkbenchController {
   }
 
   @Post('query')
+  @HttpCode(HttpStatus.OK)
   executeQuery(
     @Param('id') id: string,
     @Req() req: AuthenticatedRequest,
