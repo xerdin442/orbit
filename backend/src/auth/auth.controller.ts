@@ -1,11 +1,5 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Redirect,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
@@ -21,13 +15,13 @@ export class AuthController {
   }
 
   @Get('github/callback')
-  @Redirect()
   async githubCallback(
     @Query('code') code: string,
+    @Res() res: Response,
     @Query('state') state?: string,
   ) {
     const redirectUrl = await this.auth.handleGitHubCallback(code, state);
-    return { url: redirectUrl };
+    res.redirect(redirectUrl);
   }
 
   @Get('me')

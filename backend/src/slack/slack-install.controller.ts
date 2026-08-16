@@ -4,10 +4,11 @@ import {
   Delete,
   Query,
   Req,
+  Res,
   UseGuards,
   Inject,
-  Redirect,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { createHash, randomUUID } from 'crypto';
 import { WebClient } from '@slack/web-api';
 import type { RedisClientType } from 'redis';
@@ -34,10 +35,9 @@ export class SlackInstallController {
     @Inject(REDIS_CLIENT) private readonly redis: RedisClientType,
   ) {}
 
-  @Redirect()
   @Get('install')
   @UseGuards(JwtAuthGuard)
-  async install(@Req() req: AuthenticatedRequest) {
+  async install(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const state = randomUUID();
     const stateKey = this.getStateKey(state);
 
@@ -51,26 +51,28 @@ export class SlackInstallController {
     url.searchParams.set('redirect_uri', Secrets.SLACK_REDIRECT_URI);
     url.searchParams.set('state', state);
 
-    return { url: url.toString() };
+    res.redirect(url.toString());
   }
 
-  @Redirect()
   @Get('callback')
   async callback(
     @Query('code') code: string,
     @Query('state') state: string,
     @Query('error') error: string,
+    @Res() res: Response,
   ) {
     const failureUrl = `${Secrets.FRONTEND_URL}/settings?slack_install=error`;
 
     if (error) {
       this.logger.warn(`Slack OAuth error: ${error}`);
-      return { url: failureUrl };
+      res.redirect(failureUrl);
+      return;
     }
 
     if (!code || !state) {
       this.logger.warn('Missing code or state in callback');
-      return { url: failureUrl };
+      res.redirect(failureUrl);
+      return;
     }
 
     const stateKey = this.getStateKey(state);
@@ -78,7 +80,8 @@ export class SlackInstallController {
 
     if (!userId) {
       this.logger.warn('State not found or expired');
-      return { url: failureUrl };
+      res.redirect(failureUrl);
+      return;
     }
 
     await this.redis.del(stateKey);
@@ -94,7 +97,8 @@ export class SlackInstallController {
 
       if (!oauth.ok) {
         this.logger.error(`OAuth failed: ${oauth.error}`);
-        return { url: failureUrl };
+        res.redirect(failureUrl);
+        return;
       }
 
       const teamId = oauth.team?.id;
@@ -104,7 +108,8 @@ export class SlackInstallController {
 
       if (!teamId || !botToken || !botUserId || !installerSlackUserId) {
         this.logger.error('Missing required Slack OAuth fields');
-        return { url: failureUrl };
+        res.redirect(failureUrl);
+        return;
       }
 
       await this.installationStore.storeInstallationData({
@@ -126,14 +131,12 @@ export class SlackInstallController {
         teamId: oauth.team?.id,
         enterpriseId: oauth.enterprise?.id,
       });
-      return {
-        url: `${Secrets.FRONTEND_URL}/settings?slack_install=connected`,
-      };
+      res.redirect(`${Secrets.FRONTEND_URL}/settings?slack_install=connected`);
     } catch (err) {
       this.logger.error(
         `Slack OAuth callback failed: ${err instanceof Error ? err.message : String(err)}`,
       );
-      return { url: failureUrl };
+      res.redirect(failureUrl);
     }
   }
 

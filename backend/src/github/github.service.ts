@@ -206,7 +206,7 @@ export class GitHubService {
 
     const token = await this.getInstallationToken(installationId);
     const response = await fetch(
-      'https://api.github.com/installation/repositories',
+      'https://api.github.com/installation/repositories?per_page=100',
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -222,7 +222,7 @@ export class GitHubService {
     }
 
     const data = (await response.json()) as GitHubRepositoryList;
-    return data.repositories;
+    return data.repositories.reverse();
   }
 
   async listBranches(
