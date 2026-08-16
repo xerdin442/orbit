@@ -41,3 +41,14 @@ export const Logger = (context: string): WinstonLogger => {
     ],
   });
 };
+
+export const RequestLogger: WinstonLogger = createLogger({
+  level: 'info',
+  format: fileFormat('HTTP'),
+  transports: [
+    new transports.File({
+      filename: 'requests.log',
+      dirname: './logs',
+    }),
+  ],
+});
