@@ -46,9 +46,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="flex h-full">
-      <Sidebar projects={projects ?? []} user={user!} />
+      <Sidebar projects={projects ?? []} user={user} />
       <div
         className={cn(
           "flex min-w-0 flex-1 flex-col transition-all duration-200",
