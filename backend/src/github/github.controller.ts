@@ -6,9 +6,10 @@ import {
   Query,
   UseGuards,
   Req,
-  Redirect,
+  Res,
   ParseIntPipe,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { GitHubService } from './github.service';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
@@ -25,16 +26,16 @@ export class GitHubController {
   }
 
   @Get('install/callback')
-  @Redirect()
   async installCallback(
     @Query('installation_id', ParseIntPipe) installationId: number,
+    @Res() res: Response,
     @Query('state') state?: string,
   ) {
     const redirectUrl = await this.github.handleInstallCallback(
       installationId,
       state,
     );
-    return { url: redirectUrl };
+    res.redirect(redirectUrl);
   }
 
   @Get('installations')
