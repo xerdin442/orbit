@@ -7,6 +7,8 @@ import {
   Body,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { MigrationsService } from './migrations.service';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
@@ -21,6 +23,7 @@ export class MigrationsController {
   constructor(private readonly migrations: MigrationsService) {}
 
   @Post(':provider/connect')
+  @HttpCode(HttpStatus.OK)
   connect(
     @Req() req: AuthenticatedRequest,
     @Param('provider', ParseExternalProviderPipe) provider: ExternalProvider,

@@ -8,6 +8,8 @@ import {
   Query,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
@@ -57,6 +59,7 @@ export class ResourcesController {
   }
 
   @Post('resources/:id/clear')
+  @HttpCode(HttpStatus.OK)
   clearData(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.resources.clearData(id, req.user.id);
   }

@@ -37,7 +37,7 @@ export class SlackInstallController {
 
   @Get('install')
   @UseGuards(JwtAuthGuard)
-  async install(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+  async install(@Req() req: AuthenticatedRequest) {
     const state = randomUUID();
     const stateKey = this.getStateKey(state);
 
@@ -51,7 +51,7 @@ export class SlackInstallController {
     url.searchParams.set('redirect_uri', Secrets.SLACK_REDIRECT_URI);
     url.searchParams.set('state', state);
 
-    res.redirect(url.toString());
+    return { url: url.toString() };
   }
 
   @Get('callback')
