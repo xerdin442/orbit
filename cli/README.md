@@ -263,16 +263,10 @@ URLs:        No active domains
 
 ## Redeploy
 
-Redeploy the latest deployment without rebuilding the Docker image (reuses the existing image):
+Redeploy the environment's current deployment without rebuilding the Docker image (reuses the existing image):
 
 ```bash
 orbit redeploy
-```
-
-Or redeploy a specific deployment:
-
-```bash
-orbit redeploy <deployment-id>
 ```
 
 Add `--follow` to stream logs:
@@ -365,5 +359,5 @@ orbit env --help
 | `orbit domains add <hostname>` | Add a custom domain |
 | `orbit domains rm <hostname>` | Remove a custom domain |
 | `orbit info` | Show project and deployment status |
-| `orbit redeploy [id]` | Redeploy with existing image |
+| `orbit redeploy` | Redeploy with existing image |
 | `orbit rollback [id]` | Rollback to a previous deployment |

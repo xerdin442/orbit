@@ -78,7 +78,7 @@ export function registerInitCommand(program: Command) {
 
         const spinner = ora("Fetching repositories...").start();
         const repos = await api.get<Repository[]>(
-          `/github/${inst.installationId}/repositories`,
+          `/github/installations/${inst.installationId}/repositories`,
         );
         spinner.stop();
 
@@ -96,7 +96,7 @@ export function registerInitCommand(program: Command) {
 
         spinner.start("Fetching branches...");
         const branches = await api.get<Branch[]>(
-          `/github/branches?installationId=${inst.installationId}&repo=${encodeURIComponent(repo)}`,
+          `/github/installations/${inst.installationId}/branches?repo=${encodeURIComponent(repo)}`,
         );
         spinner.stop();
 
