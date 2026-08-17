@@ -4,14 +4,6 @@ import { ensureContext } from "../lib/config.js";
 import { error, success } from "../lib/format.js";
 import { streamLogs } from "./logs.js";
 
-interface Deployment {
-  id: string;
-}
-
-interface PaginatedDeployments {
-  data: Deployment[];
-}
-
 interface DeployResult {
   deploymentId: string;
   status: string;
@@ -19,27 +11,15 @@ interface DeployResult {
 
 export function registerRedeployCommand(program: Command) {
   program
-    .command("redeploy [deployment-id]")
-    .description("Redeploy using the same image (skips build)")
+    .command("redeploy")
+    .description("Redeploy the environment's current deployment (skips build)")
     .option("-f, --follow", "Stream logs")
-    .action(async (deploymentId?: string, options?: { follow?: boolean }) => {
+    .action(async (options?: { follow?: boolean }) => {
       const { ctx, token } = ensureContext();
 
       try {
-        if (!deploymentId) {
-          const deps = await api.get<PaginatedDeployments>(
-            `/environments/${ctx.environmentId}/deployments?limit=1`,
-          );
-          deploymentId = deps.data[0]?.id;
-        }
-
-        if (!deploymentId) {
-          error("No deployment to redeploy.");
-          process.exit(1);
-        }
-
         const result = await api.post<DeployResult>(
-          `/deployments/${deploymentId}/redeploy`,
+          `/environments/${ctx.environmentId}/redeploy`,
         );
 
         success(`Redeploy triggered: ${result.deploymentId}`);
