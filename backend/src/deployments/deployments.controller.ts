@@ -19,7 +19,7 @@ import type { DeploymentLog } from '@generated/client';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
 import type { DeploymentJob, AuthenticatedRequest } from '@src/common/types';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import { FilterDeploymentsDto, AbortDeploymentDto } from './dto/deployment.dto';
 
 @Controller()
