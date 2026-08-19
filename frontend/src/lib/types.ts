@@ -43,6 +43,7 @@ export interface Project {
   healthCheckTimeout: number;
   buildDirectory: string | null;
   startCommand: string | null;
+  secretAccessToken: string;
   source: Source | null;
   createdAt: string;
   updatedAt: string;

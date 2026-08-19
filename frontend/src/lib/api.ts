@@ -164,6 +164,8 @@ export const api = {
       request<void>(`/projects/${id}`, { method: "DELETE" }),
     branches: (id: string) =>
       request<GitHubBranch[]>(`/projects/${id}/branches`),
+    rotateToken: (id: string) =>
+      request<Project>(`/projects/${id}/tokens/rotate`, { method: "POST" }),
   },
 
   github: {
