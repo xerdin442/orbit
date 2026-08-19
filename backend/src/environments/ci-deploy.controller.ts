@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Param,
   Query,
@@ -50,5 +51,29 @@ export class CiDeployController {
     await this.deployQueue.add('deploy', { deployment });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };
+  }
+
+  @Get(':deploymentId')
+  async status(
+    @Req() req: ProjectTokenRequest,
+    @Param('projectId') projectId: string,
+    @Param('deploymentId') deploymentId: string,
+  ) {
+    if (req.project.id !== projectId) {
+      throw new ForbiddenException(
+        'Project access token does not grant access to this project',
+      );
+    }
+
+    const deployment = await this.deployments.findByIdForProject(
+      deploymentId,
+      projectId,
+    );
+
+    return {
+      deploymentId: deployment.id,
+      buildStatus: deployment.buildStatus,
+      hostname: deployment.environment.domains[0]?.hostname,
+    };
   }
 }

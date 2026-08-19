@@ -10,6 +10,7 @@ import {
   LifecycleStatus,
   DeploymentTrigger,
   ActivityType,
+  DomainType,
   Prisma,
   Deployment,
 } from '@generated/client';
@@ -111,6 +112,25 @@ export class DeploymentsService {
       where: { id, environment: { project: { ownerId: userId } } },
       include: {
         environment: { include: { project: true } },
+      },
+    });
+
+    if (!deployment) {
+      throw new NotFoundException('Deployment not found');
+    }
+
+    return deployment;
+  }
+
+  async findByIdForProject(id: string, projectId: string) {
+    const deployment = await this.db.deployment.findFirst({
+      where: { id, environment: { projectId } },
+      include: {
+        environment: {
+          include: {
+            domains: { where: { type: DomainType.managed } },
+          },
+        },
       },
     });
 
