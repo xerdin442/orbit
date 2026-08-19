@@ -26,8 +26,16 @@ export class DeploymentsService {
     private readonly resources: ResourcesService,
   ) {}
 
-  async createDeployment(environmentId: string, userId: string) {
+  async createDeployment(
+    environmentId: string,
+    userId: string,
+    expectedProjectId?: string,
+  ) {
     const env = await this.verifyEnvironmentOwnership(environmentId, userId);
+
+    if (expectedProjectId && env.projectId !== expectedProjectId) {
+      throw new NotFoundException('Environment not found');
+    }
 
     const active = await this.db.deployment.findFirst({
       where: {

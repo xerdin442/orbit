@@ -1528,6 +1528,8 @@ export const ProjectScalarFieldEnum = {
   startCommand: 'startCommand',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
+  secretAccessToken: 'secretAccessToken',
+  secretAccessTokenHash: 'secretAccessTokenHash',
   ownerId: 'ownerId'
 } as const
 

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 import { DbService } from '@src/db/db.service';
@@ -30,6 +31,8 @@ export class ProjectsService {
     const healthCheckPort =
       dto.healthCheckPort ?? this.resolvePortFromEnvVars(dto.envVars);
 
+    const secretAccessToken = this.generateSecretAccessToken();
+
     const environment = await this.db.$transaction(async (tx) => {
       const env = await tx.environment.create({
         data: {
@@ -46,6 +49,8 @@ export class ProjectsService {
               buildDirectory: dto.buildDirectory,
               startCommand: dto.startCommand,
               ownerId: userId,
+              secretAccessToken: this.encryption.encrypt(secretAccessToken),
+              secretAccessTokenHash: this.encryption.hash(secretAccessToken),
               source: {
                 create: {
                   repositoryUrl: dto.repositoryUrl,
@@ -87,16 +92,18 @@ export class ProjectsService {
 
     return {
       environmentId: environment.id,
-      project: environment.project,
+      project: this.serializeProject(environment.project),
     };
   }
 
   async findAllByUser(userId: string) {
-    return this.db.project.findMany({
+    const projects = await this.db.project.findMany({
       where: { ownerId: userId },
       include: { source: true },
       orderBy: { createdAt: 'desc' },
     });
+
+    return projects.map((project) => this.serializeProject(project));
   }
 
   async findById(id: string, userId: string) {
@@ -109,7 +116,7 @@ export class ProjectsService {
       throw new NotFoundException('Project not found');
     }
 
-    return project;
+    return this.serializeProject(project);
   }
 
   async update(id: string, userId: string, dto: UpdateProjectDto) {
@@ -130,7 +137,7 @@ export class ProjectsService {
 
     await this.invalidateCache(id);
 
-    return updated;
+    return this.serializeProject(updated);
   }
 
   async findAvailableBranches(projectId: string, userId: string) {
@@ -195,6 +202,22 @@ export class ProjectsService {
         `Branch "${defaultBranch}" not found in repository`,
       );
     }
+  }
+
+  private generateSecretAccessToken(): string {
+    return `orbit_sat_${randomBytes(24).toString('hex')}`;
+  }
+
+  private serializeProject<
+    T extends { secretAccessToken: string; secretAccessTokenHash: string },
+  >(project: T) {
+    const rest: Partial<T> = { ...project };
+    delete rest.secretAccessTokenHash;
+
+    return {
+      ...rest,
+      secretAccessToken: this.encryption.decrypt(project.secretAccessToken),
+    };
   }
 
   private resolvePortFromEnvVars(envVars?: Record<string, string>): number {
