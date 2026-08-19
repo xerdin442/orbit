@@ -8,6 +8,8 @@ import {
   Body,
   UseGuards,
   Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
@@ -58,5 +60,11 @@ export class ProjectsController {
   @Get(':id/branches')
   listBranches(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.projects.findAvailableBranches(id, req.user.id);
+  }
+
+  @Post(':id/tokens/rotate')
+  @HttpCode(HttpStatus.OK)
+  rotateToken(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.projects.rotateSecretAccessToken(id, req.user.id);
   }
 }
