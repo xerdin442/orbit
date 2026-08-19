@@ -6,7 +6,9 @@ import { FilterActivityLogsDto } from './dto/activity-log.dto';
 
 describe('ActivityService', () => {
   let service: ActivityService;
-  let db: jest.Mocked<Pick<DbService, 'activity'>>;
+  let db: {
+    activity: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
+  };
 
   function dto(
     overrides: Partial<FilterActivityLogsDto> = {},
@@ -21,7 +23,7 @@ describe('ActivityService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       },
-    } as unknown as jest.Mocked<Pick<DbService, 'activity'>>;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [ActivityService, { provide: DbService, useValue: db }],

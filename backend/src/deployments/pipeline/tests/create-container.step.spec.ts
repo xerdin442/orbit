@@ -26,7 +26,10 @@ describe('CreateContainerStep', () => {
       createContainer: jest.fn().mockResolvedValue({ id: 'container-1' }),
     };
     log = { append: jest.fn() };
-    step = new CreateContainerStep(docker as DockerService, log as LogService);
+    step = new CreateContainerStep(
+      docker as unknown as DockerService,
+      log as unknown as LogService,
+    );
   });
 
   it('creates network and container with correct options', async () => {

@@ -73,7 +73,7 @@ describe('CreateProjectDto', () => {
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://github.com/owner/repo';
     dto.defaultBranch = 'main';
-    (dto as Record<string, unknown>).healthCheck = 'yes';
+    (dto as unknown as Record<string, unknown>).healthCheck = 'yes';
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'healthCheck')).toBe(true);
   });

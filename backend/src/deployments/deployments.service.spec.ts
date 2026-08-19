@@ -12,6 +12,7 @@ import {
   BuildStatus,
   LifecycleStatus,
   DeploymentTrigger,
+  DomainType,
 } from '@generated/client';
 
 describe('DeploymentsService', () => {
@@ -87,6 +88,77 @@ describe('DeploymentsService', () => {
         }),
       });
       expect(activity.log).toHaveBeenCalled();
+    });
+
+    it('throws if the environment belongs to a different project than expected', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+        project: { ownerId: 'user-1' },
+      });
+
+      await expect(
+        service.createDeployment('env-1', 'user-1', 'proj-2'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(db.deployment.create).not.toHaveBeenCalled();
+    });
+
+    it('succeeds when expectedProjectId matches the environment project', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+        project: { ownerId: 'user-1' },
+      });
+      db.deployment.findFirst = jest.fn().mockResolvedValue(null);
+      db.deployment.create = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        trigger: DeploymentTrigger.manual,
+      });
+
+      const result = await service.createDeployment(
+        'env-1',
+        'user-1',
+        'proj-1',
+      );
+
+      expect(result.id).toBe('dep-1');
+    });
+  });
+
+  describe('findByIdForProject', () => {
+    it('returns the deployment scoped to the given project, including its managed domain', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        buildStatus: BuildStatus.ready,
+        environment: {
+          id: 'env-1',
+          projectId: 'proj-1',
+          domains: [{ hostname: 'app.orbit.dev' }],
+        },
+      });
+
+      const result = await service.findByIdForProject('dep-1', 'proj-1');
+
+      expect(result.id).toBe('dep-1');
+      expect(db.deployment.findFirst).toHaveBeenCalledWith({
+        where: { id: 'dep-1', environment: { projectId: 'proj-1' } },
+        include: {
+          environment: {
+            include: {
+              domains: { where: { type: DomainType.managed } },
+            },
+          },
+        },
+      });
+    });
+
+    it('throws if no deployment matches the project', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue(null);
+
+      await expect(
+        service.findByIdForProject('dep-1', 'proj-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

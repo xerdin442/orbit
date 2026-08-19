@@ -22,7 +22,7 @@ const mockCtx = (): DeploymentContext =>
 describe('ConfigureProxyStep', () => {
   let step: ConfigureProxyStep;
   let caddy: jest.Mocked<Pick<CaddyService, 'syncEnvironment'>>;
-  let db: jest.Mocked<Pick<DbService, 'domain'>>;
+  let db: { domain: { findFirst: jest.Mock; create: jest.Mock } };
   let log: jest.Mocked<Pick<LogService, 'append'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
 
@@ -38,10 +38,10 @@ describe('ConfigureProxyStep', () => {
     activity = { log: jest.fn() };
 
     step = new ConfigureProxyStep(
-      caddy as CaddyService,
-      db as DbService,
-      log as LogService,
-      activity as ActivityService,
+      caddy as unknown as CaddyService,
+      db as unknown as DbService,
+      log as unknown as LogService,
+      activity as unknown as ActivityService,
     );
   });
 

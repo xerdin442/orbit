@@ -207,10 +207,41 @@ describe('AuthService', () => {
         UnauthorizedException,
       );
     });
+
+    it('throws with the GitHub-provided reason when the response has no access_token', async () => {
+      fetchSpy.mockReset();
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            error: 'bad_verification_code',
+            error_description: 'The code passed is incorrect or expired.',
+          }),
+      });
+
+      await expect(service.handleGitHubCallback('bad-code')).rejects.toThrow(
+        'No access token received from GitHub: The code passed is incorrect or expired.',
+      );
+    });
   });
 
   describe('getAuthenticatedUser', () => {
     it('returns user profile when found', async () => {
+      const slackInstallation = {
+        teamId: 'T123',
+        teamName: 'Orbit',
+        installerSlackUserId: 'U123',
+        isActive: true,
+        createdAt: new Date(),
+      };
+      const externalConnections = [
+        {
+          provider: 'railway' as const,
+          label: 'testuser',
+          createdAt: new Date(),
+        },
+      ];
+
       users.findById.mockResolvedValue({
         id: 'user-1',
         githubUserId: 12345,
@@ -218,7 +249,8 @@ describe('AuthService', () => {
         email: 'test@example.com',
         avatarUrl: 'https://avatar.url',
         createdAt: new Date(),
-        updatedAt: new Date(),
+        slackInstallation,
+        externalConnections,
       });
 
       const result = await service.getAuthenticatedUser('user-1');
@@ -228,6 +260,8 @@ describe('AuthService', () => {
         githubUsername: 'testuser',
         email: 'test@example.com',
         avatarUrl: 'https://avatar.url',
+        slackInstallation,
+        externalConnections,
       });
     });
 

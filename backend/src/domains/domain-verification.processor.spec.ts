@@ -19,7 +19,7 @@ jest.mock('util', () => ({
 
 describe('DomainVerificationProcessor', () => {
   let processor: DomainVerificationProcessor;
-  let db: jest.Mocked<Pick<DbService, 'domain'>>;
+  let db: { domain: { findMany: jest.Mock; update: jest.Mock } };
   let caddy: jest.Mocked<Pick<CaddyService, 'syncEnvironment'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
 
@@ -37,8 +37,8 @@ describe('DomainVerificationProcessor', () => {
 
     processor = new DomainVerificationProcessor(
       db as unknown as DbService,
-      caddy as CaddyService,
-      activity as ActivityService,
+      caddy as unknown as CaddyService,
+      activity as unknown as ActivityService,
     );
   });
 
@@ -100,7 +100,7 @@ describe('DomainVerificationProcessor', () => {
 
     await processor.process();
 
-    const calls = (db.domain.update as jest.Mock).mock.calls as any[][];
+    const calls = db.domain.update.mock.calls as any[][];
     const statusUpdates = calls.map((c) => c[0].data.status as string);
     expect(statusUpdates).not.toContain(DomainStatus.failed);
   });

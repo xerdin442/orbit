@@ -5,7 +5,11 @@ import { DbService } from '@src/db/db.service';
 describe('CaddyService', () => {
   let service: CaddyService;
   let fetchMock: jest.Mock;
-  let db: jest.Mocked<Pick<DbService, 'environment' | 'deployment' | 'domain'>>;
+  let db: {
+    environment: { findUniqueOrThrow: jest.Mock };
+    deployment: { findUniqueOrThrow: jest.Mock };
+    domain: { findMany: jest.Mock };
+  };
 
   beforeEach(async () => {
     fetchMock = jest.fn().mockResolvedValue({ ok: true });
@@ -15,9 +19,7 @@ describe('CaddyService', () => {
       environment: { findUniqueOrThrow: jest.fn() },
       deployment: { findUniqueOrThrow: jest.fn() },
       domain: { findMany: jest.fn() },
-    } as unknown as jest.Mocked<
-      Pick<DbService, 'environment' | 'deployment' | 'domain'>
-    >;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [CaddyService, { provide: DbService, useValue: db }],

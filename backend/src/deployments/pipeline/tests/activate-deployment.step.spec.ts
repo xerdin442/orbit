@@ -10,9 +10,11 @@ const mockCtx = (): DeploymentContext =>
 
 describe('ActivateDeploymentStep', () => {
   let step: ActivateDeploymentStep;
-  let db: jest.Mocked<
-    Pick<DbService, '$transaction' | 'deployment' | 'environment'>
-  >;
+  let db: {
+    $transaction: jest.Mock;
+    deployment: { updateMany: jest.Mock; update: jest.Mock };
+    environment: { update: jest.Mock };
+  };
 
   beforeEach(() => {
     const tx = {
@@ -29,11 +31,9 @@ describe('ActivateDeploymentStep', () => {
       $transaction: jest.fn((cb: Function) => cb(tx)),
       deployment: tx.deployment,
       environment: tx.environment,
-    } as unknown as jest.Mocked<
-      Pick<DbService, '$transaction' | 'deployment' | 'environment'>
-    >;
+    };
 
-    step = new ActivateDeploymentStep(db as DbService);
+    step = new ActivateDeploymentStep(db as unknown as DbService);
   });
 
   it('deactivates previous active, activates new, updates env', async () => {
