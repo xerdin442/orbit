@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { WorkbenchService } from './workbench.service';
 import { ExecuteQueryDto } from './dto/query.dto';

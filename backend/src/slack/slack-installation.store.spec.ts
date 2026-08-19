@@ -5,7 +5,13 @@ import type { Installation, InstallationQuery } from '@slack/bolt';
 
 describe('SlackInstallationStore', () => {
   let store: SlackInstallationStore;
-  let db: jest.Mocked<Pick<DbService, 'slackInstallation'>>;
+  let db: {
+    slackInstallation: {
+      upsert: jest.Mock;
+      findFirst: jest.Mock;
+      update: jest.Mock;
+    };
+  };
   let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
 
   const mockInstallation: Installation = {
@@ -46,7 +52,7 @@ describe('SlackInstallationStore', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
       },
-    } as unknown as jest.Mocked<Pick<DbService, 'slackInstallation'>>;
+    };
 
     encryption = {
       encrypt: jest.fn((v: string) => `encrypted:${v}`),

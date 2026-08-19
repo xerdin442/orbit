@@ -15,17 +15,20 @@ describe('CleanupStep', () => {
   let docker: jest.Mocked<
     Pick<DockerService, 'stopContainer' | 'removeContainer'>
   >;
-  let db: jest.Mocked<Pick<DbService, 'deployment'>>;
+  let db: { deployment: { findMany: jest.Mock } };
 
   beforeEach(() => {
     docker = { stopContainer: jest.fn(), removeContainer: jest.fn() };
     db = { deployment: { findMany: jest.fn() } };
 
-    step = new CleanupStep(docker as DockerService, db as DbService);
+    step = new CleanupStep(
+      docker as unknown as DockerService,
+      db as unknown as DbService,
+    );
   });
 
   it('stops and removes old containers', async () => {
-    (db.deployment.findMany as jest.Mock).mockResolvedValue([
+    db.deployment.findMany.mockResolvedValue([
       { id: 'dep-1', containerId: 'c1' },
     ]);
 
@@ -36,7 +39,7 @@ describe('CleanupStep', () => {
   });
 
   it('swallows container cleanup errors', async () => {
-    (db.deployment.findMany as jest.Mock).mockResolvedValue([
+    db.deployment.findMany.mockResolvedValue([
       { id: 'dep-1', containerId: 'c1' },
     ]);
     docker.stopContainer.mockRejectedValue(new Error('gone'));
@@ -45,7 +48,7 @@ describe('CleanupStep', () => {
   });
 
   it('skips deployments without containerId', async () => {
-    (db.deployment.findMany as jest.Mock).mockResolvedValue([
+    db.deployment.findMany.mockResolvedValue([
       { id: 'dep-1', containerId: null },
     ]);
 

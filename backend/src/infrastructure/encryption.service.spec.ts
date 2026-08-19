@@ -26,4 +26,19 @@ describe('EncryptionService', () => {
     const encrypted = service.encrypt(plaintext);
     expect(service.decrypt(encrypted)).toBe(plaintext);
   });
+
+  describe('hash', () => {
+    it('produces a 64-character hex sha256 digest', () => {
+      const digest = service.hash('orbit_sat_abc');
+      expect(digest).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it('is deterministic for the same input', () => {
+      expect(service.hash('same-value')).toBe(service.hash('same-value'));
+    });
+
+    it('produces different digests for different input', () => {
+      expect(service.hash('value-a')).not.toBe(service.hash('value-b'));
+    });
+  });
 });

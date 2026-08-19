@@ -129,6 +129,18 @@ orbit deploy -f
 
 After deployment, the CLI reminds you that managed databases can be created via the Orbit dashboard.
 
+### Deploying from CI/CD
+
+For pipelines that aren't logged in (`orbit auth login`), deploy with a project-scoped access token instead. Find it on the project's page in the dashboard:
+
+```bash
+orbit deploy --token <secretAccessToken> --project <projectId>
+```
+
+This bypasses the locally linked context entirely. The environment to deploy is resolved from the current git branch (or `GITHUB_REF_NAME` / `CI_COMMIT_REF_NAME` / `BRANCH_NAME` in CI) — it must match the branch of an existing environment on the project, or the deploy is rejected.
+
+With `--follow`, the CLI can't stream logs without a login session, so it instead polls the build status every 5 seconds for up to 5 minutes. On success it reports the live URL; on failure or abort it exits non-zero. If the build hasn't resolved within 5 minutes, the CLI warns that the status check timed out and to check the dashboard, then exits non-zero — the deployment itself may still complete.
+
 ## Deployment Logs
 
 Stream real-time logs for a specific deployment:
@@ -349,6 +361,7 @@ orbit env --help
 | `orbit link` | Link to an existing project |
 | `orbit deploy` | Trigger a deployment |
 | `orbit deploy -f` | Deploy and stream logs |
+| `orbit deploy --token <t> --project <id>` | Deploy from CI/CD via project access token |
 | `orbit logs [id]` | Stream or view deployment logs |
 | `orbit list` | List recent deployments |
 | `orbit env ls` | List environment variables |

@@ -11,7 +11,9 @@ jest.mock('@slack/web-api', () => ({
 
 describe('SlackApiService', () => {
   let service: SlackApiService;
-  let db: jest.Mocked<Pick<DbService, 'slackInstallation'>>;
+  let db: {
+    slackInstallation: { findFirst: jest.Mock; update: jest.Mock };
+  };
   let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
   let queue: { add: jest.Mock };
 
@@ -26,7 +28,7 @@ describe('SlackApiService', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
       },
-    } as unknown as jest.Mocked<Pick<DbService, 'slackInstallation'>>;
+    };
 
     encryption = {
       encrypt: jest.fn((v: string) => `encrypted:${v}`),

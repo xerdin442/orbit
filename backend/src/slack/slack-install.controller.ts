@@ -12,7 +12,7 @@ import type { Response } from 'express';
 import { createHash, randomUUID } from 'crypto';
 import { WebClient } from '@slack/web-api';
 import type { RedisClientType } from 'redis';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import { SlackInstallationStore } from './slack-installation.store';
 import { SlackApiService } from './slack-api.service';
 import { ActivityService } from '@src/activity/activity.service';

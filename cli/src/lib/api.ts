@@ -20,13 +20,13 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
+  authHeaders?: Record<string, string>,
 ): Promise<T> {
-  const token = ensureAuth();
   const url = `${getApiUrl()}${path}`;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
+    ...(authHeaders ?? { Authorization: `Bearer ${ensureAuth()}` }),
   };
 
   const response = await fetch(url, {
@@ -36,7 +36,11 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    error("Not authenticated. Run `orbit auth login`.");
+    error(
+      authHeaders
+        ? "Invalid or unauthorized project access token."
+        : "Not authenticated. Run `orbit auth login`.",
+    );
     process.exit(1);
   }
 
@@ -60,15 +64,33 @@ async function request<T>(
 }
 
 type ApiClient = {
-  get: <T>(path: string) => Promise<T>;
-  post: <T>(path: string, body?: unknown) => Promise<T>;
-  patch: <T>(path: string, body?: unknown) => Promise<T>;
-  del: <T>(path: string) => Promise<T>;
+  get: <T>(path: string, authHeaders?: Record<string, string>) => Promise<T>;
+  post: <T>(
+    path: string,
+    body?: unknown,
+    authHeaders?: Record<string, string>,
+  ) => Promise<T>;
+  patch: <T>(
+    path: string,
+    body?: unknown,
+    authHeaders?: Record<string, string>,
+  ) => Promise<T>;
+  del: <T>(path: string, authHeaders?: Record<string, string>) => Promise<T>;
 };
 
 export const api: ApiClient = {
-  get: <T>(path: string) => request<T>("GET", path),
-  post: <T>(path: string, body?: unknown) => request<T>("POST", path, body),
-  patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, body),
-  del: <T>(path: string) => request<T>("DELETE", path),
+  get: <T>(path: string, authHeaders?: Record<string, string>) =>
+    request<T>("GET", path, undefined, authHeaders),
+  post: <T>(
+    path: string,
+    body?: unknown,
+    authHeaders?: Record<string, string>,
+  ) => request<T>("POST", path, body, authHeaders),
+  patch: <T>(
+    path: string,
+    body?: unknown,
+    authHeaders?: Record<string, string>,
+  ) => request<T>("PATCH", path, body, authHeaders),
+  del: <T>(path: string, authHeaders?: Record<string, string>) =>
+    request<T>("DELETE", path, undefined, authHeaders),
 };

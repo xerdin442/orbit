@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { ActivityService } from './activity.service';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import { FilterActivityLogsDto } from './dto/activity-log.dto';
 import type { AuthenticatedRequest } from '@src/common/types';
 

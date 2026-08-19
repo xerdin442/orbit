@@ -5,7 +5,7 @@ import { LogLevel, type DeploymentLog } from '@generated/client';
 
 describe('LogService', () => {
   let service: LogService;
-  let db: jest.Mocked<Pick<DbService, 'deploymentLog'>>;
+  let db: { deploymentLog: { create: jest.Mock; findMany: jest.Mock } };
 
   beforeEach(async () => {
     db = {
@@ -13,7 +13,7 @@ describe('LogService', () => {
         create: jest.fn(),
         findMany: jest.fn(),
       },
-    } as unknown as jest.Mocked<Pick<DbService, 'deploymentLog'>>;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [LogService, { provide: DbService, useValue: db }],
