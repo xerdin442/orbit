@@ -11,6 +11,10 @@ export interface AuthenticatedRequest extends Request {
   user: { id: string };
 }
 
+export interface ProjectTokenRequest extends Request {
+  project: Project;
+}
+
 export interface JwtPayload {
   sub: string;
 }

@@ -77,6 +77,20 @@ export class EnvironmentsService {
     return env;
   }
 
+  async findByProjectAndBranch(projectId: string, branch: string) {
+    const env = await this.db.environment.findFirst({
+      where: { projectId, branch },
+    });
+
+    if (!env) {
+      throw new NotFoundException(
+        `No environment is linked to branch "${branch}"`,
+      );
+    }
+
+    return env;
+  }
+
   async findAllByProject(projectId: string, userId: string) {
     await this.verifyProjectOwnership(projectId, userId);
 

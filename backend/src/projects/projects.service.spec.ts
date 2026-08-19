@@ -13,7 +13,9 @@ describe('ProjectsService', () => {
     environment: { create: jest.Mock };
     environmentVariable: { createMany: jest.Mock };
   };
-  let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
+  let encryption: jest.Mocked<
+    Pick<EncryptionService, 'encrypt' | 'decrypt' | 'hash'>
+  >;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
 
   const mockEnvironment = (healthCheckPort: number) => ({
@@ -23,6 +25,8 @@ describe('ProjectsService', () => {
       id: 'proj-1',
       name: 'my-app',
       healthCheckPort,
+      secretAccessToken: 'enc_orbit_sat_test',
+      secretAccessTokenHash: 'hash_orbit_sat_test',
     },
   });
 
@@ -39,6 +43,7 @@ describe('ProjectsService', () => {
     encryption = {
       encrypt: jest.fn((v) => `enc_${v}`),
       decrypt: jest.fn((v) => v.replace('enc_', '')),
+      hash: jest.fn((v) => `hash_${v}`),
     };
     activity = { log: jest.fn() };
 
