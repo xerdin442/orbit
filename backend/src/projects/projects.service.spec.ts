@@ -280,4 +280,72 @@ describe('ProjectsService', () => {
       });
     });
   });
+
+  describe('rotateSecretAccessToken', () => {
+    it('generates a new token and persists its encrypted value and hash', async () => {
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        name: 'app-a',
+        secretAccessToken: 'enc_orbit_sat_old',
+        secretAccessTokenHash: 'hash-old',
+      });
+      db.project.update.mockResolvedValue({
+        id: 'proj-1',
+        name: 'app-a',
+        secretAccessToken: 'enc_orbit_sat_new',
+        secretAccessTokenHash: 'hash-new',
+      });
+
+      await service.rotateSecretAccessToken('proj-1', 'user-1');
+
+      const updateArgs = db.project.update.mock.calls[0][0] as {
+        where: { id: string };
+        data: { secretAccessToken: string; secretAccessTokenHash: string };
+      };
+
+      expect(updateArgs.where).toEqual({ id: 'proj-1' });
+      expect(encryption.hash).toHaveBeenCalledWith(
+        expect.stringMatching(/^orbit_sat_[0-9a-f]{48}$/),
+      );
+      expect(updateArgs.data.secretAccessToken).toMatch(
+        /^enc_orbit_sat_[0-9a-f]{48}$/,
+      );
+      expect(updateArgs.data.secretAccessTokenHash).toMatch(
+        /^hash_orbit_sat_[0-9a-f]{48}$/,
+      );
+    });
+
+    it('returns the new token decrypted and the hash stripped', async () => {
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        name: 'app-a',
+        secretAccessToken: 'enc_orbit_sat_old',
+        secretAccessTokenHash: 'hash-old',
+      });
+      db.project.update.mockResolvedValue({
+        id: 'proj-1',
+        name: 'app-a',
+        secretAccessToken: 'enc_orbit_sat_new',
+        secretAccessTokenHash: 'hash-new',
+      });
+
+      const result = await service.rotateSecretAccessToken('proj-1', 'user-1');
+
+      expect(result).toEqual({
+        id: 'proj-1',
+        name: 'app-a',
+        secretAccessToken: 'orbit_sat_new',
+      });
+    });
+
+    it('throws when the project is not owned by the caller, without rotating anything', async () => {
+      db.project.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.rotateSecretAccessToken('proj-1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(db.project.update).not.toHaveBeenCalled();
+    });
+  });
 });

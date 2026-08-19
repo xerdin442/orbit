@@ -140,6 +140,29 @@ export class ProjectsService {
     return this.serializeProject(updated);
   }
 
+  async rotateSecretAccessToken(id: string, userId: string) {
+    await this.findById(id, userId);
+
+    const token = this.generateSecretAccessToken();
+
+    const updated = await this.db.project.update({
+      where: { id },
+      data: {
+        secretAccessToken: this.encryption.encrypt(token),
+        secretAccessTokenHash: this.encryption.hash(token),
+      },
+      include: { source: true },
+    });
+
+    await this.activity.log(ActivityType.project_updated, userId, {
+      projectId: id,
+    });
+
+    await this.invalidateCache(id);
+
+    return this.serializeProject(updated);
+  }
+
   async findAvailableBranches(projectId: string, userId: string) {
     const source = await this.db.source.findUniqueOrThrow({
       where: {
