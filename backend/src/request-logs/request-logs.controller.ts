@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
 import type { RequestLog } from '@generated/client';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { RequestLogsService } from './request-logs.service';
 import { FilterRequestLogsDto } from './dto/request-log.dto';

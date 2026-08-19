@@ -12,7 +12,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import { EnvironmentsService } from './environments.service';
 import { DeploymentsService } from '@src/deployments/deployments.service';
-import { ProjectTokenGuard } from '@src/auth/project-token.guard';
+import { ProjectTokenGuard } from '@src/common/guards/project-token.guard';
 import type { ProjectTokenRequest, DeploymentJob } from '@src/common/types';
 
 @Controller('projects/:projectId/deploy')

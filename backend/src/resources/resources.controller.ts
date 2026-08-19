@@ -12,7 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import { ParseResourceTypeArrayPipe } from '@src/common/pipes/resource-type-array.pipe';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { ResourceType } from '@generated/client';

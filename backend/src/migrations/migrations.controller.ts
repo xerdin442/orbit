@@ -11,7 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { MigrationsService } from './migrations.service';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { ParseExternalProviderPipe } from '@src/common/pipes/external-provider.pipe';
 import { ExternalProvider } from '@generated/client';
