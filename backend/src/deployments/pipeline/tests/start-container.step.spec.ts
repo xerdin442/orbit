@@ -17,7 +17,10 @@ describe('StartContainerStep', () => {
   beforeEach(() => {
     docker = { startContainer: jest.fn() };
     log = { append: jest.fn() };
-    step = new StartContainerStep(docker as DockerService, log as LogService);
+    step = new StartContainerStep(
+      docker as unknown as DockerService,
+      log as unknown as LogService,
+    );
   });
 
   it('starts the container from context', async () => {

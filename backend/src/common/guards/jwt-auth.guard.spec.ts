@@ -8,7 +8,7 @@ describe('JwtAuthGuard', () => {
 
   beforeEach(() => {
     jwt = { verify: jest.fn() };
-    guard = new JwtAuthGuard(jwt as JwtService);
+    guard = new JwtAuthGuard(jwt as unknown as JwtService);
   });
 
   const mockContext = (

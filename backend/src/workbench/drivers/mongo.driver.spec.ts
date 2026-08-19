@@ -40,7 +40,7 @@ describe('MongoDriver', () => {
       close: jest.fn(),
     };
 
-    (MongoClient as jest.Mock).mockImplementation(() => mockClient);
+    (MongoClient as unknown as jest.Mock).mockImplementation(() => mockClient);
   });
 
   const credentials = {

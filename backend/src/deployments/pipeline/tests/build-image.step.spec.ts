@@ -23,7 +23,10 @@ describe('BuildImageStep', () => {
   beforeEach(() => {
     command = { railpackBuild: jest.fn() };
     log = { append: jest.fn() };
-    step = new BuildImageStep(command as CommandService, log as LogService);
+    step = new BuildImageStep(
+      command as unknown as CommandService,
+      log as unknown as LogService,
+    );
   });
 
   it('sets imageTag and calls railpackBuild', async () => {

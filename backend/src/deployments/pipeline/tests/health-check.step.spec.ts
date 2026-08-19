@@ -25,7 +25,10 @@ describe('HealthCheckStep', () => {
       removeContainer: jest.fn(),
     };
     log = { append: jest.fn() };
-    step = new HealthCheckStep(docker as DockerService, log as LogService);
+    step = new HealthCheckStep(
+      docker as unknown as DockerService,
+      log as unknown as LogService,
+    );
   });
 
   it('skips when healthCheck is disabled', async () => {
