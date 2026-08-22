@@ -4,7 +4,15 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Globe, NotebookPen, Plus, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Globe,
+  NotebookPen,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -38,6 +46,7 @@ export default function DomainsPage() {
     null,
   );
   const [refreshingIds, setRefreshingIds] = useState<Set<string>>(new Set());
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
 
   const {
     data: domains,
@@ -56,6 +65,26 @@ export default function DomainsPage() {
     queryClient.invalidateQueries({
       queryKey: ["domains", selectedEnvironment?.id],
     });
+  };
+
+  const handleRetry = async (id: string) => {
+    setRetryingIds((prev) => new Set(prev).add(id));
+    try {
+      const updated = await api.domains.retryVerification(id);
+      queryClient.setQueryData<Domain[]>(
+        ["domains", selectedEnvironment?.id],
+        (prev) => prev?.map((d) => (d.id === id ? updated : d)),
+      );
+      toast.success(`Retrying verification for "${updated.hostname}"`);
+    } catch {
+      // error toast already surfaced by the API client
+    } finally {
+      setRetryingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   const handleRefresh = async (id: string) => {
@@ -119,9 +148,13 @@ export default function DomainsPage() {
       header: "",
       cell: ({ row }) => {
         const refreshing = refreshingIds.has(row.original.id);
+        const retrying = retryingIds.has(row.original.id);
         const needsInstructions =
           row.original.status === "pending" ||
           row.original.status === "verifying";
+        const canRefresh = row.original.status !== "failed";
+        const canRetry =
+          row.original.status === "failed" && row.original.type === "custom";
         return (
           <TooltipProvider>
             <div className="flex items-center justify-end gap-1.5">
@@ -142,24 +175,46 @@ export default function DomainsPage() {
                   <TooltipContent>View DNS instructions</TooltipContent>
                 </Tooltip>
               )}
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Refresh status"
-                      disabled={refreshing}
-                      onClick={() => handleRefresh(row.original.id)}
-                    >
-                      <RefreshCw
-                        className={cn("size-4", refreshing && "animate-spin")}
-                      />
-                    </Button>
-                  }
-                />
-                <TooltipContent>Refresh status</TooltipContent>
-              </Tooltip>
+              {canRefresh && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Refresh status"
+                        disabled={refreshing}
+                        onClick={() => handleRefresh(row.original.id)}
+                      >
+                        <RefreshCw
+                          className={cn("size-4", refreshing && "animate-spin")}
+                        />
+                      </Button>
+                    }
+                  />
+                  <TooltipContent>Refresh status</TooltipContent>
+                </Tooltip>
+              )}
+              {canRetry && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Retry verification"
+                        disabled={retrying}
+                        onClick={() => handleRetry(row.original.id)}
+                      >
+                        <RotateCcw
+                          className={cn("size-4", retrying && "animate-spin")}
+                        />
+                      </Button>
+                    }
+                  />
+                  <TooltipContent>Retry verification</TooltipContent>
+                </Tooltip>
+              )}
               {row.original.type === "custom" && (
                 <Tooltip>
                   <TooltipTrigger

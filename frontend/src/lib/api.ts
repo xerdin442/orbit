@@ -398,6 +398,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify(payload),
       }),
+    retryVerification: (id: string) =>
+      request<Domain>(`/domains/${id}/retry-verification`, {
+        method: "POST",
+      }),
     delete: (id: string) =>
       request<void>(`/domains/${id}`, { method: "DELETE" }),
   },
