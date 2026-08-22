@@ -220,6 +220,7 @@ export const DomainScalarFieldEnum = {
   type: 'type',
   status: 'status',
   verifiedAt: 'verifiedAt',
+  verificationTimeout: 'verificationTimeout',
   environmentId: 'environmentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

@@ -91,6 +91,33 @@ export class DomainsService {
     return this.getDnsInstructions(domain.hostname);
   }
 
+  async retryVerification(id: string, userId: string) {
+    const domain = await this.findOne(id, userId);
+
+    if (domain.type === DomainType.managed) {
+      throw new UnauthorizedException('Managed hostnames cannot be retried');
+    }
+
+    if (domain.status !== DomainStatus.failed) {
+      throw new ConflictException('Only failed domains can be retried');
+    }
+
+    const updated = await this.db.domain.update({
+      where: { id },
+      data: { status: DomainStatus.pending, verificationTimeout: null },
+    });
+
+    await this.invalidateCache(domain.environmentId);
+
+    await this.activity.log(ActivityType.domain_verification_retried, userId, {
+      domainId: id,
+      hostname: domain.hostname,
+      environmentId: domain.environmentId,
+    });
+
+    return updated;
+  }
+
   async deleteDomain(id: string, userId: string) {
     const domain = await this.db.domain.findFirst({
       where: { id, environment: { project: { ownerId: userId } } },

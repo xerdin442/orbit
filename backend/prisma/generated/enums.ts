@@ -117,6 +117,7 @@ export const ActivityType = {
   domain_added: 'domain_added',
   domain_removed: 'domain_removed',
   domain_verified: 'domain_verified',
+  domain_verification_retried: 'domain_verification_retried',
   github_installation_added: 'github_installation_added',
   github_installation_removed: 'github_installation_removed',
   github_webhook_event: 'github_webhook_event',
