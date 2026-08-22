@@ -33,10 +33,14 @@ export class DomainVerificationProcessor extends WorkerHost {
 
     for (const domain of domains) {
       try {
+        let verificationTimeout = domain.verificationTimeout;
+
         if (domain.status === DomainStatus.pending) {
+          verificationTimeout = new Date(Date.now() + FAILURE_TIMEOUT_MS);
+
           await this.db.domain.update({
             where: { id: domain.id },
-            data: { status: DomainStatus.verifying },
+            data: { status: DomainStatus.verifying, verificationTimeout },
           });
         }
 
@@ -60,7 +64,11 @@ export class DomainVerificationProcessor extends WorkerHost {
         if (verified) {
           await this.db.domain.update({
             where: { id: domain.id },
-            data: { status: DomainStatus.active, verifiedAt: new Date() },
+            data: {
+              status: DomainStatus.active,
+              verifiedAt: new Date(),
+              verificationTimeout: null,
+            },
           });
 
           await this.caddy.syncEnvironment(domain.environmentId);
@@ -72,7 +80,8 @@ export class DomainVerificationProcessor extends WorkerHost {
           });
         } else {
           const shouldFail =
-            Date.now() - domain.createdAt.getTime() > FAILURE_TIMEOUT_MS;
+            verificationTimeout != null &&
+            Date.now() > verificationTimeout.getTime();
 
           if (shouldFail) {
             await this.db.domain.update({

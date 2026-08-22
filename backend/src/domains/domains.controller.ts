@@ -42,6 +42,11 @@ export class DomainsController {
     return this.domains.getInstructions(id, req.user.id);
   }
 
+  @Post('domains/:id/retry-verification')
+  retryVerification(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.domains.retryVerification(id, req.user.id);
+  }
+
   @Delete('domains/:id')
   deleteDomain(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.domains.deleteDomain(id, req.user.id);

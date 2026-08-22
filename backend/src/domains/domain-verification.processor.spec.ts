@@ -6,6 +6,7 @@ import { DomainStatus } from '@generated/client';
 
 const mockResolve4 = jest.fn();
 const mockResolveCname = jest.fn();
+const FAILURE_TIMEOUT_MS = 30 * 60 * 1000;
 
 jest.mock('dns', () => ({
   resolve4: (...args: string[]) => mockResolve4(...args),
@@ -58,7 +59,10 @@ describe('DomainVerificationProcessor', () => {
 
     expect(db.domain.update).toHaveBeenCalledWith({
       where: { id: 'd1' },
-      data: { status: DomainStatus.verifying },
+      data: {
+        status: DomainStatus.verifying,
+        verificationTimeout: expect.any(Date),
+      },
     });
     expect(db.domain.update).toHaveBeenCalledWith({
       where: { id: 'd1' },
@@ -66,14 +70,15 @@ describe('DomainVerificationProcessor', () => {
     });
   });
 
-  it('marks failed after 30 minutes', async () => {
-    const oldDate = new Date(Date.now() - 31 * 60 * 1000);
+  it('marks failed once the verification timeout has elapsed', async () => {
+    const pastTimeout = new Date(Date.now() - 60 * 1000);
     db.domain.findMany = jest.fn().mockResolvedValue([
       {
         id: 'd1',
         hostname: 'old.example.com',
         status: DomainStatus.verifying,
-        createdAt: oldDate,
+        createdAt: new Date(Date.now() - 31 * 60 * 1000),
+        verificationTimeout: pastTimeout,
         environmentId: 'env-1',
       },
     ]);
@@ -86,6 +91,27 @@ describe('DomainVerificationProcessor', () => {
     );
   });
 
+  it('does not fail a domain re-entering verification even if it was created long ago', async () => {
+    const futureTimeout = new Date(Date.now() + 29 * 60 * 1000);
+    db.domain.findMany = jest.fn().mockResolvedValue([
+      {
+        id: 'd1',
+        hostname: 'retried.example.com',
+        status: DomainStatus.verifying,
+        createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+        verificationTimeout: futureTimeout,
+        environmentId: 'env-1',
+      },
+    ]);
+    mockResolve4.mockResolvedValue(['10.0.0.1']);
+
+    await processor.process();
+
+    const calls = db.domain.update.mock.calls as any[][];
+    const statusUpdates = calls.map((c) => c[0].data.status as string);
+    expect(statusUpdates).not.toContain(DomainStatus.failed);
+  });
+
   it('skips recent verifying domain on DNS mismatch', async () => {
     db.domain.findMany = jest.fn().mockResolvedValue([
       {
@@ -93,6 +119,7 @@ describe('DomainVerificationProcessor', () => {
         hostname: 'new.example.com',
         status: DomainStatus.verifying,
         createdAt: new Date(),
+        verificationTimeout: new Date(Date.now() + FAILURE_TIMEOUT_MS),
         environmentId: 'env-1',
       },
     ]);
