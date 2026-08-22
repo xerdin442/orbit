@@ -235,7 +235,11 @@ export default function ProjectOverviewPage() {
                     <span>Domains</span>
                   </div>
                   <div className="flex items-center gap-1 text-sm text-foreground">
-                    <span>{domains?.length ?? 0} configured</span>
+                    <span>
+                      {domains?.filter((d) => d.status === "active").length ??
+                        0}{" "}
+                      configured
+                    </span>
                     <Dot size={12} />
                     <Link
                       href={`/projects/${projectId}/domains`}
