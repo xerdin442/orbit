@@ -35,6 +35,16 @@ export class DomainsService {
       throw new ConflictException('This domain is already registered');
     }
 
+    const customDomainCount = await this.db.domain.count({
+      where: { environmentId, type: DomainType.custom },
+    });
+
+    if (customDomainCount >= Secrets.MAX_CUSTOM_DOMAINS) {
+      throw new ConflictException(
+        `This environment has reached the maximum of ${Secrets.MAX_CUSTOM_DOMAINS} custom domains`,
+      );
+    }
+
     const domain = await this.db.domain.create({
       data: {
         hostname,
@@ -95,7 +105,9 @@ export class DomainsService {
     const domain = await this.findOne(id, userId);
 
     if (domain.type === DomainType.managed) {
-      throw new UnauthorizedException('Managed hostnames cannot be retried');
+      throw new UnauthorizedException(
+        'Managed hostnames are active by default and cannot be retried',
+      );
     }
 
     if (domain.status !== DomainStatus.failed) {

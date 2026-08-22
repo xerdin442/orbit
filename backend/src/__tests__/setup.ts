@@ -34,6 +34,7 @@ jest.mock('@src/common/secrets', () => ({
     MONGO_IMAGE_TAG: 'mongo:7',
     RATE_LIMITING_PER_SECOND: 100,
     RATE_LIMITING_PER_MINUTE: 1000,
+    MAX_CUSTOM_DOMAINS: 5,
     SLACK_CLIENT_ID: 'test-slack-client-id',
     SLACK_CLIENT_SECRET: 'test-slack-client-secret',
     SLACK_SIGNING_SECRET: 'test-slack-signing-secret',
