@@ -450,7 +450,9 @@ export const api = {
         searchParams.set("environmentId", params.environmentId);
       if (params?.type) searchParams.set("type", params.type);
       const qs = searchParams.toString();
-      return request<ActivityLog[]>(`/activity${qs ? `?${qs}` : ""}`);
+      return request<PaginatedResult<ActivityLog>>(
+        `/activity${qs ? `?${qs}` : ""}`,
+      );
     },
   },
 };
