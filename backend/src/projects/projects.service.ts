@@ -33,56 +33,59 @@ export class ProjectsService {
 
     const secretAccessToken = this.generateSecretAccessToken();
 
-    const environment = await this.db.$transaction(async (tx) => {
-      const env = await tx.environment.create({
-        data: {
-          name: 'production',
-          branch: dto.defaultBranch,
-          autoDeploy: true,
-          project: {
-            create: {
-              name: dto.name.toLowerCase(),
-              healthCheck: dto.healthCheck ?? false,
-              healthCheckPort,
-              healthCheckPath: dto.healthCheckPath ?? '/health',
-              healthCheckTimeout: dto.healthCheckTimeout ?? 60,
-              buildDirectory: dto.buildDirectory,
-              startCommand: dto.startCommand,
-              ownerId: userId,
-              secretAccessToken: this.encryption.encrypt(secretAccessToken),
-              secretAccessTokenHash: this.encryption.hash(secretAccessToken),
-              source: {
-                create: {
-                  repositoryUrl: dto.repositoryUrl,
-                  provider: 'github',
-                  defaultBranch: dto.defaultBranch,
-                  installationId: dto.installationId,
+    const environment = await this.db.$transaction(
+      async (tx) => {
+        const env = await tx.environment.create({
+          data: {
+            name: 'production',
+            branch: dto.defaultBranch,
+            autoDeploy: true,
+            project: {
+              create: {
+                name: dto.name.toLowerCase(),
+                healthCheck: dto.healthCheck ?? false,
+                healthCheckPort,
+                healthCheckPath: dto.healthCheckPath ?? '/health',
+                healthCheckTimeout: dto.healthCheckTimeout ?? 60,
+                buildDirectory: dto.buildDirectory,
+                startCommand: dto.startCommand,
+                ownerId: userId,
+                secretAccessToken: this.encryption.encrypt(secretAccessToken),
+                secretAccessTokenHash: this.encryption.hash(secretAccessToken),
+                source: {
+                  create: {
+                    repositoryUrl: dto.repositoryUrl,
+                    provider: 'github',
+                    defaultBranch: dto.defaultBranch,
+                    installationId: dto.installationId,
+                  },
                 },
               },
             },
           },
-        },
-        include: { project: { include: { source: true } } },
-      });
-
-      if (dto.envVars) {
-        const vars = Object.entries(dto.envVars).map(([key, value]) => ({
-          key,
-          value: this.encryption.encrypt(value),
-          environmentId: env.id,
-        }));
-
-        await tx.environmentVariable.createMany({ data: vars });
-
-        await this.activity.log(ActivityType.variable_created, userId, {
-          projectId: env.projectId,
-          environmentId: env.id,
-          keys: Object.keys(dto.envVars).join(','),
+          include: { project: { include: { source: true } } },
         });
-      }
 
-      return env;
-    });
+        if (dto.envVars) {
+          const vars = Object.entries(dto.envVars).map(([key, value]) => ({
+            key,
+            value: this.encryption.encrypt(value),
+            environmentId: env.id,
+          }));
+
+          await tx.environmentVariable.createMany({ data: vars });
+
+          await this.activity.log(ActivityType.variable_created, userId, {
+            projectId: env.projectId,
+            environmentId: env.id,
+            keys: Object.keys(dto.envVars).join(','),
+          });
+        }
+
+        return env;
+      },
+      { timeout: 10000 },
+    );
 
     await this.activity.log(ActivityType.project_created, userId, {
       projectId: environment.project.id,
