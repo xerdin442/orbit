@@ -279,9 +279,9 @@ export default function ProjectOverviewPage() {
                     <Skeleton key={i} className="h-8 w-full" />
                   ))}
                 </div>
-              ) : activity && activity.length > 0 ? (
+              ) : activity && activity.data.length > 0 ? (
                 <div className="space-y-3">
-                  {activity.slice(0, 5).map((a) => (
+                  {activity.data.slice(0, 5).map((a) => (
                     <ActivityItem key={a.id} activity={a} />
                   ))}
                 </div>
