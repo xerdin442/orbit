@@ -32,6 +32,7 @@ export type DeploymentMinAggregateOutputType = {
   containerId: string | null
   trigger: $Enums.DeploymentTrigger | null
   buildStatus: $Enums.BuildStatus | null
+  failedStage: $Enums.BuildStatus | null
   lifecycleStatus: $Enums.LifecycleStatus | null
   createdAt: Date | null
   completedAt: Date | null
@@ -47,6 +48,7 @@ export type DeploymentMaxAggregateOutputType = {
   containerId: string | null
   trigger: $Enums.DeploymentTrigger | null
   buildStatus: $Enums.BuildStatus | null
+  failedStage: $Enums.BuildStatus | null
   lifecycleStatus: $Enums.LifecycleStatus | null
   createdAt: Date | null
   completedAt: Date | null
@@ -62,6 +64,7 @@ export type DeploymentCountAggregateOutputType = {
   containerId: number
   trigger: number
   buildStatus: number
+  failedStage: number
   lifecycleStatus: number
   createdAt: number
   completedAt: number
@@ -79,6 +82,7 @@ export type DeploymentMinAggregateInputType = {
   containerId?: true
   trigger?: true
   buildStatus?: true
+  failedStage?: true
   lifecycleStatus?: true
   createdAt?: true
   completedAt?: true
@@ -94,6 +98,7 @@ export type DeploymentMaxAggregateInputType = {
   containerId?: true
   trigger?: true
   buildStatus?: true
+  failedStage?: true
   lifecycleStatus?: true
   createdAt?: true
   completedAt?: true
@@ -109,6 +114,7 @@ export type DeploymentCountAggregateInputType = {
   containerId?: true
   trigger?: true
   buildStatus?: true
+  failedStage?: true
   lifecycleStatus?: true
   createdAt?: true
   completedAt?: true
@@ -197,6 +203,7 @@ export type DeploymentGroupByOutputType = {
   containerId: string | null
   trigger: $Enums.DeploymentTrigger
   buildStatus: $Enums.BuildStatus
+  failedStage: $Enums.BuildStatus | null
   lifecycleStatus: $Enums.LifecycleStatus
   createdAt: Date
   completedAt: Date | null
@@ -233,6 +240,7 @@ export type DeploymentWhereInput = {
   containerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFilter<"Deployment"> | $Enums.BuildStatus
+  failedStage?: Prisma.EnumBuildStatusNullableFilter<"Deployment"> | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFilter<"Deployment"> | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   completedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
@@ -250,6 +258,7 @@ export type DeploymentOrderByWithRelationInput = {
   containerId?: Prisma.SortOrderInput | Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
+  failedStage?: Prisma.SortOrderInput | Prisma.SortOrder
   lifecycleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -270,6 +279,7 @@ export type DeploymentWhereUniqueInput = Prisma.AtLeast<{
   containerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFilter<"Deployment"> | $Enums.BuildStatus
+  failedStage?: Prisma.EnumBuildStatusNullableFilter<"Deployment"> | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFilter<"Deployment"> | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   completedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
@@ -287,6 +297,7 @@ export type DeploymentOrderByWithAggregationInput = {
   containerId?: Prisma.SortOrderInput | Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
+  failedStage?: Prisma.SortOrderInput | Prisma.SortOrder
   lifecycleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -308,6 +319,7 @@ export type DeploymentScalarWhereWithAggregatesInput = {
   containerId?: Prisma.StringNullableWithAggregatesFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerWithAggregatesFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusWithAggregatesFilter<"Deployment"> | $Enums.BuildStatus
+  failedStage?: Prisma.EnumBuildStatusNullableWithAggregatesFilter<"Deployment"> | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusWithAggregatesFilter<"Deployment"> | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Deployment"> | Date | string
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Deployment"> | Date | string | null
@@ -323,6 +335,7 @@ export type DeploymentCreateInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -339,6 +352,7 @@ export type DeploymentUncheckedCreateInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -355,6 +369,7 @@ export type DeploymentUpdateInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -371,6 +386,7 @@ export type DeploymentUncheckedUpdateInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -387,6 +403,7 @@ export type DeploymentCreateManyInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -402,6 +419,7 @@ export type DeploymentUpdateManyMutationInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -416,6 +434,7 @@ export type DeploymentUncheckedUpdateManyInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -441,6 +460,7 @@ export type DeploymentCountOrderByAggregateInput = {
   containerId?: Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
+  failedStage?: Prisma.SortOrder
   lifecycleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
@@ -456,6 +476,7 @@ export type DeploymentMaxOrderByAggregateInput = {
   containerId?: Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
+  failedStage?: Prisma.SortOrder
   lifecycleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
@@ -471,6 +492,7 @@ export type DeploymentMinOrderByAggregateInput = {
   containerId?: Prisma.SortOrder
   trigger?: Prisma.SortOrder
   buildStatus?: Prisma.SortOrder
+  failedStage?: Prisma.SortOrder
   lifecycleStatus?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
@@ -533,6 +555,10 @@ export type EnumBuildStatusFieldUpdateOperationsInput = {
   set?: $Enums.BuildStatus
 }
 
+export type NullableEnumBuildStatusFieldUpdateOperationsInput = {
+  set?: $Enums.BuildStatus | null
+}
+
 export type EnumLifecycleStatusFieldUpdateOperationsInput = {
   set?: $Enums.LifecycleStatus
 }
@@ -563,6 +589,7 @@ export type DeploymentCreateWithoutEnvironmentInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -578,6 +605,7 @@ export type DeploymentUncheckedCreateWithoutEnvironmentInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -622,6 +650,7 @@ export type DeploymentScalarWhereInput = {
   containerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFilter<"Deployment"> | $Enums.BuildStatus
+  failedStage?: Prisma.EnumBuildStatusNullableFilter<"Deployment"> | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFilter<"Deployment"> | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFilter<"Deployment"> | Date | string
   completedAt?: Prisma.DateTimeNullableFilter<"Deployment"> | Date | string | null
@@ -637,6 +666,7 @@ export type DeploymentCreateWithoutLogsInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -652,6 +682,7 @@ export type DeploymentUncheckedCreateWithoutLogsInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -683,6 +714,7 @@ export type DeploymentUpdateWithoutLogsInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -698,6 +730,7 @@ export type DeploymentUncheckedUpdateWithoutLogsInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -713,6 +746,7 @@ export type DeploymentCreateManyEnvironmentInput = {
   containerId?: string | null
   trigger?: $Enums.DeploymentTrigger
   buildStatus?: $Enums.BuildStatus
+  failedStage?: $Enums.BuildStatus | null
   lifecycleStatus?: $Enums.LifecycleStatus
   createdAt?: Date | string
   completedAt?: Date | string | null
@@ -727,6 +761,7 @@ export type DeploymentUpdateWithoutEnvironmentInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -742,6 +777,7 @@ export type DeploymentUncheckedUpdateWithoutEnvironmentInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -757,6 +793,7 @@ export type DeploymentUncheckedUpdateManyWithoutEnvironmentInput = {
   containerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trigger?: Prisma.EnumDeploymentTriggerFieldUpdateOperationsInput | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus
+  failedStage?: Prisma.NullableEnumBuildStatusFieldUpdateOperationsInput | $Enums.BuildStatus | null
   lifecycleStatus?: Prisma.EnumLifecycleStatusFieldUpdateOperationsInput | $Enums.LifecycleStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -802,6 +839,7 @@ export type DeploymentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   containerId?: boolean
   trigger?: boolean
   buildStatus?: boolean
+  failedStage?: boolean
   lifecycleStatus?: boolean
   createdAt?: boolean
   completedAt?: boolean
@@ -820,6 +858,7 @@ export type DeploymentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   containerId?: boolean
   trigger?: boolean
   buildStatus?: boolean
+  failedStage?: boolean
   lifecycleStatus?: boolean
   createdAt?: boolean
   completedAt?: boolean
@@ -836,6 +875,7 @@ export type DeploymentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   containerId?: boolean
   trigger?: boolean
   buildStatus?: boolean
+  failedStage?: boolean
   lifecycleStatus?: boolean
   createdAt?: boolean
   completedAt?: boolean
@@ -852,6 +892,7 @@ export type DeploymentSelectScalar = {
   containerId?: boolean
   trigger?: boolean
   buildStatus?: boolean
+  failedStage?: boolean
   lifecycleStatus?: boolean
   createdAt?: boolean
   completedAt?: boolean
@@ -859,7 +900,7 @@ export type DeploymentSelectScalar = {
   environmentId?: boolean
 }
 
-export type DeploymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "commitSha" | "commitMessage" | "imageTag" | "containerId" | "trigger" | "buildStatus" | "lifecycleStatus" | "createdAt" | "completedAt" | "updatedAt" | "environmentId", ExtArgs["result"]["deployment"]>
+export type DeploymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "commitSha" | "commitMessage" | "imageTag" | "containerId" | "trigger" | "buildStatus" | "failedStage" | "lifecycleStatus" | "createdAt" | "completedAt" | "updatedAt" | "environmentId", ExtArgs["result"]["deployment"]>
 export type DeploymentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
   logs?: boolean | Prisma.Deployment$logsArgs<ExtArgs>
@@ -886,6 +927,7 @@ export type $DeploymentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     containerId: string | null
     trigger: $Enums.DeploymentTrigger
     buildStatus: $Enums.BuildStatus
+    failedStage: $Enums.BuildStatus | null
     lifecycleStatus: $Enums.LifecycleStatus
     createdAt: Date
     completedAt: Date | null
@@ -1323,6 +1365,7 @@ export interface DeploymentFieldRefs {
   readonly containerId: Prisma.FieldRef<"Deployment", 'String'>
   readonly trigger: Prisma.FieldRef<"Deployment", 'DeploymentTrigger'>
   readonly buildStatus: Prisma.FieldRef<"Deployment", 'BuildStatus'>
+  readonly failedStage: Prisma.FieldRef<"Deployment", 'BuildStatus'>
   readonly lifecycleStatus: Prisma.FieldRef<"Deployment", 'LifecycleStatus'>
   readonly createdAt: Prisma.FieldRef<"Deployment", 'DateTime'>
   readonly completedAt: Prisma.FieldRef<"Deployment", 'DateTime'>

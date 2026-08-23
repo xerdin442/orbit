@@ -1584,6 +1584,7 @@ export const DeploymentScalarFieldEnum = {
   containerId: 'containerId',
   trigger: 'trigger',
   buildStatus: 'buildStatus',
+  failedStage: 'failedStage',
   lifecycleStatus: 'lifecycleStatus',
   createdAt: 'createdAt',
   completedAt: 'completedAt',

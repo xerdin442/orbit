@@ -240,17 +240,17 @@ export class DeploymentsService {
     });
   }
 
-  async updateCommit(
-    id: string,
-    data: {
-      commitSha: string;
-      commitMessage: string;
-      imageTag: string | null;
-    },
-  ) {
+  async updateCommit(id: string, sha: string, msg: string) {
     return this.db.deployment.update({
       where: { id },
-      data,
+      data: { commitSha: sha, commitMessage: msg },
+    });
+  }
+
+  async updateBuildImage(id: string, imageTag: string | null) {
+    return this.db.deployment.update({
+      where: { id },
+      data: { imageTag },
     });
   }
 
@@ -261,11 +261,12 @@ export class DeploymentsService {
     });
   }
 
-  async markFailed(id: string) {
+  async markFailed(id: string, failedStage?: BuildStatus) {
     return this.db.deployment.update({
       where: { id },
       data: {
         buildStatus: BuildStatus.failed,
+        ...(failedStage ? { failedStage } : {}),
         lifecycleStatus: LifecycleStatus.aborted,
       },
     });
