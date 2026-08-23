@@ -126,6 +126,7 @@ describe('DeploymentProcessor', () => {
     findById: jest.Mock;
     updateBuildStatus: jest.Mock;
     updateCommit: jest.Mock;
+    updateBuildImage: jest.Mock;
     updateContainerId: jest.Mock;
     markCompleted: jest.Mock;
     markFailed: jest.Mock;
@@ -166,6 +167,7 @@ describe('DeploymentProcessor', () => {
         .mockResolvedValue({ buildStatus: BuildStatus.pending }),
       updateBuildStatus: jest.fn().mockResolvedValue(undefined),
       updateCommit: jest.fn().mockResolvedValue(undefined),
+      updateBuildImage: jest.fn().mockResolvedValue(undefined),
       updateContainerId: jest.fn().mockResolvedValue(undefined),
       markCompleted: jest.fn().mockResolvedValue(undefined),
       markFailed: jest.fn().mockResolvedValue(undefined),
@@ -220,11 +222,15 @@ describe('DeploymentProcessor', () => {
       expect(mockExecuteConfigureProxy).toHaveBeenCalledTimes(1);
       expect(mockExecuteCleanup).toHaveBeenCalledTimes(1);
 
-      expect(deployments.updateCommit).toHaveBeenCalledWith(DEPLOYMENT_ID, {
-        commitSha: 'abc123',
-        commitMessage: 'initial commit',
-        imageTag: 'app:latest',
-      });
+      expect(deployments.updateCommit).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        'abc123',
+        'initial commit',
+      );
+      expect(deployments.updateBuildImage).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        'app:latest',
+      );
       expect(deployments.updateContainerId).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
         '',
@@ -358,7 +364,10 @@ describe('DeploymentProcessor', () => {
 
       await processor.process(job);
 
-      expect(deployments.markFailed).toHaveBeenCalledWith(DEPLOYMENT_ID);
+      expect(deployments.markFailed).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        BuildStatus.deploying,
+      );
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
       expect(activity.log).toHaveBeenCalledWith(
         ActivityType.deployment_failed,
@@ -376,6 +385,21 @@ describe('DeploymentProcessor', () => {
       expect(mockExecuteHealthCheck).not.toHaveBeenCalled();
     });
 
+    it('records the building stage when the image build step fails', async () => {
+      mockExecuteBuildImage.mockRejectedValue(
+        new DeploymentStepExecutionError('railpack: command not found'),
+      );
+
+      const job = buildJob({ skipImageBuild: false });
+
+      await processor.process(job);
+
+      expect(deployments.markFailed).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        BuildStatus.building,
+      );
+    });
+
     it('rethrows and still marks the deployment failed for an unexpected (non-step) error', async () => {
       const unexpected = new Error('database error');
       mockExecuteStartContainer.mockRejectedValue(unexpected);
@@ -384,7 +408,10 @@ describe('DeploymentProcessor', () => {
 
       await expect(processor.process(job)).rejects.toThrow('database error');
 
-      expect(deployments.markFailed).toHaveBeenCalledWith(DEPLOYMENT_ID);
+      expect(deployments.markFailed).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        BuildStatus.deploying,
+      );
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
     });
 
@@ -508,7 +535,10 @@ describe('DeploymentProcessor', () => {
 
       await promise;
 
-      expect(deployments.markFailed).toHaveBeenCalledWith(DEPLOYMENT_ID);
+      expect(deployments.markFailed).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        BuildStatus.pending,
+      );
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
         LogLevel.ERROR,

@@ -71,7 +71,12 @@ export class DeploymentProcessor extends WorkerHost {
       try {
         await this.provisionResources(ctx, resourceCount);
       } catch (error) {
-        await this.handleError(ctx, error as Error, slackMetadata);
+        await this.handleError(
+          ctx,
+          error as Error,
+          slackMetadata,
+          BuildStatus.pending,
+        );
         return;
       }
     }
@@ -106,8 +111,28 @@ export class DeploymentProcessor extends WorkerHost {
         return;
       }
 
+      const nextStatus = this.statusForStep(step.name);
+
       try {
-        const nextStatus = this.statusForStep(step.name);
+        if (step.name === DeploymentStepName.BuildImage) {
+          await this.deployments.updateCommit(
+            deploymentId,
+            ctx.commitSha,
+            ctx.commitMessage,
+          );
+        }
+
+        if (step.name === DeploymentStepName.CreateContainer) {
+          await this.deployments.updateBuildImage(deploymentId, ctx.imageTag);
+        }
+
+        if (step.name === DeploymentStepName.ConfigureProxy) {
+          await this.deployments.updateContainerId(
+            deploymentId,
+            ctx.containerId,
+          );
+        }
+
         await this.deployments.updateBuildStatus(deploymentId, nextStatus);
 
         if (nextStatus !== BuildStatus.ready) {
@@ -126,18 +151,10 @@ export class DeploymentProcessor extends WorkerHost {
         await step.execute(ctx);
       } catch (error) {
         if (step.name === DeploymentStepName.Cleanup) break;
-        await this.handleError(ctx, error as Error, slackMetadata);
+        await this.handleError(ctx, error as Error, slackMetadata, nextStatus);
         return;
       }
     }
-
-    await this.deployments.updateCommit(deploymentId, {
-      commitSha: ctx.commitSha,
-      commitMessage: ctx.commitMessage,
-      imageTag: ctx.imageTag,
-    });
-
-    await this.deployments.updateContainerId(deploymentId, ctx.containerId);
 
     await this.deployments.markCompleted(deploymentId);
 
@@ -329,8 +346,9 @@ export class DeploymentProcessor extends WorkerHost {
     ctx: DeploymentContext,
     error: Error,
     slackMetadata?: DeploymentJob['slackMetadata'],
+    failedStage?: BuildStatus,
   ): Promise<void> {
-    await this.deployments.markFailed(ctx.deployment.id);
+    await this.deployments.markFailed(ctx.deployment.id, failedStage);
     await this.deployments.markCompleted(ctx.deployment.id);
 
     await this.activity.log(
