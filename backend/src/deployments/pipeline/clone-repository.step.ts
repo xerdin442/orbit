@@ -3,7 +3,9 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
+import { GitHubService } from '@src/github/github.service';
 import { LogLevel } from '@generated/client';
+import type { Source } from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -17,6 +19,7 @@ export class CloneRepositoryStep implements DeploymentStep {
   constructor(
     private readonly command: CommandService,
     private readonly log: LogService,
+    private readonly github: GitHubService,
   ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
@@ -24,9 +27,10 @@ export class CloneRepositoryStep implements DeploymentStep {
     ctx.workspace = await mkdtemp(prefix);
 
     const source = ctx.project.source!;
+    const repoUrl = await this.resolveAuthenticatedUrl(source);
 
     const result = await this.command.gitClone(
-      source.repositoryUrl,
+      repoUrl,
       ctx.environment.branch,
       ctx.workspace,
       (data) => {
@@ -43,5 +47,18 @@ export class CloneRepositoryStep implements DeploymentStep {
         `Git clone failed: ${result.stderr}`,
       );
     }
+  }
+
+  private async resolveAuthenticatedUrl(source: Source): Promise<string> {
+    if (!source.installationId) {
+      return source.repositoryUrl;
+    }
+
+    const token = await this.github.getInstallationToken(source.installationId);
+
+    const url = new URL(source.repositoryUrl);
+    url.username = 'x-access-token';
+    url.password = token;
+    return url.toString();
   }
 }

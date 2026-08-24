@@ -11,9 +11,10 @@ export class CommandService {
     args: string[],
     onStdout?: OnOutput,
     onStderr?: OnOutput,
+    env?: NodeJS.ProcessEnv,
   ): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
-      const child = spawn(command, args, { shell: false });
+      const child = spawn(command, args, { shell: false, env });
 
       let stdout = '';
       let stderr = '';
@@ -58,6 +59,7 @@ export class CommandService {
       ['clone', '--branch', branch, repoUrl, targetPath],
       onStdout,
       onStderr,
+      { ...process.env, GIT_TERMINAL_PROMPT: '0' },
     );
   }
 

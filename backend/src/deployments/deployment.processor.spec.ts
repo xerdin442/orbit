@@ -16,6 +16,7 @@ import type { DbService } from '@src/db/db.service';
 import type { LogService } from '@src/infrastructure/log.service';
 import type { DeploymentsService } from './deployments.service';
 import type { ActivityService } from '@src/activity/activity.service';
+import type { GitHubService } from '@src/github/github.service';
 
 jest.mock('fs/promises', () => ({
   rm: jest.fn().mockResolvedValue(undefined),
@@ -137,6 +138,7 @@ describe('DeploymentProcessor', () => {
   let eventEmitter: {
     emit: jest.Mock;
   };
+  let github: Record<string, jest.Mock>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -178,6 +180,7 @@ describe('DeploymentProcessor', () => {
     eventEmitter = {
       emit: jest.fn(),
     };
+    github = {};
 
     processor = new DeploymentProcessor(
       docker as unknown as DockerService,
@@ -188,6 +191,7 @@ describe('DeploymentProcessor', () => {
       deployments as unknown as DeploymentsService,
       activity as unknown as ActivityService,
       eventEmitter as unknown as EventEmitter2,
+      github as unknown as GitHubService,
     );
 
     // default: every step succeeds
