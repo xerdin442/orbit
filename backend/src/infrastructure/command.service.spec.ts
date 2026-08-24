@@ -91,7 +91,10 @@ describe('CommandService', () => {
       expect(spawn).toHaveBeenCalledWith(
         'git',
         ['clone', '--branch', 'main', 'https://github.com/o/r', '/tmp/build'],
-        { shell: false },
+        {
+          shell: false,
+          env: expect.objectContaining({ GIT_TERMINAL_PROMPT: '0' }),
+        },
       );
     });
   });

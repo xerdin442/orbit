@@ -16,6 +16,7 @@ import { CaddyService } from '@src/infrastructure/caddy.service';
 import { DbService } from '@src/db/db.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { GitHubService } from '@src/github/github.service';
 import { DeploymentsService } from './deployments.service';
 import {
   DeploymentStatusChangedEvent,
@@ -54,6 +55,7 @@ export class DeploymentProcessor extends WorkerHost {
     private readonly deployments: DeploymentsService,
     private readonly activity: ActivityService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly github: GitHubService,
   ) {
     super();
   }
@@ -233,7 +235,7 @@ export class DeploymentProcessor extends WorkerHost {
     if (skipImageBuild) return commonSteps;
 
     return [
-      new CloneRepositoryStep(this.command, this.logService),
+      new CloneRepositoryStep(this.command, this.logService, this.github),
       new ResolveCommitStep(this.command, this.logService),
       new BuildImageStep(this.command, this.logService),
       ...commonSteps,

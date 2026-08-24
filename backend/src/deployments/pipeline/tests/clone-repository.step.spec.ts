@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'fs/promises';
 import { CloneRepositoryStep } from '../clone-repository.step';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
+import { GitHubService } from '@src/github/github.service';
 import { DeploymentContext } from '@src/common/types';
 import { DeploymentStepExecutionError } from '@src/common/types';
 import { LogLevel } from '@generated/client';
@@ -13,11 +14,15 @@ jest.mock('fs/promises', () => ({
 
 const WORKSPACE = '/tmp/builds-12345';
 
-const mockCtx = (): DeploymentContext =>
+const mockCtx = (sourceOverrides: Record<string, unknown> = {}): DeploymentContext =>
   ({
     deployment: { id: 'dep-1' },
     project: {
-      source: { repositoryUrl: 'https://github.com/owner/repo' },
+      source: {
+        repositoryUrl: 'https://github.com/owner/repo',
+        installationId: null,
+        ...sourceOverrides,
+      },
     },
     environment: { branch: 'main' },
     workspace: '',
@@ -27,6 +32,7 @@ describe('CloneRepositoryStep', () => {
   let step: CloneRepositoryStep;
   let command: jest.Mocked<Pick<CommandService, 'gitClone'>>;
   let log: jest.Mocked<Pick<LogService, 'append'>>;
+  let github: jest.Mocked<Pick<GitHubService, 'getInstallationToken'>>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,9 +42,11 @@ describe('CloneRepositoryStep', () => {
 
     command = { gitClone: jest.fn() };
     log = { append: jest.fn() };
+    github = { getInstallationToken: jest.fn() };
     step = new CloneRepositoryStep(
       command as unknown as CommandService,
       log as unknown as LogService,
+      github as unknown as GitHubService,
     );
   });
 
@@ -97,5 +105,21 @@ describe('CloneRepositoryStep', () => {
       recursive: true,
       force: true,
     });
+  });
+
+  it('clones with an embedded installation token when the source has an installationId', async () => {
+    command.gitClone.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' });
+    github.getInstallationToken.mockResolvedValue('installation-token');
+
+    await step.execute(mockCtx({ installationId: 42 }));
+
+    expect(github.getInstallationToken).toHaveBeenCalledWith(42);
+    expect(command.gitClone).toHaveBeenCalledWith(
+      'https://x-access-token:installation-token@github.com/owner/repo',
+      'main',
+      WORKSPACE,
+      expect.any(Function),
+      expect.any(Function),
+    );
   });
 });
