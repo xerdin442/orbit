@@ -9,19 +9,14 @@ import {
 import type { RawBodyRequest } from '@nestjs/common';
 import { Request } from 'express';
 import { GitHubService } from './github.service';
-import { ActivityService } from '@src/activity/activity.service';
 import { Logger } from '@src/common/logger';
-import { ActivityType } from '@generated/client';
 import { GitHubWebhookPayload } from '@src/common/types';
 
 @Controller('github')
 export class GitHubWebhookController {
   private readonly logger = Logger(GitHubWebhookController.name);
 
-  constructor(
-    private readonly github: GitHubService,
-    private readonly activity: ActivityService,
-  ) {}
+  constructor(private readonly github: GitHubService) {}
 
   @Post('webhook')
   @HttpCode(HttpStatus.OK)
@@ -41,10 +36,6 @@ export class GitHubWebhookController {
     }
 
     const payload = JSON.parse(rawBody.toString()) as GitHubWebhookPayload;
-
-    await this.activity.log(ActivityType.github_webhook_event, 'github', {
-      event,
-    });
 
     if (event === 'push' && payload.ref && payload.repository) {
       await this.github.handlePushEvent(

@@ -308,6 +308,12 @@ export class GitHubService {
         },
       );
 
+      await this.activity.log(ActivityType.github_webhook_event, 'github', {
+        event: 'push',
+        repo: repoFullName,
+        branch,
+      });
+
       await this.deployQueue.add('webhook', { deployment });
     }
   }
