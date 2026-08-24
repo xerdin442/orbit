@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
     >
-      <body className="h-dvh flex flex-col">
+      <body className="h-dvh flex flex-col custom-scrollbar">
         <Providers>
           <Suspense>
             <AuthCallback>{children}</AuthCallback>
