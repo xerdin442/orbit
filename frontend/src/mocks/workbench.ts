@@ -1,0 +1,145 @@
+import type { DatabaseSchema, TableObject, TableData } from "@/lib/types";
+
+export const tablesByResource: Record<string, TableObject[]> = {
+  "res-1": [
+    { name: "users", type: "table" },
+    { name: "orders", type: "table" },
+    { name: "products", type: "table" },
+  ],
+};
+
+export const schemaByResource: Record<string, DatabaseSchema[]> = {
+  "res-1": [{ name: "public", objects: tablesByResource["res-1"] }],
+};
+
+export const tableDataByResource: Record<string, Record<string, TableData>> = {
+  "res-1": {
+    users: {
+      columns: [
+        { name: "id", type: "uuid", primaryKey: true },
+        { name: "name", type: "text" },
+        { name: "email", type: "text" },
+        { name: "role", type: "text" },
+        { name: "is_active", type: "boolean" },
+        { name: "phone", type: "text" },
+        { name: "country", type: "text" },
+        { name: "login_count", type: "integer" },
+        { name: "last_login_at", type: "timestamp", nullable: true },
+        { name: "created_at", type: "timestamp" },
+      ],
+      rows: [
+        {
+          id: "a1b2c3d4",
+          name: "Alice Nakamura",
+          email: "alice@example.com",
+          role: "admin",
+          is_active: true,
+          phone: "+81-90-1234-5678",
+          country: "JP",
+          login_count: 142,
+          last_login_at: "2026-08-05T09:12:00Z",
+          created_at: "2026-07-01T10:00:00Z",
+        },
+        {
+          id: "e5f6g7h8",
+          name: "Bob Ferreira",
+          email: "bob@example.com",
+          role: "member",
+          is_active: true,
+          phone: "+55-11-98765-4321",
+          country: "BR",
+          login_count: 58,
+          last_login_at: "2026-08-04T21:47:00Z",
+          created_at: "2026-07-03T14:22:00Z",
+        },
+        {
+          id: "i9j0k1l2",
+          name: "Carol Whitfield",
+          email: "carol@example.com",
+          role: "member",
+          is_active: false,
+          phone: "+44-7911-123456",
+          country: "GB",
+          login_count: 9,
+          last_login_at: "2026-07-19T11:03:00Z",
+          created_at: "2026-07-12T09:41:00Z",
+        },
+        {
+          id: "m3n4o5p6",
+          name: "Dave Okafor",
+          email: "dave@example.com",
+          role: "member",
+          is_active: true,
+          phone: "+234-802-345-6789",
+          country: "NG",
+          login_count: 76,
+          last_login_at: "2026-08-06T07:28:00Z",
+          created_at: "2026-07-15T08:05:00Z",
+        },
+        {
+          id: "q7r8s9t0",
+          name: "Erin Kowalski",
+          email: "erin@example.com",
+          role: "viewer",
+          is_active: true,
+          phone: "+48-601-234-567",
+          country: "PL",
+          login_count: 23,
+          last_login_at: "2026-08-01T15:56:00Z",
+          created_at: "2026-07-20T17:33:00Z",
+        },
+        {
+          id: "u1v2w3x4",
+          name: "Frank Lindqvist",
+          email: "frank@example.com",
+          role: "viewer",
+          is_active: false,
+          phone: "+46-70-123-4567",
+          country: "SE",
+          login_count: 3,
+          last_login_at: "2026-07-29T06:40:00Z",
+          created_at: "2026-07-28T12:11:00Z",
+        },
+      ],
+      meta: {
+        total: 6,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    },
+    orders: {
+      columns: [
+        { name: "id", type: "uuid", primaryKey: true },
+        { name: "user_id", type: "uuid" },
+        { name: "total_cents", type: "integer" },
+      ],
+      rows: [{ id: "o1", user_id: "a1b2c3d4", total_cents: 4599 }],
+      meta: {
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    },
+    products: {
+      columns: [
+        { name: "id", type: "uuid", primaryKey: true },
+        { name: "name", type: "text" },
+      ],
+      rows: [],
+      meta: {
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    },
+  },
+};

@@ -1,0 +1,78 @@
+import type { DeploymentLog } from "@/lib/types";
+
+function buildLogs(
+  deploymentId: string,
+  startOffsetMs: number,
+  entries: [number, DeploymentLog["level"], string][],
+): DeploymentLog[] {
+  const base = Date.now() - startOffsetMs;
+  return entries.map(([offsetSeconds, level, message], i) => ({
+    id: `${deploymentId}-log-${i}`,
+    deploymentId,
+    timestamp: new Date(base + offsetSeconds * 1000).toISOString(),
+    level,
+    message,
+  }));
+}
+
+export const logsByDeployment: Record<string, DeploymentLog[]> = {
+  "dep-1": buildLogs("dep-1", 2 * 60 * 60 * 1000, [
+    [0, "INFO", "Cloning repository orbit-user/orbit-api@main"],
+    [3, "INFO", "Checked out commit a1b2c3d"],
+    [4, "INFO", "Starting build with Railpack"],
+    [5, "INFO", "Detected Node.js project"],
+    [6, "INFO", "Using Node.js version 20.11.1"],
+    [7, "INFO", "Restoring build cache"],
+    [8, "INFO", "Installing dependencies"],
+    [9, "INFO", "npm install"],
+    [10, "INFO", "added @nestjs/common@10.3.0"],
+    [10, "INFO", "added @nestjs/core@10.3.0"],
+    [11, "INFO", "added @nestjs/platform-express@10.3.0"],
+    [11, "INFO", "added @nestjs/bullmq@10.0.1"],
+    [12, "INFO", "added @prisma/client@5.9.1"],
+    [12, "INFO", "added bullmq@5.1.5"],
+    [13, "INFO", "added class-transformer@0.5.1"],
+    [13, "INFO", "added class-validator@0.14.1"],
+    [14, "WARN", "deprecated inflight@1.0.6: This module is not supported"],
+    [14, "INFO", "added ioredis@5.3.2"],
+    [15, "INFO", "added passport@0.7.0"],
+    [15, "INFO", "added passport-jwt@4.0.1"],
+    [16, "INFO", "added reflect-metadata@0.2.1"],
+    [16, "WARN", "deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported"],
+    [17, "INFO", "added rxjs@7.8.1"],
+    [17, "INFO", "added typeorm@0.3.20"],
+    [18, "INFO", "added zod@3.22.4"],
+    [19, "INFO", "audited 842 packages in 11.2s"],
+    [19, "INFO", "found 0 vulnerabilities"],
+    [20, "INFO", "Dependencies installed"],
+    [21, "INFO", "Running prisma generate"],
+    [24, "INFO", "Generated Prisma Client"],
+    [25, "INFO", "Compiling TypeScript"],
+    [33, "INFO", "Bundling application"],
+    [38, "INFO", "Optimizing image layers"],
+    [42, "INFO", "Build completed"],
+    [43, "INFO", "Pushing image to registry"],
+    [44, "INFO", "Creating container"],
+    [45, "INFO", "Attaching network orbit-network"],
+    [46, "INFO", "Mounting volumes"],
+    [47, "INFO", "Starting container"],
+    [49, "INFO", "Waiting for health check endpoint"],
+    [51, "INFO", "GET /health -> 200 OK"],
+    [52, "SUCCESS", "Health check passed"],
+    [53, "SUCCESS", "Deployment ready"],
+  ]),
+  "dep-3": buildLogs("dep-3", 6 * 60 * 60 * 1000, [
+    [0, "INFO", "Cloning repository orbit-user/orbit-api@main"],
+    [3, "INFO", "Checked out commit c3d4e5f"],
+    [4, "INFO", "Starting build with Railpack"],
+    [20, "INFO", "Installing dependencies"],
+    [55, "ERROR", "Build failed: missing environment variable DATABASE_URL"],
+  ]),
+  "dep-5": buildLogs("dep-5", 30 * 60 * 1000, [
+    [0, "INFO", "Cloning repository orbit-user/orbit-frontend@main"],
+    [2, "INFO", "Checked out commit e5f6g7h"],
+    [3, "INFO", "Starting build with Railpack"],
+    [15, "INFO", "Installing dependencies"],
+    [58, "INFO", "Compiling..."],
+  ]),
+};

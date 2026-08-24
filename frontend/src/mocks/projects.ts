@@ -1,0 +1,46 @@
+import type { Project } from "@/lib/types";
+
+export const projects: Project[] = [
+  {
+    id: "proj-1",
+    name: "orbit-api",
+    ownerId: "mock-user-1",
+    healthCheck: true,
+    healthCheckPort: 8080,
+    healthCheckPath: "/healthz",
+    healthCheckTimeout: 30,
+    buildDirectory: null,
+    startCommand: null,
+    secretAccessToken: "orbit_sat_2f6b1c9e4a7d8035f1c2b6a9d4e7f80135f1c2b6",
+    source: {
+      id: "src-1",
+      repositoryUrl: "https://github.com/orbit-user/orbit-api",
+      provider: "github",
+      defaultBranch: "main",
+      installationId: 12345,
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "proj-2",
+    name: "orbit-frontend",
+    ownerId: "mock-user-1",
+    healthCheck: false,
+    healthCheckPort: 3000,
+    healthCheckPath: "/health",
+    healthCheckTimeout: 60,
+    buildDirectory: null,
+    startCommand: null,
+    secretAccessToken: "orbit_sat_9d3a5c7e1b4f602883d3a5c7e1b4f6028f1c2b6a",
+    source: {
+      id: "src-2",
+      repositoryUrl: "https://github.com/orbit-user/orbit-frontend",
+      provider: "github",
+      defaultBranch: "main",
+      installationId: 12345,
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];

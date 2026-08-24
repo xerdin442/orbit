@@ -1,0 +1,60 @@
+import type { ActivityLog } from "@/lib/types";
+
+export const activityLogs: ActivityLog[] = [
+  {
+    id: "act-1",
+    type: "deployment_completed",
+    actorId: "mock-user-1",
+    metadata: { deploymentId: "dep-1", environmentId: "env-1" },
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-2",
+    type: "deployment_started",
+    actorId: "mock-user-1",
+    metadata: { deploymentId: "dep-1", environmentId: "env-1" },
+    createdAt: new Date(Date.now() - 2.1 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-3",
+    type: "deployment_failed",
+    actorId: "mock-user-1",
+    metadata: { deploymentId: "dep-3", environmentId: "env-2" },
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-4",
+    type: "domain_added",
+    actorId: "mock-user-1",
+    metadata: { domainId: "dom-1", hostname: "api.orbit.dev" },
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-5",
+    type: "resource_provisioned",
+    actorId: "mock-user-1",
+    metadata: { resourceId: "res-1", environmentId: "env-1" },
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-6",
+    type: "variable_created",
+    actorId: "mock-user-1",
+    metadata: { environmentId: "env-1", keys: "DATABASE_URL,NODE_ENV" },
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-7",
+    type: "project_created",
+    actorId: "mock-user-1",
+    metadata: { projectId: "proj-1" },
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-8",
+    type: "deployment_completed",
+    actorId: "mock-user-1",
+    metadata: { deploymentId: "dep-4", environmentId: "env-3" },
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  },
+];
