@@ -124,7 +124,7 @@ describe('CommandService', () => {
         [
           'build',
           '/tmp/build',
-          '--tag',
+          '--name',
           'project-1:abc123',
           '--error-missing-start',
         ],
@@ -146,7 +146,7 @@ describe('CommandService', () => {
         [
           'build',
           '/tmp/build',
-          '--tag',
+          '--name',
           'project-1:abc123',
           '--error-missing-start',
           '--start-cmd',

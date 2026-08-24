@@ -13,6 +13,7 @@ import {
   LifecycleStatus,
   DeploymentTrigger,
   DomainType,
+  ActivityType,
 } from '@generated/client';
 
 describe('DeploymentsService', () => {
@@ -250,6 +251,179 @@ describe('DeploymentsService', () => {
         BadRequestException,
       );
     });
+
+    it('creates a rollback deployment when the target is ready/inactive', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        environmentId: 'env-1',
+        lifecycleStatus: LifecycleStatus.inactive,
+        buildStatus: BuildStatus.ready,
+        commitSha: 'abc123',
+        commitMessage: 'initial commit',
+        imageTag: 'project-1:abc123',
+      });
+      db.deployment.create = jest.fn().mockResolvedValue({
+        id: 'dep-rollback',
+        trigger: DeploymentTrigger.rollback,
+      });
+
+      const result = await service.findForRollback('dep-1', 'user-1');
+
+      expect(db.deployment.create).toHaveBeenCalledWith({
+        data: {
+          environmentId: 'env-1',
+          trigger: DeploymentTrigger.rollback,
+          commitSha: 'abc123',
+          commitMessage: 'initial commit',
+          imageTag: 'project-1:abc123',
+          buildStatus: BuildStatus.pending,
+          lifecycleStatus: LifecycleStatus.inactive,
+        },
+      });
+      expect(activity.log).toHaveBeenCalled();
+      expect(result.id).toBe('dep-rollback');
+    });
+  });
+
+  describe('findByEnvironment', () => {
+    it('throws if environment not found', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(
+        service.findByEnvironment('env-1', 'user-1', {}),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns a paginated result scoped to the environment', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        project: { ownerId: 'user-1' },
+      });
+      db.deployment.findMany = jest
+        .fn()
+        .mockResolvedValue([{ id: 'dep-1' }, { id: 'dep-2' }]);
+      db.deployment.count = jest.fn().mockResolvedValue(2);
+
+      const result = await service.findByEnvironment('env-1', 'user-1', {});
+
+      expect(db.deployment.findMany).toHaveBeenCalledWith({
+        where: { environmentId: 'env-1' },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        skip: 0,
+      });
+      expect(result.data).toHaveLength(2);
+      expect(result.meta).toEqual({
+        total: 2,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      });
+    });
+
+    it('applies trigger and status filters', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        project: { ownerId: 'user-1' },
+      });
+      db.deployment.findMany = jest.fn().mockResolvedValue([]);
+      db.deployment.count = jest.fn().mockResolvedValue(0);
+
+      await service.findByEnvironment('env-1', 'user-1', {
+        page: 2,
+        limit: 10,
+        trigger: DeploymentTrigger.webhook,
+        status: BuildStatus.failed,
+      });
+
+      expect(db.deployment.findMany).toHaveBeenCalledWith({
+        where: {
+          environmentId: 'env-1',
+          trigger: DeploymentTrigger.webhook,
+          buildStatus: BuildStatus.failed,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        skip: 10,
+      });
+    });
+
+    it('applies the startDate filter as a lower bound', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        project: { ownerId: 'user-1' },
+      });
+      db.deployment.findMany = jest.fn().mockResolvedValue([]);
+      db.deployment.count = jest.fn().mockResolvedValue(0);
+
+      const startDate = new Date('2026-01-01T00:00:00.000Z');
+
+      await service.findByEnvironment('env-1', 'user-1', { startDate });
+
+      expect(db.deployment.findMany).toHaveBeenCalledWith({
+        where: {
+          environmentId: 'env-1',
+          createdAt: { gte: startDate },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        skip: 0,
+      });
+    });
+
+    it('applies the endDate filter as an upper bound extended to end of day', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        project: { ownerId: 'user-1' },
+      });
+      db.deployment.findMany = jest.fn().mockResolvedValue([]);
+      db.deployment.count = jest.fn().mockResolvedValue(0);
+
+      const endDate = new Date('2026-01-31T00:00:00.000Z');
+
+      await service.findByEnvironment('env-1', 'user-1', { endDate });
+
+      expect(db.deployment.findMany).toHaveBeenCalledWith({
+        where: {
+          environmentId: 'env-1',
+          createdAt: { lte: endDate },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        skip: 0,
+      });
+      expect(endDate.getHours()).toBe(23);
+    });
+
+    it('drops the endDate bound when both startDate and endDate are given', async () => {
+      // The service applies endDate first, then overwrites `where.createdAt`
+      // entirely when startDate is also present, so only `gte` survives.
+      db.environment.findFirst = jest.fn().mockResolvedValue({
+        id: 'env-1',
+        project: { ownerId: 'user-1' },
+      });
+      db.deployment.findMany = jest.fn().mockResolvedValue([]);
+      db.deployment.count = jest.fn().mockResolvedValue(0);
+
+      const startDate = new Date('2026-01-01T00:00:00.000Z');
+      const endDate = new Date('2026-01-31T00:00:00.000Z');
+
+      await service.findByEnvironment('env-1', 'user-1', {
+        startDate,
+        endDate,
+      });
+
+      expect(db.deployment.findMany).toHaveBeenCalledWith({
+        where: {
+          environmentId: 'env-1',
+          createdAt: { gte: startDate },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        skip: 0,
+      });
+    });
   });
 
   describe('updateBuildStatus', () => {
@@ -292,6 +466,16 @@ describe('DeploymentsService', () => {
     });
   });
 
+  describe('updateContainerId', () => {
+    it('updates the container id', async () => {
+      await service.updateContainerId('dep-1', 'container-123');
+      expect(db.deployment.update).toHaveBeenCalledWith({
+        where: { id: 'dep-1' },
+        data: { containerId: 'container-123' },
+      });
+    });
+  });
+
   describe('markFailed', () => {
     it('sets failed and aborted', async () => {
       await service.markFailed('dep-1');
@@ -314,6 +498,58 @@ describe('DeploymentsService', () => {
           lifecycleStatus: LifecycleStatus.aborted,
         },
       });
+    });
+  });
+
+  describe('abortDeployment', () => {
+    it('marks the deployment aborted, recording the stage it was aborted at', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        environmentId: 'env-1',
+        buildStatus: BuildStatus.building,
+      });
+
+      await service.abortDeployment('dep-1', 'user-1');
+
+      expect(db.deployment.update).toHaveBeenCalledWith({
+        where: { id: 'dep-1' },
+        data: {
+          buildStatus: BuildStatus.aborted,
+          failedStage: BuildStatus.building,
+          lifecycleStatus: LifecycleStatus.aborted,
+          completedAt: expect.any(Date),
+        },
+      });
+      expect(activity.log).toHaveBeenCalledWith(
+        ActivityType.deployment_aborted,
+        'user-1',
+        { deploymentId: 'dep-1', environmentId: 'env-1' },
+      );
+      expect(resources.delete).not.toHaveBeenCalled();
+    });
+
+    it('deletes the given resources, ignoring ones that fail to delete', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        environmentId: 'env-1',
+        buildStatus: BuildStatus.building,
+      });
+      resources.delete = jest
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('already gone'));
+
+      await service.abortDeployment('dep-1', 'user-1', ['res-1', 'res-2']);
+
+      expect(resources.delete).toHaveBeenCalledWith('res-1', 'user-1');
+      expect(resources.delete).toHaveBeenCalledWith('res-2', 'user-1');
+    });
+
+    it('throws if the deployment is not found', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(
+        service.abortDeployment('dep-1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
