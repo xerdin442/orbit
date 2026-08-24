@@ -277,10 +277,13 @@ export class DeploymentsService {
 
     await this.db.deployment.update({
       where: { id },
-      data: { buildStatus: BuildStatus.aborted },
+      data: {
+        buildStatus: BuildStatus.aborted,
+        failedStage: deployment.buildStatus,
+        lifecycleStatus: LifecycleStatus.aborted,
+        completedAt: new Date(),
+      },
     });
-
-    await this.markCompleted(deployment.id);
 
     await this.activity.log(ActivityType.deployment_aborted, userId, {
       deploymentId: id,
