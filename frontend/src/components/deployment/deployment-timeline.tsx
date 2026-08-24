@@ -1,4 +1,4 @@
-import { Ban, Check, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BuildStatus } from "@/lib/types";
 
@@ -45,12 +45,6 @@ export function DeploymentTimeline({
           index === currentIndex &&
           buildStatus !== "ready";
 
-        const label = isFailedNode
-          ? buildStatus === "aborted"
-            ? "Aborted"
-            : "Failed"
-          : stage.label;
-
         return (
           <li
             key={stage.status}
@@ -75,11 +69,7 @@ export function DeploymentTimeline({
                 )}
               >
                 {isFailedNode ? (
-                  buildStatus === "aborted" ? (
-                    <Ban className="size-3.5" />
-                  ) : (
-                    <X className="size-3.5" />
-                  )
+                  <X className="size-3.5" />
                 ) : isComplete ? (
                   <Check className="size-3.5" />
                 ) : (
@@ -96,7 +86,7 @@ export function DeploymentTimeline({
                       : "text-muted-foreground",
                 )}
               >
-                {label}
+                {stage.label}
               </span>
             </div>
             {!isLast && (
