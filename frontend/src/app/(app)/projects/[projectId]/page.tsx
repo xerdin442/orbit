@@ -348,7 +348,7 @@ export default function ProjectOverviewPage() {
                         {d.buildStatus}
                       </StatusBadge>
                       <span className="text-foreground truncate">
-                        {d.commitMessage ?? d.commitSha.slice(0, 7)}
+                        {d.commitMessage ?? "Resolving commit..."}
                       </span>
                       <TimestampDisplay
                         value={d.createdAt}
