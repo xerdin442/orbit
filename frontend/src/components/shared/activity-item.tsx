@@ -123,7 +123,7 @@ export function ActivityItem({
             />
           </button>
           {expanded && activity.metadata && (
-            <pre className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground overflow-auto leading-snug">
+            <pre className="mt-2 rounded-md bg-muted p-2 text-xs text-muted-foreground overflow-auto leading-snug custom-scrollbar">
               {JSON.stringify(activity.metadata, null, 2)}
             </pre>
           )}
