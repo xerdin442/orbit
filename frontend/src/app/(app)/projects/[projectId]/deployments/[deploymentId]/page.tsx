@@ -111,7 +111,7 @@ export default function DeploymentDetailPage() {
   return (
     <div>
       <PageHeader
-        title={`Deployment ${deployment.commitSha ? deployment.commitSha.slice(0, 7) : deployment.id.slice(0, 8)}`}
+        title={`Deployment: ${deployment.id}`}
         description={deployment.commitMessage ?? "No commit message"}
       >
         <Button
@@ -239,7 +239,10 @@ export default function DeploymentDetailPage() {
           <SectionCard title="Container Details">
             <KeyValueList
               items={[
-                { key: "Commit SHA", value: deployment.commitSha || "—" },
+                {
+                  key: "Commit SHA",
+                  value: deployment.commitSha.slice(0, 7) || "—",
+                },
                 {
                   key: "Image Tag",
                   value: deployment.imageTag ?? "Not built yet",
