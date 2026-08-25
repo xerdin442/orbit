@@ -41,5 +41,11 @@ export class ResolveCommitStep implements DeploymentStep {
     } else {
       ctx.commitMessage = ctx.commitSha;
     }
+
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      `Commit resolved successfully. SHA: ${ctx.commitSha}`,
+    );
   }
 }

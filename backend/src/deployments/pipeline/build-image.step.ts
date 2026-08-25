@@ -28,6 +28,12 @@ export class BuildImageStep implements DeploymentStep {
   ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Building image...',
+    );
+
     ctx.imageTag = `project-${ctx.project.id}:${ctx.commitSha}`;
 
     const sourcePath = resolveSourcePath(
