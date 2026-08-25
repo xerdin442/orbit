@@ -31,7 +31,7 @@ import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import Link from "next/link";
 import { useSelectedEnvironment } from "@/hooks/use-selected-environment";
 import { useDialog } from "@/hooks/use-dialog";
-import { buildStatusBadgeVariant, isBuildInProgress } from "@/lib/utils";
+import { buildStatusBadgeVariant, cn, isBuildInProgress } from "@/lib/utils";
 
 export default function ProjectOverviewPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -347,7 +347,12 @@ export default function ProjectOverviewPage() {
                       >
                         {d.buildStatus}
                       </StatusBadge>
-                      <span className="text-foreground truncate">
+                      <span
+                        className={cn(
+                          "text-foreground truncate",
+                          !d.commitMessage && "italic text-muted-foreground",
+                        )}
+                      >
                         {d.commitMessage ?? "Resolving commit..."}
                       </span>
                       <TimestampDisplay
