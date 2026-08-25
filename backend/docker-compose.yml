@@ -23,7 +23,16 @@ services:
       - caddy-data:/data
       - caddy-config:/config
 
+  buildkit:
+    image: moby/buildkit:latest
+    container_name: buildkit
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - buildkit-data:/var/lib/buildkit
+
 volumes:
   redis-data:
   caddy-data:
   caddy-config:
+  buildkit-data:
