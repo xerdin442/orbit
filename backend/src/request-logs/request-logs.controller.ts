@@ -1,14 +1,14 @@
 import {
   Controller,
   Get,
+  HttpStatus,
   Param,
   Query,
   Req,
-  Sse,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { Observable, map } from 'rxjs';
-import type { RequestLog } from '@generated/client';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { RequestLogsService } from './request-logs.service';
@@ -28,12 +28,39 @@ export class RequestLogsController {
     return this.requestLogs.findByEnvironment(id, req.user.id, filters);
   }
 
-  @Sse('environments/:id/requests/stream')
+  @Get('environments/:id/requests/stream')
   async stream(
     @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
     @Param('id') id: string,
-  ): Promise<Observable<{ data: RequestLog }>> {
+  ): Promise<void> {
     const stream = await this.requestLogs.subscribeForUser(id, req.user.id);
-    return stream.pipe(map((entry) => ({ data: entry })));
+
+    res.writeHead(HttpStatus.OK, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.flushHeaders();
+    res.write(': connected\n\n');
+
+    // Keep the connection alive through long quiet stretches where no log entry is emitted for a while.
+    const heartbeat = setInterval(() => {
+      res.write(': heartbeat\n\n');
+    }, 15_000);
+
+    const subscription = stream.subscribe({
+      next: (entry) => res.write(`data: ${JSON.stringify(entry)}\n\n`),
+      complete: () => {
+        clearInterval(heartbeat);
+        res.end();
+      },
+    });
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      subscription.unsubscribe();
+    });
   }
 }

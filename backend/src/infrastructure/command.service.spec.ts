@@ -127,6 +127,8 @@ describe('CommandService', () => {
           '--name',
           'project-1:abc123',
           '--error-missing-start',
+          '--env',
+          'npm_config_loglevel=http',
         ],
         { shell: false },
       );
@@ -149,8 +151,39 @@ describe('CommandService', () => {
           '--name',
           'project-1:abc123',
           '--error-missing-start',
+          '--env',
+          'npm_config_loglevel=http',
           '--start-cmd',
           'npm run start:prod',
+        ],
+        { shell: false },
+      );
+    });
+
+    it('forwards envVars as --env flags for use during the build', async () => {
+      const promise = service.railpackBuild(
+        '/tmp/build',
+        'project-1:abc123',
+        undefined,
+        ['NODE_ENV=production', 'API_URL=https://api.example.com'],
+      );
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith(
+        'railpack',
+        [
+          'build',
+          '/tmp/build',
+          '--name',
+          'project-1:abc123',
+          '--error-missing-start',
+          '--env',
+          'npm_config_loglevel=http',
+          '--env',
+          'NODE_ENV=production',
+          '--env',
+          'API_URL=https://api.example.com',
         ],
         { shell: false },
       );

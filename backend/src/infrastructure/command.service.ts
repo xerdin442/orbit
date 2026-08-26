@@ -81,6 +81,7 @@ export class CommandService {
     sourcePath: string,
     imageTag: string,
     startCommand?: string,
+    envVars?: string[],
     onStdout?: OnOutput,
     onStderr?: OnOutput,
   ) {
@@ -90,7 +91,13 @@ export class CommandService {
       '--name',
       imageTag,
       '--error-missing-start',
+      '--env',
+      'npm_config_loglevel=http', // increase verbosity of npm commands
     ];
+
+    for (const variable of envVars ?? []) {
+      args.push('--env', variable);
+    }
 
     if (startCommand) {
       args.push('--start-cmd', startCommand);

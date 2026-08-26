@@ -6,13 +6,17 @@ import { DeploymentContext } from '@src/common/types';
 import { DeploymentStepExecutionError } from '@src/common/types';
 import { LogLevel } from '@generated/client';
 
-const mockCtx = (overrides?: { project?: Record<string, unknown> }) =>
+const mockCtx = (overrides?: {
+  project?: Record<string, unknown>;
+  variables?: string[];
+}) =>
   ({
     deployment: { id: 'dep-1' },
     project: { id: 'proj-1', ...overrides?.project },
     workspace: '/tmp/build',
     commitSha: 'abc123',
     imageTag: null,
+    variables: overrides?.variables ?? [],
   }) as unknown as DeploymentContext;
 
 describe('BuildImageStep', () => {
@@ -44,6 +48,7 @@ describe('BuildImageStep', () => {
       '/tmp/build',
       'project-proj-1:abc123',
       undefined,
+      [],
       expect.any(Function),
       expect.any(Function),
     );
@@ -64,6 +69,7 @@ describe('BuildImageStep', () => {
       join('/tmp/build', 'apps', 'web'),
       'project-proj-1:abc123',
       undefined,
+      [],
       expect.any(Function),
       expect.any(Function),
     );
@@ -84,6 +90,30 @@ describe('BuildImageStep', () => {
       '/tmp/build',
       'project-proj-1:abc123',
       'npm run start:prod',
+      [],
+      expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it('passes ctx.variables through to railpackBuild as build-time env vars', async () => {
+    command.railpackBuild.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+
+    await step.execute(
+      mockCtx({
+        variables: ['NODE_ENV=production', 'API_URL=https://api.example.com'],
+      }),
+    );
+
+    expect(command.railpackBuild).toHaveBeenCalledWith(
+      '/tmp/build',
+      'project-proj-1:abc123',
+      undefined,
+      ['NODE_ENV=production', 'API_URL=https://api.example.com'],
       expect.any(Function),
       expect.any(Function),
     );
@@ -103,7 +133,7 @@ describe('BuildImageStep', () => {
 
   it('logs stdout as INFO and stderr as WARN', async () => {
     command.railpackBuild.mockImplementation(
-      async (_source, _tag, _startCommand, onStdout, onStderr) => {
+      async (_source, _tag, _startCommand, _envVars, onStdout, onStderr) => {
         onStdout?.('installing dependencies\n');
         onStderr?.('deprecated inflight@1.0.6\n');
         return { exitCode: 0, stdout: '', stderr: '' };
