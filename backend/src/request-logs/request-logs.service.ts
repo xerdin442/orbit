@@ -49,6 +49,16 @@ export class RequestLogsService {
     return this.subscribe(environmentId);
   }
 
+  async getRecent(environmentId: string, limit = 20): Promise<RequestLog[]> {
+    const rows = await this.db.requestLog.findMany({
+      where: { environmentId },
+      orderBy: { timestamp: 'desc' },
+      take: limit,
+    });
+
+    return rows.reverse();
+  }
+
   async findByEnvironment(
     environmentId: string,
     userId: string,

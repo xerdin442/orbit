@@ -17,6 +17,7 @@ import { DbService } from '@src/db/db.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { GitHubService } from '@src/github/github.service';
+import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { DeploymentsService } from './deployments.service';
 import {
   DeploymentStatusChangedEvent,
@@ -53,6 +54,7 @@ export class DeploymentProcessor extends WorkerHost {
     private readonly db: DbService,
     private readonly logService: LogService,
     private readonly deployments: DeploymentsService,
+    private readonly encryption: EncryptionService,
     private readonly activity: ActivityService,
     private readonly eventEmitter: EventEmitter2,
     private readonly github: GitHubService,
@@ -255,7 +257,9 @@ export class DeploymentProcessor extends WorkerHost {
       where: { environmentId: ctx.environment.id },
     });
 
-    ctx.variables = vars.map((v) => `${v.key}=${v.value}`);
+    ctx.variables = vars.map(
+      (v) => `${v.key}=${this.encryption.decrypt(v.value)}`,
+    );
 
     await this.logService.append(
       deploymentId,
