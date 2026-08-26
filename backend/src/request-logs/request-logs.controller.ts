@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import type { RequestLog } from '@generated/client';
 import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { RequestLogsService } from './request-logs.service';
@@ -50,13 +51,29 @@ export class RequestLogsController {
       res.write(': heartbeat\n\n');
     }, 15_000);
 
+    const sent = new Set<string>();
+    const send = (entry: RequestLog) => {
+      if (sent.has(entry.id)) return;
+      sent.add(entry.id);
+      res.write(`data: ${JSON.stringify(entry)}\n\n`);
+    };
+
+    let replaying = true;
+    const pending: RequestLog[] = [];
+
     const subscription = stream.subscribe({
-      next: (entry) => res.write(`data: ${JSON.stringify(entry)}\n\n`),
+      next: (entry) => (replaying ? pending.push(entry) : send(entry)),
       complete: () => {
         clearInterval(heartbeat);
         res.end();
       },
     });
+
+    const backlog = await this.requestLogs.getRecent(id);
+    for (const entry of backlog) send(entry);
+
+    replaying = false;
+    for (const entry of pending) send(entry);
 
     req.on('close', () => {
       clearInterval(heartbeat);

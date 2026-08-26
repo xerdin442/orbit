@@ -91,8 +91,6 @@ export class CommandService {
       '--name',
       imageTag,
       '--error-missing-start',
-      '--env',
-      'npm_config_loglevel=http', // increase verbosity of npm commands
     ];
 
     for (const variable of envVars ?? []) {
