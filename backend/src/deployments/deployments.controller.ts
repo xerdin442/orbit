@@ -6,7 +6,7 @@ import {
   Query,
   UseGuards,
   Req,
-  Sse,
+  Res,
   ParseIntPipe,
   HttpCode,
   HttpStatus,
@@ -14,8 +14,7 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
-import { Observable, map } from 'rxjs';
-import type { DeploymentLog } from '@generated/client';
+import type { Response } from 'express';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
 import type { DeploymentJob, AuthenticatedRequest } from '@src/common/types';
@@ -117,15 +116,39 @@ export class DeploymentsController {
     return this.logService.getLogs(id);
   }
 
-  @Sse('deployments/:id/logs/stream')
+  @Get('deployments/:id/logs/stream')
   async streamLogs(
     @Req() req: AuthenticatedRequest,
+    @Res() res: Response,
     @Param('id') id: string,
-  ): Promise<Observable<{ data: DeploymentLog }>> {
+  ): Promise<void> {
     await this.deployments.findById(id, req.user.id);
 
-    return this.logService
-      .subscribe(id)
-      .pipe(map((entry) => ({ data: entry })));
+    res.writeHead(HttpStatus.OK, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    res.flushHeaders();
+    res.write(': connected\n\n');
+
+    // Keep the connection alive through long quiet stretches where no log entry is emitted for a while.
+    const heartbeat = setInterval(() => {
+      res.write(': heartbeat\n\n');
+    }, 15_000);
+
+    const subscription = this.logService.subscribe(id).subscribe({
+      next: (entry) => res.write(`data: ${JSON.stringify(entry)}\n\n`),
+      complete: () => {
+        clearInterval(heartbeat);
+        res.end();
+      },
+    });
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      subscription.unsubscribe();
+    });
   }
 }
