@@ -56,10 +56,7 @@ export class CaddyService {
       },
     });
 
-    const container = await this.docker.inspectContainer(
-      deployment.containerId,
-    );
-    const containerName = container.Name.replace(/^\//, '');
+    const upstreamHost = deployment.containerId.slice(0, 12);
 
     for (const domain of domains) {
       const routeId = this.routeId(domain.hostname);
@@ -71,7 +68,7 @@ export class CaddyService {
             handler: 'reverse_proxy',
             upstreams: [
               {
-                dial: `${containerName}:${env.project.healthCheckPort}`,
+                dial: `${upstreamHost}:${env.project.healthCheckPort}`,
               },
             ],
           },
@@ -86,20 +83,25 @@ export class CaddyService {
     routeId: string,
     route: Record<string, unknown>,
   ): Promise<void> {
+    // Drop any existing copy first, then re-insert at the head of the route list
+    await this.deleteRoute(routeId);
+
+    await this.fetchCaddy(
+      '/config/apps/http/servers/srv0/routes/0',
+      'PUT',
+      route,
+    );
+  }
+
+  private async deleteRoute(routeId: string): Promise<void> {
     try {
-      await this.fetchCaddy(`/id/${routeId}`, 'PATCH', route);
+      await this.fetchCaddy(`/id/${routeId}`, 'DELETE');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 
       if (!/unknown object id/i.test(message)) {
         throw error;
       }
-
-      await this.fetchCaddy(
-        '/config/apps/http/servers/srv0/routes',
-        'POST',
-        route,
-      );
     }
   }
 

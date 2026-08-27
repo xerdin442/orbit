@@ -3,11 +3,12 @@ import { BullModule, InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import { DomainsService } from './domains.service';
 import { DomainsController } from './domains.controller';
+import { CaddyController } from './caddy.controller';
 import { DomainVerificationProcessor } from './domain-verification.processor';
 
 @Module({
   imports: [BullModule.registerQueue({ name: 'domains' })],
-  controllers: [DomainsController],
+  controllers: [DomainsController, CaddyController],
   providers: [DomainsService, DomainVerificationProcessor],
 })
 export class DomainsModule implements OnModuleInit {
