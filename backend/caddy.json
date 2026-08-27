@@ -1,0 +1,45 @@
+{
+  "admin": {
+    "listen": "0.0.0.0:2019",
+    "origins": ["localhost:2019", "127.0.0.1:2019"]
+  },
+  "apps": {
+    "http": {
+      "servers": {
+        "srv0": {
+          "listen": [":80", ":443"],
+          "automatic_https": {
+            "disable_redirects": true
+          },
+          "routes": [
+            {
+              "handle": [
+                {
+                  "handler": "static_response",
+                  "body": "Orbit Platform",
+                  "status_code": 200
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "tls": {
+      "automation": {
+        "on_demand": {
+          "permission": {
+            "module": "http",
+            "endpoint": "{env.CADDY_ON_DEMAND_ASK}"
+          }
+        },
+        "policies": [
+          {
+            "issuers": [{ "module": "internal" }],
+            "on_demand": true
+          }
+        ]
+      }
+    }
+  }
+}

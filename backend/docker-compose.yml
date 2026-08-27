@@ -14,12 +14,17 @@ services:
     image: caddy:2-alpine
     container_name: orbit-caddy
     restart: unless-stopped
+    command: ["caddy", "run", "--config", "/etc/caddy/caddy.json"]
+    environment:
+      - CADDY_ON_DEMAND_ASK=${CADDY_ON_DEMAND_ASK}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "80:80"
       - "443:443"
       - "127.0.0.1:2019:2019"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy.json:/etc/caddy/caddy.json
       - caddy-data:/data
       - caddy-config:/config
 

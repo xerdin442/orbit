@@ -3,6 +3,7 @@ import { CaddyService } from '@src/infrastructure/caddy.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { Secrets } from '@src/common/secrets';
+import { randomAlphanumeric } from '@src/common/util';
 import {
   ActivityType,
   Domain,
@@ -43,13 +44,7 @@ export class ConfigureProxyStep implements DeploymentStep {
     if (existing) {
       ctx.domain = existing.hostname;
     } else {
-      const isDefaultBranch =
-        ctx.environment.branch ===
-        (ctx.project.source?.defaultBranch ?? 'main');
-
-      ctx.domain = isDefaultBranch
-        ? `${ctx.project.name}.${Secrets.INGRESS_HOST}`
-        : `${ctx.project.name}-${ctx.environment.name}.${Secrets.INGRESS_HOST}`;
+      ctx.domain = await this.generateUniqueHostname(ctx);
 
       newDomain = await this.db.domain.create({
         data: {
@@ -87,5 +82,35 @@ export class ConfigureProxyStep implements DeploymentStep {
         `Failed to route traffic and configure proxy: ${message}`,
       );
     }
+  }
+
+  private async generateUniqueHostname(
+    ctx: DeploymentContext,
+  ): Promise<string> {
+    const isDefaultBranch =
+      ctx.environment.branch === (ctx.project.source?.defaultBranch ?? 'main');
+
+    const prefix = isDefaultBranch
+      ? ctx.project.name
+      : `${ctx.project.name}-${ctx.environment.name}`;
+
+    const MAX_ATTEMPTS = 10;
+
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const hostname = `${prefix}-${randomAlphanumeric(7)}.${Secrets.INGRESS_HOST}`;
+
+      const clash = await this.db.domain.findFirst({
+        where: { hostname },
+        select: { id: true },
+      });
+
+      if (!clash) {
+        return hostname;
+      }
+    }
+
+    throw new DeploymentStepExecutionError(
+      `Could not generate a unique hostname for "${prefix}" after ${MAX_ATTEMPTS} attempts`,
+    );
   }
 }
