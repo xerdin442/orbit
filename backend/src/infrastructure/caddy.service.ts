@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Secrets } from '@src/common/secrets';
 import { DbService } from '@src/db/db.service';
+import { DockerService } from '@src/infrastructure/docker.service';
 import { Logger } from '@src/common/logger';
 import { DomainStatus } from '@generated/client';
 
@@ -9,7 +10,10 @@ export class CaddyService {
   private readonly logger = Logger(CaddyService.name);
   private readonly adminUrl: string;
 
-  constructor(private readonly db: DbService) {
+  constructor(
+    private readonly db: DbService,
+    private readonly docker: DockerService,
+  ) {
     this.adminUrl = Secrets.CADDY_ADMIN_URL;
   }
 
@@ -35,6 +39,16 @@ export class CaddyService {
       return;
     }
 
+    const network = await this.docker.getOrCreateProjectNetwork(env.project.id);
+    try {
+      await this.docker.connectContainerToNetwork(
+        network.id,
+        Secrets.CADDY_CONTAINER_NAME,
+      );
+    } catch {
+      // Caddy is already connected to this network
+    }
+
     const domains = await this.db.domain.findMany({
       where: {
         environmentId,
@@ -42,24 +56,47 @@ export class CaddyService {
       },
     });
 
+    const container = await this.docker.inspectContainer(
+      deployment.containerId,
+    );
+    const containerName = container.Name.replace(/^\//, '');
+
     for (const domain of domains) {
+      const routeId = this.routeId(domain.hostname);
       const route = {
-        '@id': this.routeId(domain.hostname),
+        '@id': routeId,
         match: [{ host: [domain.hostname] }],
         handle: [
           {
             handler: 'reverse_proxy',
             upstreams: [
               {
-                dial: `${deployment.containerId}:${env.project.healthCheckPort}`,
+                dial: `${containerName}:${env.project.healthCheckPort}`,
               },
             ],
           },
         ],
       };
 
+      await this.upsertRoute(routeId, route);
+    }
+  }
+
+  private async upsertRoute(
+    routeId: string,
+    route: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      await this.fetchCaddy(`/id/${routeId}`, 'PATCH', route);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (!/unknown object id/i.test(message)) {
+        throw error;
+      }
+
       await this.fetchCaddy(
-        `/id/${this.routeId(domain.hostname)}`,
+        '/config/apps/http/servers/srv0/routes',
         'POST',
         route,
       );

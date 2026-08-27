@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CaddyService } from './caddy.service';
 import { DbService } from '@src/db/db.service';
+import { DockerService } from '@src/infrastructure/docker.service';
 
 describe('CaddyService', () => {
   let service: CaddyService;
@@ -9,6 +10,11 @@ describe('CaddyService', () => {
     environment: { findUniqueOrThrow: jest.Mock };
     deployment: { findUniqueOrThrow: jest.Mock };
     domain: { findMany: jest.Mock };
+  };
+  let docker: {
+    getOrCreateProjectNetwork: jest.Mock;
+    connectContainerToNetwork: jest.Mock;
+    inspectContainer: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -21,8 +27,22 @@ describe('CaddyService', () => {
       domain: { findMany: jest.fn() },
     };
 
+    docker = {
+      getOrCreateProjectNetwork: jest
+        .fn()
+        .mockResolvedValue({ id: 'network-1' }),
+      connectContainerToNetwork: jest.fn().mockResolvedValue(undefined),
+      inspectContainer: jest
+        .fn()
+        .mockResolvedValue({ Name: '/project-proj-1-deployment-dep-1' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CaddyService, { provide: DbService, useValue: db }],
+      providers: [
+        CaddyService,
+        { provide: DbService, useValue: db },
+        { provide: DockerService, useValue: docker },
+      ],
     }).compile();
 
     service = module.get(CaddyService);
@@ -73,7 +93,7 @@ describe('CaddyService', () => {
       db.environment.findUniqueOrThrow.mockResolvedValue({
         id: 'env-1',
         currentDeploymentId: 'dep-1',
-        project: { healthCheckPort: 8080 },
+        project: { id: 'proj-1', healthCheckPort: 8080 },
       });
       db.deployment.findUniqueOrThrow.mockResolvedValue({
         id: 'dep-1',
@@ -88,13 +108,144 @@ describe('CaddyService', () => {
         include: { project: true },
       });
 
+      expect(docker.getOrCreateProjectNetwork).toHaveBeenCalledWith('proj-1');
+      expect(docker.connectContainerToNetwork).toHaveBeenCalledWith(
+        'network-1',
+        'orbit-caddy',
+      );
+
       expect(fetchMock).toHaveBeenCalledWith(
         'http://localhost:2019/id/orbit-route-app-example-com',
         expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('"container-1:8080"'),
+          method: 'PATCH',
+          body: expect.stringContaining(
+            '"project-proj-1-deployment-dep-1:8080"',
+          ),
         }),
       );
+    });
+
+    it('dials the container by name rather than its full ID, since Docker DNS cannot resolve a 64-char ID', async () => {
+      db.environment.findUniqueOrThrow.mockResolvedValue({
+        id: 'env-1',
+        currentDeploymentId: 'dep-1',
+        project: { id: 'proj-1', healthCheckPort: 8080 },
+      });
+      db.deployment.findUniqueOrThrow.mockResolvedValue({
+        id: 'dep-1',
+        containerId:
+          'cff6948fe1d450dbc2061e3ef59c126ef16814c6d8d1d4d57428269bd4429557',
+      });
+      db.domain.findMany.mockResolvedValue([{ hostname: 'app.example.com' }]);
+      docker.inspectContainer.mockResolvedValue({
+        Name: '/project-proj-1-deployment-dep-1',
+      });
+
+      await service.syncEnvironment('env-1');
+
+      expect(docker.inspectContainer).toHaveBeenCalledWith(
+        'cff6948fe1d450dbc2061e3ef59c126ef16814c6d8d1d4d57428269bd4429557',
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:2019/id/orbit-route-app-example-com',
+        expect.objectContaining({
+          body: expect.stringContaining(
+            '"project-proj-1-deployment-dep-1:8080"',
+          ),
+        }),
+      );
+    });
+
+    it('tolerates Caddy already being connected to the project network', async () => {
+      db.environment.findUniqueOrThrow.mockResolvedValue({
+        id: 'env-1',
+        currentDeploymentId: 'dep-1',
+        project: { id: 'proj-1', healthCheckPort: 8080 },
+      });
+      db.deployment.findUniqueOrThrow.mockResolvedValue({
+        id: 'dep-1',
+        containerId: 'container-1',
+      });
+      db.domain.findMany.mockResolvedValue([{ hostname: 'app.example.com' }]);
+      docker.connectContainerToNetwork.mockRejectedValue(
+        new Error('endpoint already exists'),
+      );
+
+      await expect(service.syncEnvironment('env-1')).resolves.not.toThrow();
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:2019/id/orbit-route-app-example-com',
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+    });
+
+    it('creates the route via the routes array when it does not exist yet', async () => {
+      db.environment.findUniqueOrThrow.mockResolvedValue({
+        id: 'env-1',
+        currentDeploymentId: 'dep-1',
+        project: { id: 'proj-1', healthCheckPort: 8080 },
+      });
+      db.deployment.findUniqueOrThrow.mockResolvedValue({
+        id: 'dep-1',
+        containerId: 'container-1',
+      });
+      db.domain.findMany.mockResolvedValue([{ hostname: 'app.example.com' }]);
+
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              error: "unknown object ID 'orbit-route-app-example-com'",
+            }),
+          ),
+      });
+      fetchMock.mockResolvedValueOnce({ ok: true });
+
+      await service.syncEnvironment('env-1');
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:2019/id/orbit-route-app-example-com',
+        expect.objectContaining({ method: 'PATCH' }),
+      );
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:2019/config/apps/http/servers/srv0/routes',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining(
+            '"project-proj-1-deployment-dep-1:8080"',
+          ),
+        }),
+      );
+    });
+
+    it('propagates errors unrelated to a missing object ID', async () => {
+      db.environment.findUniqueOrThrow.mockResolvedValue({
+        id: 'env-1',
+        currentDeploymentId: 'dep-1',
+        project: { id: 'proj-1', healthCheckPort: 8080 },
+      });
+      db.deployment.findUniqueOrThrow.mockResolvedValue({
+        id: 'dep-1',
+        containerId: 'container-1',
+      });
+      db.domain.findMany.mockResolvedValue([{ hostname: 'app.example.com' }]);
+
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        text: () => Promise.resolve('upstream connect error'),
+      });
+
+      await expect(service.syncEnvironment('env-1')).rejects.toThrow(
+        'Caddy API error (502): upstream connect error',
+      );
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
     it('does nothing when the environment has no active deployment', async () => {

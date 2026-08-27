@@ -270,12 +270,12 @@ export type DeploymentOrderByWithRelationInput = {
 
 export type DeploymentWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  imageTag?: string
   AND?: Prisma.DeploymentWhereInput | Prisma.DeploymentWhereInput[]
   OR?: Prisma.DeploymentWhereInput[]
   NOT?: Prisma.DeploymentWhereInput | Prisma.DeploymentWhereInput[]
   commitSha?: Prisma.StringFilter<"Deployment"> | string
   commitMessage?: Prisma.StringNullableFilter<"Deployment"> | string | null
+  imageTag?: Prisma.StringNullableFilter<"Deployment"> | string | null
   containerId?: Prisma.StringNullableFilter<"Deployment"> | string | null
   trigger?: Prisma.EnumDeploymentTriggerFilter<"Deployment"> | $Enums.DeploymentTrigger
   buildStatus?: Prisma.EnumBuildStatusFilter<"Deployment"> | $Enums.BuildStatus
@@ -287,7 +287,7 @@ export type DeploymentWhereUniqueInput = Prisma.AtLeast<{
   environmentId?: Prisma.StringFilter<"Deployment"> | string
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
   logs?: Prisma.DeploymentLogListRelationFilter
-}, "id" | "imageTag">
+}, "id">
 
 export type DeploymentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

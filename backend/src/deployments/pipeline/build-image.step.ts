@@ -34,7 +34,7 @@ export class BuildImageStep implements DeploymentStep {
       'Building image...',
     );
 
-    ctx.imageTag = `project-${ctx.project.id}:${ctx.commitSha}`;
+    ctx.imageTag = `${ctx.project.name}-${ctx.project.id}:${ctx.commitSha}`;
 
     const sourcePath = resolveSourcePath(
       ctx.workspace,

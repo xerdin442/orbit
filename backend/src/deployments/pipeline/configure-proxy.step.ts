@@ -5,6 +5,7 @@ import { ActivityService } from '@src/activity/activity.service';
 import { Secrets } from '@src/common/secrets';
 import {
   ActivityType,
+  Domain,
   DomainStatus,
   DomainType,
   LogLevel,
@@ -37,6 +38,8 @@ export class ConfigureProxyStep implements DeploymentStep {
       where: { environmentId: ctx.environment.id, type: DomainType.managed },
     });
 
+    let newDomain: Domain | null = null;
+
     if (existing) {
       ctx.domain = existing.hostname;
     } else {
@@ -48,7 +51,7 @@ export class ConfigureProxyStep implements DeploymentStep {
         ? `${ctx.project.name}.${Secrets.INGRESS_HOST}`
         : `${ctx.project.name}-${ctx.environment.name}.${Secrets.INGRESS_HOST}`;
 
-      const domain = await this.db.domain.create({
+      newDomain = await this.db.domain.create({
         data: {
           hostname: ctx.domain,
           type: DomainType.managed,
@@ -56,19 +59,32 @@ export class ConfigureProxyStep implements DeploymentStep {
           environmentId: ctx.environment.id,
         },
       });
-
-      await this.activity.log(ActivityType.domain_added, ctx.project.ownerId, {
-        domainId: domain.id,
-        hostname: domain.hostname,
-        environmentId: ctx.environment.id,
-      });
     }
 
     try {
       await this.caddy.syncEnvironment(ctx.environment.id);
-    } catch {
+
+      if (newDomain) {
+        await this.activity.log(
+          ActivityType.domain_added,
+          ctx.project.ownerId,
+          {
+            domainId: newDomain.id,
+            hostname: newDomain.hostname,
+            environmentId: ctx.environment.id,
+          },
+        );
+      }
+    } catch (error) {
+      if (newDomain) {
+        await this.db.domain.delete({
+          where: { id: newDomain.id },
+        });
+      }
+
+      const message = error instanceof Error ? error.message : String(error);
       throw new DeploymentStepExecutionError(
-        'Failed to route traffic and configure proxy',
+        `Failed to route traffic and configure proxy: ${message}`,
       );
     }
   }
