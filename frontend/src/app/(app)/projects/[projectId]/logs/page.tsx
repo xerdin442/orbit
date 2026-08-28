@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Route, SearchX } from "lucide-react";
+import { Route, Search, SearchX } from "lucide-react";
 import { api } from "@/lib/api";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DataTable } from "@/components/shared/data-table";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useSelectedEnvironment } from "@/hooks/use-selected-environment";
 import { useSSE } from "@/hooks/use-sse";
+import { useDebounce } from "@/hooks/use-debounce";
 import { requestStatusVariant } from "@/lib/utils";
 import { STATUS_CLASSES } from "@/lib/types";
 import type { RequestLog, StatusClass } from "@/lib/types";
@@ -35,10 +37,13 @@ export default function LogsPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [method, setMethod] = useState<string>("all");
   const [statusClass, setStatusClass] = useState<StatusClass | "all">("all");
+  const [pathInput, setPathInput] = useState("");
   const [streamedEntries, setStreamedEntries] = useState<RequestLog[]>([]);
   const [streamedForEnv, setStreamedForEnv] = useState<string | null>(null);
 
-  const hasFilters = method !== "all" || statusClass !== "all";
+  const pathFilter = useDebounce(pathInput.trim(), 300);
+  const hasFilters =
+    method !== "all" || statusClass !== "all" || pathFilter !== "";
   const isFirstPage = pageIndex === 0;
 
   if (selectedEnvironment && streamedForEnv !== selectedEnvironment.id) {
@@ -58,6 +63,7 @@ export default function LogsPage() {
       pageIndex,
       method,
       statusClass,
+      pathFilter,
     ],
     queryFn: () =>
       selectedEnvironment
@@ -66,6 +72,7 @@ export default function LogsPage() {
             limit: PAGE_SIZE,
             method: method === "all" ? undefined : method,
             statusClass: statusClass === "all" ? undefined : statusClass,
+            path: pathFilter || undefined,
           })
         : null,
     enabled: !!selectedEnvironment,
@@ -102,6 +109,7 @@ export default function LogsPage() {
   const clearFilters = () => {
     setMethod("all");
     setStatusClass("all");
+    setPathInput("");
     setPageIndex(0);
   };
 
@@ -125,16 +133,21 @@ export default function LogsPage() {
       ),
     },
     {
-      accessorKey: "uri",
+      accessorKey: "path",
       header: "Path",
-      cell: ({ row }) => (
-        <span
-          className="block max-w-md truncate font-mono text-xs text-foreground"
-          title={row.original.uri}
-        >
-          {row.original.uri}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const { path, query } = row.original;
+        const full = query ? `${path}?${query}` : path;
+        return (
+          <span
+            className="block max-w-md truncate font-mono text-xs text-foreground"
+            title={full}
+          >
+            {path}
+            {query && <span className="text-muted-foreground">?{query}</span>}
+          </span>
+        );
+      },
     },
     {
       id: "hostname",
@@ -171,6 +184,19 @@ export default function LogsPage() {
       <PageHeader title="Logs" description="View all incoming HTTP requests" />
 
       <div className="mb-4 -mt-6 mr-1 flex items-center justify-end gap-2">
+        <div className="relative w-64">
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={pathInput}
+            onChange={(e) => {
+              setPathInput(e.target.value);
+              setPageIndex(0);
+            }}
+            placeholder="Filter by path, e.g. /api/users"
+            className="h-8.75 pl-8 text-xs"
+          />
+        </div>
+
         <Select
           value={method}
           onValueChange={(v) => {
@@ -223,7 +249,7 @@ export default function LogsPage() {
           <EmptyState
             icon={SearchX}
             title="No matching requests"
-            description="No requests match the selected filters. Try a different method or status."
+            description="No requests match the selected filters. Try a different path, method, or status."
             action={{ label: "Clear filters", onClick: clearFilters }}
             className="py-16"
           />

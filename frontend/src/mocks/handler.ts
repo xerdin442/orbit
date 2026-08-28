@@ -425,6 +425,10 @@ const mockRoutes: Record<string, MockHandler> = {
       filtered = filtered.filter((r) => r.method === query.method);
     }
 
+    if (query?.path) {
+      filtered = filtered.filter((r) => r.path.includes(query.path));
+    }
+
     if (query?.statusClass) {
       const base = Number(query.statusClass[0]) * 100;
       filtered = filtered.filter(
