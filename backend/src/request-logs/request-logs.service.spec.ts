@@ -28,7 +28,8 @@ describe('RequestLogsService', () => {
 
   const line: ParsedAccessLogLine = {
     method: 'GET',
-    uri: '/api/users',
+    path: '/api/users',
+    query: 'page=2',
     statusCode: 200,
     durationMs: 12,
     hostname: 'app.example.com',
@@ -56,7 +57,7 @@ describe('RequestLogsService', () => {
         data: { environmentId: 'env-1', ...line, method: 'GET' },
       });
       expect(received).toHaveLength(1);
-      expect(received[0].uri).toBe('/api/users');
+      expect(received[0].path).toBe('/api/users');
       expect(received[0].id).toBe('req-1');
     });
 
@@ -94,7 +95,7 @@ describe('RequestLogsService', () => {
 
   describe('getRecent', () => {
     it('returns the most recent entries in chronological (oldest-first) order', async () => {
-      const newer: RequestLog = { ...created, id: 'req-2', uri: '/newer' };
+      const newer: RequestLog = { ...created, id: 'req-2', path: '/newer' };
       db.requestLog.findMany = jest.fn().mockResolvedValue([newer, created]);
 
       const result = await service.getRecent('env-1');

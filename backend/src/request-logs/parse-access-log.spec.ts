@@ -18,7 +18,8 @@ describe('parseAccessLogLine', () => {
 
     expect(parseAccessLogLine(line)).toEqual({
       method: 'GET',
-      uri: '/api/users',
+      path: '/api/users',
+      query: 'page=2',
       hostname: 'app.example.com',
       statusCode: 200,
       durationMs: 2,
@@ -26,15 +27,49 @@ describe('parseAccessLogLine', () => {
     });
   });
 
-  it('strips the query string from the uri', () => {
+  it('splits the path and query string', () => {
     const line = JSON.stringify({
       logger: 'http.log.access',
-      request: { method: 'GET', host: 'app.example.com', uri: '/login?_rsc=abc' },
+      request: {
+        method: 'GET',
+        host: 'app.example.com',
+        uri: '/login?_rsc=abc',
+      },
       status: 200,
       duration: 0.1,
     });
 
-    expect(parseAccessLogLine(line)?.uri).toBe('/login');
+    const parsed = parseAccessLogLine(line);
+    expect(parsed?.path).toBe('/login');
+    expect(parsed?.query).toBe('_rsc=abc');
+  });
+
+  it('leaves query undefined when there is none', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: { method: 'GET', host: 'app.example.com', uri: '/dashboard' },
+      status: 200,
+      duration: 0.1,
+    });
+
+    const parsed = parseAccessLogLine(line);
+    expect(parsed?.path).toBe('/dashboard');
+    expect(parsed?.query).toBeUndefined();
+  });
+
+  it('caps an overlong query string', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'GET',
+        host: 'app.example.com',
+        uri: `/search?q=${'x'.repeat(5000)}`,
+      },
+      status: 200,
+      duration: 0.1,
+    });
+
+    expect(parseAccessLogLine(line)?.query).toHaveLength(1024);
   });
 
   it('falls back to an undefined timestamp when ts is absent', () => {
@@ -94,7 +129,66 @@ describe('parseAccessLogLine', () => {
       duration: 0.01,
     });
 
-    expect(parseAccessLogLine(line)?.uri).toBe('/dashboard');
+    expect(parseAccessLogLine(line)?.path).toBe('/dashboard');
+  });
+
+  it('drops CORS preflight requests', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'OPTIONS',
+        host: 'api.example.com',
+        uri: '/orders',
+        headers: {
+          Origin: ['https://app.example.com'],
+          'Access-Control-Request-Method': ['POST'],
+        },
+      },
+      status: 204,
+      duration: 0.001,
+    });
+
+    expect(parseAccessLogLine(line)).toBeNull();
+  });
+
+  it('keeps a genuine OPTIONS call with no preflight header', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'OPTIONS',
+        host: 'api.example.com',
+        uri: '/orders',
+        headers: { 'User-Agent': ['curl/8.0'] },
+      },
+      status: 200,
+      duration: 0.001,
+    });
+
+    expect(parseAccessLogLine(line)?.path).toBe('/orders');
+  });
+
+  it('drops speculative prefetches', () => {
+    const headerSets = [
+      { 'Sec-Purpose': ['prefetch;prerender'] },
+      { Purpose: ['prefetch'] },
+      { 'X-Moz': ['prefetch'] },
+      { 'Next-Router-Prefetch': ['1'] },
+    ];
+
+    for (const headers of headerSets) {
+      const line = JSON.stringify({
+        logger: 'http.log.access',
+        request: {
+          method: 'GET',
+          host: 'app.example.com',
+          uri: '/dashboard',
+          headers,
+        },
+        status: 200,
+        duration: 0.01,
+      });
+      expect(parseAccessLogLine(line)).toBeNull();
+    }
   });
 
   it('returns null for blank lines', () => {
