@@ -182,7 +182,8 @@ model RequestLog {
   id         String   @id @default(uuid())
   timestamp  DateTime @default(now())
   method     String
-  uri        String
+  path       String
+  query      String?
   statusCode Int
   durationMs Int
   hostname   String
@@ -192,6 +193,7 @@ model RequestLog {
 
   @@index([environmentId])
   @@index([environmentId, timestamp])
+  @@index([environmentId, path])
 }
 
 model Deployment {

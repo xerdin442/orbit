@@ -9,6 +9,10 @@ export class FilterRequestLogsDto extends PaginationDto {
   method?: string;
 
   @IsOptional()
+  @IsString()
+  path?: string;
+
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(200)

@@ -75,6 +75,10 @@ export class RequestLogsService {
       where.method = filters.method.toUpperCase();
     }
 
+    if (filters.path) {
+      where.path = { contains: filters.path };
+    }
+
     if (filters.statusCode) {
       where.statusCode = filters.statusCode;
     } else if (filters.statusClass) {

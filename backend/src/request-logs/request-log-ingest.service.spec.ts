@@ -83,7 +83,7 @@ describe('RequestLogIngestService', () => {
         'env-1',
         expect.objectContaining({
           method: 'GET',
-          uri: '/health',
+          path: '/health',
           statusCode: 200,
           durationMs: 10,
           hostname: 'app.example.com',
