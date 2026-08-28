@@ -1,16 +1,35 @@
 {
   "admin": {
     "listen": "0.0.0.0:2019",
-    "origins": ["localhost:2019", "127.0.0.1:2019"]
+    "origins": [
+      "localhost:2019",
+      "127.0.0.1:2019"
+    ]
+  },
+  "logging": {
+    "logs": {
+      "default": {
+        "encoder": {
+          "format": "json"
+        },
+        "include": [
+          "http.log.access"
+        ]
+      }
+    }
   },
   "apps": {
     "http": {
       "servers": {
         "srv0": {
-          "listen": [":80", ":443"],
+          "listen": [
+            ":80",
+            ":443"
+          ],
           "automatic_https": {
             "disable_redirects": true
           },
+          "logs": {},
           "routes": [
             {
               "handle": [
@@ -35,7 +54,11 @@
         },
         "policies": [
           {
-            "issuers": [{ "module": "internal" }],
+            "issuers": [
+              {
+                "module": "internal"
+              }
+            ],
             "on_demand": true
           }
         ]
