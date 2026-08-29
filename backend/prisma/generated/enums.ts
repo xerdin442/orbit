@@ -33,7 +33,7 @@ export type LifecycleStatus = (typeof LifecycleStatus)[keyof typeof LifecycleSta
 
 export const DeploymentTrigger = {
   manual: 'manual',
-  webhook: 'webhook',
+  github: 'github',
   redeploy: 'redeploy',
   rollback: 'rollback'
 } as const
@@ -128,9 +128,7 @@ export const ActivityType = {
   slack_installation_removed: 'slack_installation_removed',
   slack_token_revoked: 'slack_token_revoked',
   external_connection_added: 'external_connection_added',
-  external_connection_removed: 'external_connection_removed',
-  railway_project_imported: 'railway_project_imported',
-  vercel_project_imported: 'vercel_project_imported'
+  external_connection_removed: 'external_connection_removed'
 } as const
 
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType]

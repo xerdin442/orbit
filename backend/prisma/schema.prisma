@@ -27,7 +27,7 @@ enum LifecycleStatus {
 
 enum DeploymentTrigger {
   manual
-  webhook
+  github
   redeploy
   rollback
 }
@@ -102,8 +102,6 @@ enum ActivityType {
   slack_token_revoked
   external_connection_added
   external_connection_removed
-  railway_project_imported
-  vercel_project_imported
 }
 
 model User {

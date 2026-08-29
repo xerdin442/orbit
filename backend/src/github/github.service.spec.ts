@@ -353,7 +353,7 @@ describe('GitHubService', () => {
       });
       db.deployment.create = jest
         .fn()
-        .mockResolvedValue({ id: 'dep-1', trigger: 'webhook' });
+        .mockResolvedValue({ id: 'dep-1', trigger: 'github' });
 
       await service.handlePushEvent('refs/heads/main', 'owner/repo');
 
@@ -361,8 +361,8 @@ describe('GitHubService', () => {
       expect(db.deployment.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ environmentId: 'env-1' }),
       });
-      expect(queue.add).toHaveBeenCalledWith('webhook', {
-        deployment: { id: 'dep-1', trigger: 'webhook' },
+      expect(queue.add).toHaveBeenCalledWith('github', {
+        deployment: { id: 'dep-1', trigger: 'github' },
       });
       expect(activity.log).toHaveBeenCalledWith(
         'deployment_started',
