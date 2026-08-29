@@ -57,4 +57,25 @@ export const activityLogs: ActivityLog[] = [
     metadata: { deploymentId: "dep-4", environmentId: "env-3" },
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   },
+  {
+    id: "act-9",
+    type: "domain_verification_retried",
+    actorId: "mock-user-1",
+    metadata: { domainId: "dom-2", hostname: "app.orbit.dev" },
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-10",
+    type: "external_connection_added",
+    actorId: "mock-user-1",
+    metadata: { provider: "railway", connectionId: "conn-1" },
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "act-11",
+    type: "external_connection_removed",
+    actorId: "mock-user-1",
+    metadata: { provider: "vercel", connectionId: "conn-2" },
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+  },
 ];

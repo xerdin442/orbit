@@ -60,7 +60,7 @@ export interface Environment {
   updatedAt: string;
 }
 
-export type DeploymentTrigger = "manual" | "webhook" | "rollback" | "redeploy";
+export type DeploymentTrigger = "manual" | "github" | "rollback" | "redeploy";
 
 export type BuildStatus =
   | "pending"
@@ -211,6 +211,7 @@ export type ActivityType =
   | "domain_added"
   | "domain_removed"
   | "domain_verified"
+  | "domain_verification_retried"
   | "github_installation_added"
   | "github_installation_removed"
   | "github_webhook_event"
@@ -219,7 +220,9 @@ export type ActivityType =
   | "resource_data_cleared"
   | "slack_installation_added"
   | "slack_installation_removed"
-  | "slack_token_revoked";
+  | "slack_token_revoked"
+  | "external_connection_added"
+  | "external_connection_removed";
 
 export interface ActivityLog {
   id: string;
