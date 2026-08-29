@@ -47,7 +47,7 @@ export default function DeploymentDetailPage() {
   const [logs, setLogs] = useState<DeploymentLog[]>([]);
   const [seededLogsFor, setSeededLogsFor] = useState<string | null>(null);
 
-  const { data: deployment, isLoading } = useQuery({
+  const { data: deployment, isLoading: deploymentLoading } = useQuery({
     queryKey: ["deployment", deploymentId],
     queryFn: () => api.deployments.get(deploymentId),
     refetchInterval: (query) => {
@@ -56,7 +56,7 @@ export default function DeploymentDetailPage() {
     },
   });
 
-  const { data: persistedLogs } = useQuery({
+  const { data: persistedLogs, isLoading: persistedLogsLoading } = useQuery({
     queryKey: ["deployment-logs", deploymentId],
     queryFn: () => api.deployments.logs(deploymentId),
   });
@@ -93,7 +93,7 @@ export default function DeploymentDetailPage() {
     queryClient.invalidateQueries({ queryKey: ["activity", projectId] });
   }
 
-  if (isLoading || !deployment) {
+  if (deploymentLoading || !deployment) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-1/3" />
@@ -227,10 +227,19 @@ export default function DeploymentDetailPage() {
           }
         >
           <TerminalViewer
-            lines={logs.map((log) => ({
-              text: formatLogLine(log),
-              className: logLevelColor(log.level),
-            }))}
+            lines={
+              persistedLogsLoading
+                ? [
+                    {
+                      text: "Threading logs...",
+                      className: "text-muted-foreground animate-pulse",
+                    },
+                  ]
+                : logs.map((log) => ({
+                    text: formatLogLine(log),
+                    className: logLevelColor(log.level),
+                  }))
+            }
             className="h-96"
           />
         </SectionCard>

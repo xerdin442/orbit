@@ -69,7 +69,12 @@ export function DeploymentLogsDialog({
         <TerminalViewer
           lines={
             isLoading
-              ? []
+              ? [
+                  {
+                    text: "Threading logs...",
+                    className: "text-muted-foreground animate-pulse",
+                  },
+                ]
               : logs.map((log) => ({
                   text: formatLogLine(log),
                   className: logLevelColor(log.level),
