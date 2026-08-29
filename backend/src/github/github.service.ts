@@ -290,7 +290,7 @@ export class GitHubService {
       const deployment = await this.db.deployment.create({
         data: {
           environmentId: env.id,
-          trigger: DeploymentTrigger.webhook,
+          trigger: DeploymentTrigger.github,
           imageTag: null,
           commitSha: '',
           buildStatus: BuildStatus.pending,
@@ -308,13 +308,13 @@ export class GitHubService {
         },
       );
 
-      await this.activity.log(ActivityType.github_webhook_event, 'github', {
+      await this.activity.log(ActivityType.github_webhook_event, 'system', {
         event: 'push',
         repo: repoFullName,
         branch,
       });
 
-      await this.deployQueue.add('webhook', { deployment });
+      await this.deployQueue.add('github', { deployment });
     }
   }
 

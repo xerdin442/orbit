@@ -333,14 +333,14 @@ describe('DeploymentsService', () => {
       await service.findByEnvironment('env-1', 'user-1', {
         page: 2,
         limit: 10,
-        trigger: DeploymentTrigger.webhook,
+        trigger: DeploymentTrigger.github,
         status: BuildStatus.failed,
       });
 
       expect(db.deployment.findMany).toHaveBeenCalledWith({
         where: {
           environmentId: 'env-1',
-          trigger: DeploymentTrigger.webhook,
+          trigger: DeploymentTrigger.github,
           buildStatus: BuildStatus.failed,
         },
         orderBy: { createdAt: 'desc' },
