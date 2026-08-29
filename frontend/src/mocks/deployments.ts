@@ -20,7 +20,8 @@ export const deployments: Deployment[] = [
     id: "dep-1",
     commitSha: "a1b2c3d4e5f6g7h8i9j0",
     commitMessage: "feat: add user authentication",
-    imageTag: "orbit-api:a1b2c3d",
+    imageTag:
+      "orbit-api-7f3c9a1e-2b4d-4e8a-9c1f-6a5b3d2e1f0c:a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
     containerId: "container-001",
     trigger: "manual",
     buildStatus: "ready",
@@ -35,7 +36,8 @@ export const deployments: Deployment[] = [
     id: "dep-2",
     commitSha: "b2c3d4e5f6g7h8i9j0a1",
     commitMessage: "fix: resolve CORS issue",
-    imageTag: "orbit-api:b2c3d4e",
+    imageTag:
+      "orbit-api-7f3c9a1e-2b4d-4e8a-9c1f-6a5b3d2e1f0c:b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
     containerId: "container-002",
     trigger: "webhook",
     buildStatus: "ready",
@@ -50,7 +52,8 @@ export const deployments: Deployment[] = [
     id: "dep-3",
     commitSha: "c3d4e5f6g7h8i9j0a1b2",
     commitMessage: "chore: update dependencies",
-    imageTag: "orbit-api:c3d4e5f",
+    imageTag:
+      "orbit-api-7f3c9a1e-2b4d-4e8a-9c1f-6a5b3d2e1f0c:c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",
     containerId: "container-003",
     trigger: "manual",
     buildStatus: "failed",
@@ -65,7 +68,8 @@ export const deployments: Deployment[] = [
     id: "dep-4",
     commitSha: "d4e5f6g7h8i9j0a1b2c3",
     commitMessage: "feat: add landing page redesign",
-    imageTag: "orbit-frontend:d4e5f6g",
+    imageTag:
+      "orbit-frontend-1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d:d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3",
     containerId: "container-004",
     trigger: "manual",
     buildStatus: "ready",
@@ -80,7 +84,8 @@ export const deployments: Deployment[] = [
     id: "dep-5",
     commitSha: "e5f6g7h8i9j0a1b2c3d4",
     commitMessage: "feat: add dark mode support",
-    imageTag: "orbit-frontend:e5f6g7h",
+    imageTag:
+      "orbit-frontend-1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d:e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
     containerId: "container-005",
     trigger: "manual",
     buildStatus: "building",
