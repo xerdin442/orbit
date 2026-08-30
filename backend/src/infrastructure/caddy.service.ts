@@ -75,16 +75,16 @@ export class CaddyService {
         ],
       };
 
-      await this.upsertRoute(routeId, route);
+      await this.upsertRoute(domain.hostname, route);
     }
   }
 
   private async upsertRoute(
-    routeId: string,
+    hostname: string,
     route: Record<string, unknown>,
   ): Promise<void> {
     // Drop any existing copy first, then re-insert at the head of the route list
-    await this.deleteRoute(routeId);
+    await this.deleteRoute(hostname);
 
     await this.fetchCaddy(
       '/config/apps/http/servers/srv0/routes/0',
@@ -93,7 +93,9 @@ export class CaddyService {
     );
   }
 
-  private async deleteRoute(routeId: string): Promise<void> {
+  async deleteRoute(hostname: string): Promise<void> {
+    const routeId = this.routeId(hostname);
+
     try {
       await this.fetchCaddy(`/id/${routeId}`, 'DELETE');
     } catch (error) {
