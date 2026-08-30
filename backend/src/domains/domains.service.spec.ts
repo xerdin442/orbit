@@ -3,6 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { DomainsService } from './domains.service';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { CaddyService } from '@src/infrastructure/caddy.service';
 import {
   NotFoundException,
   ConflictException,
@@ -14,6 +15,7 @@ describe('DomainsService', () => {
   let service: DomainsService;
   let db: jest.Mocked<Pick<DbService, 'environment' | 'domain'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
+  let caddy: jest.Mocked<Pick<CaddyService, 'deleteRoute'>>;
 
   beforeEach(async () => {
     db = {
@@ -28,12 +30,14 @@ describe('DomainsService', () => {
       },
     } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'domain'>>;
     activity = { log: jest.fn() };
+    caddy = { deleteRoute: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DomainsService,
         { provide: DbService, useValue: db },
         { provide: ActivityService, useValue: activity },
+        { provide: CaddyService, useValue: caddy },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
       ],
     }).compile();
@@ -173,6 +177,7 @@ describe('DomainsService', () => {
       await service.deleteDomain('d1', 'user-1');
 
       expect(db.domain.delete).toHaveBeenCalledWith({ where: { id: 'd1' } });
+      expect(caddy.deleteRoute).toHaveBeenCalledWith('api.example.com');
       expect(activity.log).toHaveBeenCalled();
     });
   });

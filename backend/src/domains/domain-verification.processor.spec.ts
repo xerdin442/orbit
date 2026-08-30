@@ -70,6 +70,28 @@ describe('DomainVerificationProcessor', () => {
     });
   });
 
+  it('verifies a non-apex domain whose CNAME the provider flattens to an A record', async () => {
+    db.domain.findMany = jest.fn().mockResolvedValue([
+      {
+        id: 'd1',
+        hostname: 'flat.example.com',
+        status: DomainStatus.pending,
+        createdAt: new Date(),
+        environmentId: 'env-1',
+      },
+    ]);
+    mockResolveCname.mockRejectedValue(new Error('ENODATA'));
+    mockResolve4.mockResolvedValue(['192.168.1.55']);
+
+    await processor.process();
+
+    expect(db.domain.update).toHaveBeenCalledWith({
+      where: { id: 'd1' },
+      data: expect.objectContaining({ status: DomainStatus.active }),
+    });
+    expect(caddy.syncEnvironment).toHaveBeenCalledWith('env-1');
+  });
+
   it('marks failed once the verification timeout has elapsed', async () => {
     const pastTimeout = new Date(Date.now() - 60 * 1000);
     db.domain.findMany = jest.fn().mockResolvedValue([

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { CaddyService } from '@src/infrastructure/caddy.service';
 import { Secrets } from '@src/common/secrets';
 import { ActivityType, DomainType, DomainStatus } from '@generated/client';
 import type { DnsInstructions } from '@src/common/types';
@@ -17,6 +18,7 @@ export class DomainsService {
   constructor(
     private readonly db: DbService,
     private readonly activity: ActivityService,
+    private readonly caddy: CaddyService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
@@ -144,6 +146,8 @@ export class DomainsService {
     }
 
     await this.db.domain.delete({ where: { id } });
+
+    await this.caddy.deleteRoute(domain.hostname);
 
     await this.invalidateCache(domain.environmentId);
 

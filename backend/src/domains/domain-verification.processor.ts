@@ -54,8 +54,17 @@ export class DomainVerificationProcessor extends WorkerHost {
             const addresses = await dnsResolve4(domain.hostname);
             verified = addresses.includes(Secrets.INGRESS_IP);
           } else {
-            const cnames = await dnsResolveCname(domain.hostname);
-            verified = cnames.includes(Secrets.INGRESS_HOST);
+            try {
+              const cnames = await dnsResolveCname(domain.hostname);
+              verified = cnames.includes(Secrets.INGRESS_HOST);
+            } catch {
+              // No CNAME record found, fall back to the resolved A records
+            }
+
+            if (!verified) {
+              const addresses = await dnsResolve4(domain.hostname);
+              verified = addresses.includes(Secrets.INGRESS_IP);
+            }
           }
         } catch {
           // DNS resolution failed, check for retry or mark as failed

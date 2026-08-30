@@ -288,4 +288,42 @@ describe('CaddyService', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
   });
+
+  describe('deleteRoute', () => {
+    it('deletes the route for a hostname by its derived id', async () => {
+      await service.deleteRoute('app.example.com');
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://localhost:2019/id/orbit-route-app-example-com',
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+    });
+
+    it('swallows a missing-route response for a hostname that was never routed', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              error: "unknown object ID 'orbit-route-gone-example-com'",
+            }),
+          ),
+      });
+
+      await expect(service.deleteRoute('gone.example.com')).resolves.not.toThrow();
+    });
+
+    it('propagates errors unrelated to a missing object id', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        text: () => Promise.resolve('upstream connect error'),
+      });
+
+      await expect(service.deleteRoute('app.example.com')).rejects.toThrow(
+        'Caddy API error (502): upstream connect error',
+      );
+    });
+  });
 });
