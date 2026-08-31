@@ -38,6 +38,7 @@ interface SecretsConfig {
   SLACK_CLIENT_ID: string;
   SLACK_CLIENT_SECRET: string;
   SLACK_SIGNING_SECRET: string;
+  SLACK_APP_TOKEN: string;
   SLACK_REDIRECT_URI: string;
   SLACK_BOT_SCOPES: string;
 }
@@ -83,6 +84,7 @@ export const Secrets: SecretsConfig = {
   SLACK_CLIENT_ID: getString('SLACK_CLIENT_ID'),
   SLACK_CLIENT_SECRET: getString('SLACK_CLIENT_SECRET'),
   SLACK_SIGNING_SECRET: getString('SLACK_SIGNING_SECRET'),
+  SLACK_APP_TOKEN: getString('SLACK_APP_TOKEN'),
   SLACK_REDIRECT_URI: getString('SLACK_REDIRECT_URI'),
   SLACK_BOT_SCOPES: getString('SLACK_BOT_SCOPES'),
 };

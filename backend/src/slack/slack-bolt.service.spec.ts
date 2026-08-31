@@ -1,5 +1,5 @@
 import { SlackBoltService } from './slack-bolt.service';
-import { App, ExpressReceiver } from '@slack/bolt';
+import { App } from '@slack/bolt';
 import type { Queue } from 'bullmq';
 import type { RedisClientType } from 'redis';
 import type { DbService } from '@src/db/db.service';
@@ -14,15 +14,13 @@ const appMock = {
   event: jest.fn(),
   command: jest.fn(),
   view: jest.fn(),
-  init: jest.fn().mockResolvedValue(undefined),
+  start: jest.fn().mockResolvedValue(undefined),
+  stop: jest.fn().mockResolvedValue(undefined),
 };
 
 jest.mock('@slack/bolt', () => {
   return {
     App: jest.fn(() => appMock),
-    ExpressReceiver: jest.fn().mockImplementation(() => ({
-      router: { use: jest.fn() },
-    })),
   };
 });
 
@@ -92,22 +90,23 @@ describe('SlackBoltService', () => {
     );
   });
 
-  it('creates an ExpressReceiver and App', () => {
-    expect(ExpressReceiver).toHaveBeenCalledWith(
-      expect.objectContaining({
-        signingSecret: 'test-slack-signing-secret',
-        processBeforeResponse: true,
-        installationStore: mockInstallationStore,
-      }),
-    );
+  it('creates a Socket Mode App', () => {
     expect(App).toHaveBeenCalledWith(
       expect.objectContaining({
-        receiver: expect.anything(),
+        appToken: 'xapp-test-app-token',
+        socketMode: true,
         authorize: expect.any(Function),
       }),
     );
-    expect(service.receiver).toBeDefined();
     expect(service.app).toBeDefined();
+  });
+
+  it('opens the Socket Mode connection on module init and closes it on destroy', async () => {
+    await service.onModuleInit();
+    expect(appMock.start).toHaveBeenCalledTimes(1);
+
+    await service.onModuleDestroy();
+    expect(appMock.stop).toHaveBeenCalledTimes(1);
   });
 
   it('registers middleware, lifecycle events, commands, and view submissions', () => {

@@ -38,6 +38,7 @@ jest.mock('@src/common/secrets', () => ({
     SLACK_CLIENT_ID: 'test-slack-client-id',
     SLACK_CLIENT_SECRET: 'test-slack-client-secret',
     SLACK_SIGNING_SECRET: 'test-slack-signing-secret',
+    SLACK_APP_TOKEN: 'xapp-test-app-token',
     SLACK_REDIRECT_URI: 'http://localhost:3000/api/slack/callback',
     SLACK_BOT_SCOPES: 'commands,chat:write',
   },
