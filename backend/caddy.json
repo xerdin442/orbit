@@ -57,8 +57,7 @@
             "issuers": [
               {
                 "module": "zerossl",
-                "api_key": "{env.ZEROSSL_API_KEY}",
-                "email": "{env.ACME_EMAIL}"
+                "api_key": "{env.ZEROSSL_API_KEY}"
               },
               {
                 "module": "acme",
