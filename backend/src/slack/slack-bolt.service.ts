@@ -13,6 +13,8 @@ import {
   type RespondFn,
   type SlashCommand,
   type SlackCommandMiddlewareArgs,
+  type BlockAction,
+  type ButtonAction,
 } from '@slack/bolt';
 import { ChatPostMessageResponse } from '@slack/web-api';
 import type { Queue } from 'bullmq';
@@ -30,7 +32,13 @@ import {
   formatDuration,
 } from './blocks/deployment-status.blocks';
 import type { DeploymentJob } from '@src/common/types';
-import { ActivityType, LifecycleStatus, BuildStatus } from '@generated/client';
+import {
+  ActivityType,
+  LifecycleStatus,
+  BuildStatus,
+  Project,
+  Environment,
+} from '@generated/client';
 import { Logger } from '@src/common/logger';
 
 interface SlackCommandContext {
@@ -85,7 +93,7 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
     this.registerMiddleware();
     this.registerLifecycleEvents();
     this.registerCommands();
-    this.registerViewSubmissions();
+    this.registerActions();
   }
 
   async onModuleInit(): Promise<void> {
@@ -289,12 +297,11 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
           return;
         }
 
-        await this.openConfirmationModal(
+        await this.openConfirmationPrompt(
+          respond,
           command,
-          project.id,
-          project.name,
-          env.id,
-          env.name,
+          project,
+          env,
           'deploy',
         );
       });
@@ -348,12 +355,11 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
           return;
         }
 
-        await this.openConfirmationModal(
+        await this.openConfirmationPrompt(
+          respond,
           command,
-          project.id,
-          project.name,
-          env.id,
-          env.name,
+          project,
+          env,
           'rollback',
         );
       });
@@ -465,110 +471,154 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private registerViewSubmissions(): void {
-    this.app.view('deploy_confirm', async ({ ack, body, respond }) => {
-      await ack();
+  private registerActions(): void {
+    this.app.action<BlockAction<ButtonAction>>(
+      'deploy_confirm',
+      async ({ ack, action, respond }) => {
+        await ack();
 
-      const metadata = JSON.parse(body.view.private_metadata) as {
-        teamId: string;
-        channelId: string;
-        userId: string;
-        projectId: string;
-        projectName: string;
-        environmentId: string;
-        environmentName: string;
-        action: 'deploy' | 'rollback';
-      };
+        if (!action.value) {
+          this.logger.error('deploy_confirm action received without a value');
+          return;
+        }
 
-      const record = await this.installationStore.getRecord(metadata.teamId);
-      if (!record) {
-        this.logger.error(
-          `No installation record found for team ${metadata.teamId} during view submission`,
-        );
-        return;
-      }
+        const metadata = JSON.parse(action.value) as {
+          teamId: string;
+          channelId: string;
+          userId: string;
+          projectId: string;
+          projectName: string;
+          environmentId: string;
+          environmentName: string;
+          action: 'deploy' | 'rollback';
+        };
 
-      const startedAt = new Date().toISOString();
-      const blocks = buildDeploymentStatusBlocks({
-        project: metadata.projectName,
-        environment: metadata.environmentName,
-        status: 'queued',
-        triggeredBy: metadata.userId,
-        startedAt,
-      });
-
-      let messageTs: string;
-      try {
-        const msg: ChatPostMessageResponse = await this.slackApi.call(
-          metadata.teamId,
-          'chat.postMessage',
-          {
-            channel: metadata.channelId,
-            blocks,
-            text: `Deploying ${metadata.projectName} (${metadata.environmentName})...`,
-          },
-        );
-        messageTs = msg.ts as string;
-      } catch (error) {
-        this.logger.error(
-          `Failed to post Slack status card: ${error instanceof Error ? error.message : String(error)}`,
-        );
-
-        await respond({
-          text: `Unable to start ${metadata.action} for ${metadata.projectName} (${metadata.environmentName}): the status card could not be displayed.`,
-          response_type: 'ephemeral',
-        });
-        return;
-      }
-
-      const slackMetadata = {
-        teamId: metadata.teamId,
-        channelId: metadata.channelId,
-        userId: metadata.userId,
-        messageTs,
-        startedAt,
-      };
-
-      if (metadata.action === 'deploy') {
-        const deployment = await this.deployments.createDeployment(
-          metadata.environmentId,
-          record.userId,
-        );
-
-        await this.deployQueue.add('deploy', {
-          deployment,
-          slackMetadata,
-        });
-      } else {
-        const previousDeployment = await this.db.deployment.findFirst({
-          where: {
-            environmentId: metadata.environmentId,
-            lifecycleStatus: LifecycleStatus.inactive,
-            buildStatus: BuildStatus.ready,
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-
-        if (!previousDeployment) {
-          await this.slackApi.enqueue(metadata.teamId, 'chat.postMessage', {
-            channel: metadata.channelId,
-            text: `No previous successful deployment to rollback to in ${metadata.projectName} (${metadata.environmentName}).`,
+        const record = await this.installationStore.getRecord(metadata.teamId);
+        if (!record) {
+          this.logger.error(
+            `No installation record found for team ${metadata.teamId} during deployment confirmation`,
+          );
+          await respond({
+            text: 'No linked Orbit account found for this workspace.',
+            replace_original: true,
           });
           return;
         }
 
-        const deployment = await this.deployments.findForRollback(
-          previousDeployment.id,
-          record.userId,
-        );
-
-        await this.deployQueue.add('rollback', {
-          deployment,
-          skipImageBuild: true,
-          slackMetadata,
+        const startedAt = new Date().toISOString();
+        const blocks = buildDeploymentStatusBlocks({
+          project: metadata.projectName,
+          environment: metadata.environmentName,
+          status: 'queued',
+          triggeredBy: metadata.userId,
+          startedAt,
         });
-      }
-    });
+
+        let messageTs: string;
+        try {
+          const msg: ChatPostMessageResponse = await this.slackApi.call(
+            metadata.teamId,
+            'chat.postMessage',
+            {
+              channel: metadata.channelId,
+              blocks,
+              text: `Deploying ${metadata.projectName} (${metadata.environmentName})...`,
+            },
+          );
+          messageTs = msg.ts as string;
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          this.logger.error(`Failed to post Slack status card: ${message}`);
+
+          const notInChannel = message.includes('not_in_channel');
+          const noticeText = notInChannel
+            ? 'invite Orbit to this channel with `/invite @orbit-app` and try again.'
+            : 'the status card could not be displayed.';
+
+          await respond({
+            text: `Unable to start ${metadata.action} for *${metadata.projectName}* (\`${metadata.environmentName}\`): ${noticeText}`,
+            replace_original: true,
+          });
+          return;
+        }
+
+        const slackMetadata = {
+          teamId: metadata.teamId,
+          channelId: metadata.channelId,
+          userId: metadata.userId,
+          messageTs,
+          startedAt,
+        };
+
+        if (metadata.action === 'deploy') {
+          const deployment = await this.deployments.createDeployment(
+            metadata.environmentId,
+            record.userId,
+          );
+
+          await this.deployQueue.add('deploy', {
+            deployment,
+            slackMetadata,
+          });
+        } else {
+          const previousDeployment = await this.db.deployment.findFirst({
+            where: {
+              environmentId: metadata.environmentId,
+              lifecycleStatus: LifecycleStatus.inactive,
+              buildStatus: BuildStatus.ready,
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          if (!previousDeployment) {
+            await respond({
+              text: `No previous successful deployment to rollback to in ${metadata.projectName} (${metadata.environmentName}).`,
+              replace_original: true,
+            });
+            return;
+          }
+
+          const deployment = await this.deployments.findForRollback(
+            previousDeployment.id,
+            record.userId,
+          );
+
+          await this.deployQueue.add('rollback', {
+            deployment,
+            skipImageBuild: true,
+            slackMetadata,
+          });
+        }
+
+        await respond({
+          text: `${
+            metadata.action === 'deploy' ? 'Deployment' : 'Rollback'
+          } queued for ${metadata.projectName} (${metadata.environmentName}).`,
+          replace_original: true,
+        });
+      },
+    );
+
+    this.app.action<BlockAction<ButtonAction>>(
+      'deploy_cancel',
+      async ({ ack, action, respond }) => {
+        await ack();
+
+        if (!action.value) {
+          this.logger.error('deploy_cancel action received without a value');
+          return;
+        }
+
+        const actionText =
+          action.value === 'deploy' ? 'Deployment' : 'Rollback';
+
+        await respond({
+          text: `${actionText} cancelled.`,
+          replace_original: true,
+        });
+      },
+    );
   }
 
   private isSlashCommandBody(
@@ -624,12 +674,14 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
       await this.slackApi.call(command.team_id, 'users.info', {
         user: targetUserId,
       });
-    } catch {
-      await respond({
-        text: `<@${targetUserId}> is not a valid Slack user in this workspace.`,
-        response_type: 'ephemeral',
-      });
-      return;
+    } catch (error) {
+      // Slack already resolved the mention to a real user ID, so a failed
+      // users.info lookup shouldn't block authorization
+      this.logger.warn(
+        `users.info check failed while authorizing ${targetUserId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     }
 
     await this.db.slackInstallation.update({
@@ -692,50 +744,60 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  private async openConfirmationModal(
+  private async openConfirmationPrompt(
+    respond: RespondFn,
     command: SlashCommand,
-    projectId: string,
-    projectName: string,
-    environmentId: string,
-    environmentName: string,
+    project: Project,
+    environment: Environment,
     action: 'deploy' | 'rollback',
   ): Promise<void> {
-    const title =
-      action === 'deploy' ? 'Confirm Deployment' : 'Confirm Rollback';
+    const { id: projectId, name: projectName } = project;
+    const { id: environmentId, name: environmentName } = environment;
+
     const submitText = action === 'deploy' ? 'Deploy' : 'Rollback';
     const description =
       action === 'deploy'
-        ? `Start a new deployment of *${projectName}* to *${environmentName}*?`
+        ? `Start a new deployment of *${projectName}* in *${environmentName}*?`
         : `Rollback *${projectName}* to the previous deployment in *${environmentName}*?`;
 
-    await this.slackApi.call(command.team_id, 'views.open', {
-      trigger_id: command.trigger_id,
-      view: {
-        type: 'modal',
-        callback_id: 'deploy_confirm',
-        title: { type: 'plain_text', text: title },
-        submit: { type: 'plain_text', text: submitText },
-        close: { type: 'plain_text', text: 'Cancel' },
-        private_metadata: JSON.stringify({
-          teamId: command.team_id,
-          channelId: command.channel_id,
-          userId: command.user_id,
-          projectId,
-          projectName,
-          environmentId,
-          environmentName,
-          action,
-        }),
-        blocks: [
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: description,
+    const value = JSON.stringify({
+      teamId: command.team_id,
+      channelId: command.channel_id,
+      userId: command.user_id,
+      projectId,
+      projectName,
+      environmentId,
+      environmentName,
+      action,
+    });
+
+    await respond({
+      response_type: 'ephemeral',
+      text: description,
+      blocks: [
+        {
+          type: 'section',
+          text: { type: 'mrkdwn', text: description },
+        },
+        {
+          type: 'actions',
+          elements: [
+            {
+              type: 'button',
+              style: 'primary',
+              text: { type: 'plain_text', text: submitText },
+              action_id: 'deploy_confirm',
+              value,
             },
-          },
-        ],
-      },
+            {
+              type: 'button',
+              text: { type: 'plain_text', text: 'Cancel' },
+              action_id: 'deploy_cancel',
+              value: action,
+            },
+          ],
+        },
+      ],
     });
   }
 
