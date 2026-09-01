@@ -13,7 +13,7 @@ const appMock = {
   use: jest.fn(),
   event: jest.fn(),
   command: jest.fn(),
-  view: jest.fn(),
+  action: jest.fn(),
   start: jest.fn().mockResolvedValue(undefined),
   stop: jest.fn().mockResolvedValue(undefined),
 };
@@ -66,6 +66,7 @@ const mockDb = {
 
 const mockDeployments = {
   createDeployment: jest.fn(),
+  findForRollback: jest.fn(),
   findById: jest.fn(),
   updateBuildStatus: jest.fn(),
   markCompleted: jest.fn(),
@@ -109,11 +110,11 @@ describe('SlackBoltService', () => {
     expect(appMock.stop).toHaveBeenCalledTimes(1);
   });
 
-  it('registers middleware, lifecycle events, commands, and view submissions', () => {
+  it('registers middleware, lifecycle events, commands, and actions', () => {
     expect(service.app.use).toHaveBeenCalledTimes(2);
     expect(service.app.event).toHaveBeenCalledTimes(2);
     expect(service.app.command).toHaveBeenCalledTimes(4);
-    expect(service.app.view).toHaveBeenCalledTimes(1);
+    expect(service.app.action).toHaveBeenCalledTimes(2);
   });
 
   describe('authorize', () => {
@@ -149,6 +150,208 @@ describe('SlackBoltService', () => {
         teamId: 'T1',
         enterpriseId: undefined,
       });
+    });
+  });
+
+  const actionHandler = (id: string) => {
+    const call = (appMock.action.mock.calls as [string, unknown][]).find(
+      ([actionId]) => actionId === id,
+    );
+    if (!call) throw new Error(`no handler registered for action "${id}"`);
+    return call[1] as (args: {
+      ack: jest.Mock;
+      action: { value?: string };
+      respond: jest.Mock;
+    }) => Promise<void>;
+  };
+
+  const confirmMetadata = {
+    teamId: 'T1',
+    channelId: 'C1',
+    userId: 'U1',
+    projectId: 'p1',
+    projectName: 'api',
+    environmentId: 'e1',
+    environmentName: 'production',
+    action: 'deploy' as 'deploy' | 'rollback',
+  };
+
+  describe('deploy_confirm action', () => {
+    let ack: jest.Mock;
+    let respond: jest.Mock;
+
+    beforeEach(() => {
+      ack = jest.fn().mockResolvedValue(undefined);
+      respond = jest.fn().mockResolvedValue(undefined);
+      mockInstallationStore.getRecord.mockResolvedValue({
+        id: 'inst-1',
+        userId: 'owner-1',
+      });
+      mockSlackApi.call.mockResolvedValue({ ts: '1700000000.000100' });
+      mockDeployments.createDeployment.mockResolvedValue({ id: 'dep-1' });
+      mockDeployments.findForRollback.mockResolvedValue({ id: 'rb-1' });
+    });
+
+    it('acks, posts the status card, creates a deployment, and enqueues the job', async () => {
+      await actionHandler('deploy_confirm')({
+        ack,
+        action: { value: JSON.stringify(confirmMetadata) },
+        respond,
+      });
+
+      expect(ack).toHaveBeenCalledTimes(1);
+      expect(mockSlackApi.call).toHaveBeenCalledWith(
+        'T1',
+        'chat.postMessage',
+        expect.objectContaining({ channel: 'C1' }),
+      );
+      expect(mockDeployments.createDeployment).toHaveBeenCalledWith(
+        'e1',
+        'owner-1',
+      );
+      expect(mockQueue.add).toHaveBeenCalledWith(
+        'deploy',
+        expect.objectContaining({
+          deployment: { id: 'dep-1' },
+          slackMetadata: expect.objectContaining({
+            teamId: 'T1',
+            channelId: 'C1',
+            userId: 'U1',
+            messageTs: '1700000000.000100',
+          }),
+        }),
+      );
+      expect(respond).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('Deployment queued'),
+          replace_original: true,
+        }),
+      );
+    });
+
+    it('ignores an action with no value', async () => {
+      await actionHandler('deploy_confirm')({ ack, action: {}, respond });
+
+      expect(ack).toHaveBeenCalledTimes(1);
+      expect(mockSlackApi.call).not.toHaveBeenCalled();
+      expect(mockQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('replaces the prompt when the installation record is gone', async () => {
+      mockInstallationStore.getRecord.mockResolvedValue(null);
+
+      await actionHandler('deploy_confirm')({
+        ack,
+        action: { value: JSON.stringify(confirmMetadata) },
+        respond,
+      });
+
+      expect(mockDeployments.createDeployment).not.toHaveBeenCalled();
+      expect(respond).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('No linked Orbit account'),
+          replace_original: true,
+        }),
+      );
+    });
+
+    it('reports when the status card cannot be posted', async () => {
+      mockSlackApi.call.mockRejectedValue(new Error('channel_not_found'));
+
+      await actionHandler('deploy_confirm')({
+        ack,
+        action: { value: JSON.stringify(confirmMetadata) },
+        respond,
+      });
+
+      expect(mockDeployments.createDeployment).not.toHaveBeenCalled();
+      expect(mockQueue.add).not.toHaveBeenCalled();
+      expect(respond).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('could not be displayed'),
+          replace_original: true,
+        }),
+      );
+    });
+
+    it('enqueues a rollback against the previous ready deployment', async () => {
+      mockDb.deployment.findFirst.mockResolvedValue({ id: 'prev-1' });
+
+      await actionHandler('deploy_confirm')({
+        ack,
+        action: {
+          value: JSON.stringify({ ...confirmMetadata, action: 'rollback' }),
+        },
+        respond,
+      });
+
+      expect(mockDeployments.findForRollback).toHaveBeenCalledWith(
+        'prev-1',
+        'owner-1',
+      );
+      expect(mockQueue.add).toHaveBeenCalledWith(
+        'rollback',
+        expect.objectContaining({
+          deployment: { id: 'rb-1' },
+          skipImageBuild: true,
+        }),
+      );
+      expect(respond).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('Rollback queued'),
+          replace_original: true,
+        }),
+      );
+    });
+
+    it('reports when there is nothing to roll back to', async () => {
+      mockDb.deployment.findFirst.mockResolvedValue(null);
+
+      await actionHandler('deploy_confirm')({
+        ack,
+        action: {
+          value: JSON.stringify({ ...confirmMetadata, action: 'rollback' }),
+        },
+        respond,
+      });
+
+      expect(mockDeployments.findForRollback).not.toHaveBeenCalled();
+      expect(mockQueue.add).not.toHaveBeenCalled();
+      expect(respond).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: expect.stringContaining('No previous successful deployment'),
+          replace_original: true,
+        }),
+      );
+    });
+  });
+
+  describe('deploy_cancel action', () => {
+    it('replaces the prompt with a cancellation notice', async () => {
+      const ack = jest.fn().mockResolvedValue(undefined);
+      const respond = jest.fn().mockResolvedValue(undefined);
+
+      await actionHandler('deploy_cancel')({
+        ack,
+        action: { value: 'rollback' },
+        respond,
+      });
+
+      expect(ack).toHaveBeenCalledTimes(1);
+      expect(respond).toHaveBeenCalledWith({
+        text: 'Rollback cancelled.',
+        replace_original: true,
+      });
+    });
+
+    it('ignores an action with no value', async () => {
+      const ack = jest.fn().mockResolvedValue(undefined);
+      const respond = jest.fn().mockResolvedValue(undefined);
+
+      await actionHandler('deploy_cancel')({ ack, action: {}, respond });
+
+      expect(ack).toHaveBeenCalledTimes(1);
+      expect(respond).not.toHaveBeenCalled();
     });
   });
 });

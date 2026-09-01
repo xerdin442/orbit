@@ -40,6 +40,7 @@ describe('RequestLogsService', () => {
     environmentId: 'env-1',
     timestamp: new Date(),
     ...line,
+    query: line.query ?? null,
   };
 
   describe('append', () => {
