@@ -7,6 +7,7 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import {
   App,
+  SocketModeReceiver,
   type AnyMiddlewareArgs,
   type AllMiddlewareArgs,
   type Middleware,
@@ -54,6 +55,7 @@ type SlackCommandArgs = SlackCommandMiddlewareArgs &
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 const RATE_LIMIT_MAX_COMMANDS = 10;
 const RATE_LIMIT_MAX_DEPLOYMENTS = 2;
+const SOCKET_CLIENT_PING_TIMEOUT_MS = 30_000;
 
 @Injectable()
 export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
@@ -71,8 +73,11 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
     private readonly deployQueue: Queue<DeploymentJob>,
   ) {
     this.app = new App<SlackCommandContext>({
-      appToken: Secrets.SLACK_APP_TOKEN,
       socketMode: true,
+      receiver: new SocketModeReceiver({
+        appToken: Secrets.SLACK_APP_TOKEN,
+        clientPingTimeout: SOCKET_CLIENT_PING_TIMEOUT_MS,
+      }),
       authorize: async ({ teamId, enterpriseId, isEnterpriseInstall }) => {
         const installation = await this.installationStore.fetchInstallation({
           teamId,
@@ -537,7 +542,7 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
             : 'the status card could not be displayed.';
 
           await respond({
-            text: `Unable to start ${metadata.action} for *${metadata.projectName}* (\`${metadata.environmentName}\`): ${noticeText}`,
+            text: `Unable to start ${metadata.action} for *${metadata.projectName}* (${metadata.environmentName}): ${noticeText}`,
             replace_original: true,
           });
           return;

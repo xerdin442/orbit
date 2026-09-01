@@ -1,5 +1,5 @@
 import { SlackBoltService } from './slack-bolt.service';
-import { App } from '@slack/bolt';
+import { App, SocketModeReceiver } from '@slack/bolt';
 import type { Queue } from 'bullmq';
 import type { RedisClientType } from 'redis';
 import type { DbService } from '@src/db/db.service';
@@ -18,9 +18,12 @@ const appMock = {
   stop: jest.fn().mockResolvedValue(undefined),
 };
 
+const receiverMock = { key: 'socket-mode-receiver' };
+
 jest.mock('@slack/bolt', () => {
   return {
     App: jest.fn(() => appMock),
+    SocketModeReceiver: jest.fn(() => receiverMock),
   };
 });
 
@@ -91,11 +94,17 @@ describe('SlackBoltService', () => {
     );
   });
 
-  it('creates a Socket Mode App', () => {
-    expect(App).toHaveBeenCalledWith(
+  it('creates a Socket Mode App backed by a SocketModeReceiver', () => {
+    expect(SocketModeReceiver).toHaveBeenCalledWith(
       expect.objectContaining({
         appToken: 'xapp-test-app-token',
+        clientPingTimeout: 30_000,
+      }),
+    );
+    expect(App).toHaveBeenCalledWith(
+      expect.objectContaining({
         socketMode: true,
+        receiver: receiverMock,
         authorize: expect.any(Function),
       }),
     );
