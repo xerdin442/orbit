@@ -30,6 +30,15 @@ const MOUNT_PATH: Record<ResourceType, string> = {
   mongo: '/data/db',
 };
 
+const SECOND_NS = 1_000_000_000;
+
+const HEALTHCHECK_TEST: Record<ResourceType, string[]> = {
+  postgres: ['CMD', 'pg_isready', '-U', 'orbit', '-d', 'orbit', '-q'],
+  mysql: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1'],
+  redis: ['CMD', 'redis-cli', 'ping'],
+  mongo: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok'],
+};
+
 @Processor('resources')
 export class ResourceProcessor extends WorkerHost {
   private readonly logger = Logger(ResourceProcessor.name);
@@ -74,6 +83,14 @@ export class ResourceProcessor extends WorkerHost {
         name: containerName,
         Image: image,
         Env: envVars,
+        Cmd: this.buildCommand(resource.type, password),
+        Healthcheck: {
+          Test: HEALTHCHECK_TEST[resource.type],
+          Interval: 15 * SECOND_NS,
+          Timeout: 30 * SECOND_NS,
+          Retries: 10,
+          StartPeriod: 40 * SECOND_NS,
+        },
         HostConfig: {
           Binds: [`${volumeName}:${MOUNT_PATH[resource.type]}`],
           RestartPolicy: { Name: 'unless-stopped' },
@@ -157,7 +174,7 @@ export class ResourceProcessor extends WorkerHost {
           'MYSQL_DATABASE=orbit',
         ];
       case ResourceType.redis:
-        return [`REDIS_PASSWORD=${password}`];
+        return [`REDISCLI_AUTH=${password}`];
       case ResourceType.mongo:
         return [
           'MONGO_INITDB_ROOT_USERNAME=orbit',
@@ -165,6 +182,17 @@ export class ResourceProcessor extends WorkerHost {
           'MONGO_INITDB_DATABASE=orbit',
         ];
     }
+  }
+
+  private buildCommand(
+    type: ResourceType,
+    password?: string,
+  ): string[] | undefined {
+    if (password && type === ResourceType.redis) {
+      return ['redis-server', '--requirepass', password];
+    }
+
+    return undefined;
   }
 
   private buildCredentials(
@@ -301,7 +329,7 @@ export class ResourceProcessor extends WorkerHost {
   }
 
   private async waitForHealth(containerId: string): Promise<boolean> {
-    const deadline = Date.now() + 45_000;
+    const deadline = Date.now() + 180_000;
 
     while (Date.now() < deadline) {
       try {
@@ -311,11 +339,15 @@ export class ResourceProcessor extends WorkerHost {
         if (state.Status === 'running' && state.Health?.Status === 'healthy') {
           return true;
         }
+
+        if (state.Status === 'exited' || state.Status === 'dead') {
+          return false;
+        }
       } catch {
         // not ready yet
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 4500));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
 
     return false;

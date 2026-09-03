@@ -477,10 +477,7 @@ describe('DeploymentProcessor', () => {
 
       expect(encryption.decrypt).toHaveBeenCalledWith('enc:production');
       expect(encryption.decrypt).toHaveBeenCalledWith('enc:3000');
-      expect(capturedVariables).toEqual([
-        'NODE_ENV=production',
-        'PORT=3000',
-      ]);
+      expect(capturedVariables).toEqual(['NODE_ENV=production', 'PORT=3000']);
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
         LogLevel.INFO,
@@ -555,7 +552,7 @@ describe('DeploymentProcessor', () => {
 
       const promise = processor.process(job);
 
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 19; i++) {
         await jest.advanceTimersByTimeAsync(10_000);
       }
 
@@ -569,6 +566,24 @@ describe('DeploymentProcessor', () => {
         DEPLOYMENT_ID,
         LogLevel.ERROR,
         'Resource provisioning timed out.',
+      );
+      expect(mockExecuteCreateContainer).not.toHaveBeenCalled();
+    });
+
+    it('aborts immediately when a resource is marked failed', async () => {
+      db.resource.findMany.mockResolvedValue([
+        { id: 'resource-1', name: 'cache', status: ResourceStatus.failed },
+      ]);
+
+      const job = buildJob({ skipImageBuild: true, resourceCount: 1 });
+
+      await processor.process(job);
+
+      expect(db.resource.findMany).toHaveBeenCalledTimes(1);
+      expect(logService.append).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        LogLevel.ERROR,
+        'Resource provisioning failed for: cache',
       );
       expect(mockExecuteCreateContainer).not.toHaveBeenCalled();
     });

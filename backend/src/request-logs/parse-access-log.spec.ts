@@ -33,15 +33,33 @@ describe('parseAccessLogLine', () => {
       request: {
         method: 'GET',
         host: 'app.example.com',
-        uri: '/login?_rsc=abc',
+        uri: '/orders?status=open&page=2',
       },
       status: 200,
       duration: 0.1,
     });
 
     const parsed = parseAccessLogLine(line);
-    expect(parsed?.path).toBe('/login');
-    expect(parsed?.query).toBe('_rsc=abc');
+    expect(parsed?.path).toBe('/orders');
+    expect(parsed?.query).toBe('status=open&page=2');
+  });
+
+  it("strips Next's _rsc cache-buster so RSC hits collapse onto the plain path", () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'GET',
+        host: 'app.example.com',
+        uri: '/dashboard?tab=usage&_rsc=9f3ac1',
+        headers: { RSC: ['1'] },
+      },
+      status: 200,
+      duration: 0.1,
+    });
+
+    const parsed = parseAccessLogLine(line);
+    expect(parsed?.path).toBe('/dashboard');
+    expect(parsed?.query).toBe('tab=usage');
   });
 
   it('leaves query undefined when there is none', () => {
@@ -172,7 +190,8 @@ describe('parseAccessLogLine', () => {
       { 'Sec-Purpose': ['prefetch;prerender'] },
       { Purpose: ['prefetch'] },
       { 'X-Moz': ['prefetch'] },
-      { 'Next-Router-Prefetch': ['1'] },
+      // Next.js App Router prefetches every in-viewport <Link>
+      { 'Next-Router-Prefetch': ['1'], RSC: ['1'] },
     ];
 
     for (const headers of headerSets) {
@@ -181,7 +200,7 @@ describe('parseAccessLogLine', () => {
         request: {
           method: 'GET',
           host: 'app.example.com',
-          uri: '/dashboard',
+          uri: '/login?_rsc=abc123',
           headers,
         },
         status: 200,
@@ -189,6 +208,24 @@ describe('parseAccessLogLine', () => {
       });
       expect(parseAccessLogLine(line)).toBeNull();
     }
+  });
+
+  it('keeps the RSC fetch behind a real navigation (no prefetch header)', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'GET',
+        host: 'app.example.com',
+        uri: '/login?_rsc=abc123',
+        headers: { RSC: ['1'] },
+      },
+      status: 200,
+      duration: 0.01,
+    });
+
+    const parsed = parseAccessLogLine(line);
+    expect(parsed?.path).toBe('/login');
+    expect(parsed?.query).toBeUndefined();
   });
 
   it('returns null for blank lines', () => {

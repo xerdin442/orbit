@@ -107,7 +107,16 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.app.stop();
+    try {
+      await this.app.stop();
+      this.logger.info('Slack Socket Mode connection closed');
+    } catch (error) {
+      this.logger.warn(
+        `Failed to close Slack Socket Mode connection: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 
   private registerMiddleware(): void {
@@ -681,7 +690,7 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
       });
     } catch (error) {
       // Slack already resolved the mention to a real user ID, so a failed
-      // users.info lookup shouldn't block authorization
+      // users.info lookup should not block authorization
       this.logger.warn(
         `users.info check failed while authorizing ${targetUserId}: ${
           error instanceof Error ? error.message : String(error)

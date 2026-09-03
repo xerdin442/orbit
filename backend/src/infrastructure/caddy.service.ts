@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Secrets } from '@src/common/secrets';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { Logger } from '@src/common/logger';
 import { DomainStatus } from '@generated/client';
 
+const MANAGED_TLS_POLICY_ID = 'orbit-managed-internal-tls';
+
 @Injectable()
-export class CaddyService {
+export class CaddyService implements OnModuleInit {
   private readonly logger = Logger(CaddyService.name);
   private readonly adminUrl: string;
 
@@ -15,6 +17,59 @@ export class CaddyService {
     private readonly docker: DockerService,
   ) {
     this.adminUrl = Secrets.CADDY_ADMIN_URL;
+  }
+
+  async onModuleInit(): Promise<void> {
+    try {
+      await this.ensureManagedTlsPolicy();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Failed to configure managed-domain TLS policy: ${message}`,
+      );
+    }
+  }
+
+  private async ensureManagedTlsPolicy(): Promise<void> {
+    if (!this.isPrivateAddress(Secrets.INGRESS_IP)) {
+      return;
+    }
+
+    // Drop any stale copy first so re-runs don't stack duplicate policies.
+    try {
+      await this.fetchCaddy(`/id/${MANAGED_TLS_POLICY_ID}`, 'DELETE');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (!/unknown object id/i.test(message)) {
+        throw error;
+      }
+    }
+
+    await this.fetchCaddy('/config/apps/tls/automation/policies/0', 'PUT', {
+      '@id': MANAGED_TLS_POLICY_ID,
+      subjects: [`*.${Secrets.INGRESS_HOST}`],
+      issuers: [{ module: 'internal' }],
+      on_demand: true,
+    });
+  }
+
+  private isPrivateAddress(ip: string): boolean {
+    if (ip === 'localhost' || ip === '::1' || /^127\./.test(ip)) {
+      return true;
+    }
+
+    if (/^10\./.test(ip) || /^192\.168\./.test(ip)) {
+      return true;
+    }
+
+    const secondOctet = ip.match(/^172\.(\d{1,3})\./);
+    if (secondOctet) {
+      const octet = Number(secondOctet[1]);
+      return octet >= 16 && octet <= 31;
+    }
+
+    return false;
   }
 
   async syncEnvironment(environmentId: string) {

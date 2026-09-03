@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CaddyService } from './caddy.service';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
+import { Secrets } from '@src/common/secrets';
 
 describe('CaddyService', () => {
   let service: CaddyService;
@@ -46,6 +47,109 @@ describe('CaddyService', () => {
     }).compile();
 
     service = module.get(CaddyService);
+  });
+
+  describe('onModuleInit — managed-domain TLS policy', () => {
+    const realIngressIp = Secrets.INGRESS_IP;
+    const realIngressHost = Secrets.INGRESS_HOST;
+
+    afterEach(() => {
+      Secrets.INGRESS_IP = realIngressIp;
+      Secrets.INGRESS_HOST = realIngressHost;
+    });
+
+    it('routes the managed wildcard to the internal CA when the ingress IP is private', async () => {
+      Secrets.INGRESS_IP = '192.168.1.55';
+      Secrets.INGRESS_HOST = '192.168.1.55.sslip.io';
+
+      await service.onModuleInit();
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:2019/id/orbit-managed-internal-tls',
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:2019/config/apps/tls/automation/policies/0',
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('"*.192.168.1.55.sslip.io"'),
+        }),
+      );
+
+      const putBody = JSON.parse(
+        (fetchMock.mock.calls[1][1] as { body: string }).body,
+      );
+      expect(putBody).toMatchObject({
+        '@id': 'orbit-managed-internal-tls',
+        issuers: [{ module: 'internal' }],
+        on_demand: true,
+      });
+    });
+
+    it('treats loopback ingress as private', async () => {
+      Secrets.INGRESS_IP = '127.0.0.1';
+      Secrets.INGRESS_HOST = '127.0.0.1.sslip.io';
+
+      await service.onModuleInit();
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:2019/config/apps/tls/automation/policies/0',
+        expect.objectContaining({
+          body: expect.stringContaining('"*.127.0.0.1.sslip.io"'),
+        }),
+      );
+    });
+
+    it('leaves TLS automation alone when the ingress IP is publicly routable', async () => {
+      Secrets.INGRESS_IP = '203.0.113.10';
+      Secrets.INGRESS_HOST = 'apps.orbit.example';
+
+      await service.onModuleInit();
+
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('tolerates the policy not existing yet on first boot', async () => {
+      Secrets.INGRESS_IP = '10.0.0.4';
+      Secrets.INGRESS_HOST = '10.0.0.4.sslip.io';
+
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              error: "unknown object ID 'orbit-managed-internal-tls'",
+            }),
+          ),
+      });
+      fetchMock.mockResolvedValueOnce({ ok: true });
+
+      await expect(service.onModuleInit()).resolves.not.toThrow();
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:2019/config/apps/tls/automation/policies/0',
+        expect.objectContaining({ method: 'PUT' }),
+      );
+    });
+
+    it('swallows a Caddy failure so a bad admin API call cannot block startup', async () => {
+      Secrets.INGRESS_IP = '192.168.1.55';
+      Secrets.INGRESS_HOST = '192.168.1.55.sslip.io';
+
+      fetchMock.mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('boom'),
+      });
+
+      await expect(service.onModuleInit()).resolves.not.toThrow();
+    });
   });
 
   describe('enableAccessLogging', () => {
@@ -311,7 +415,9 @@ describe('CaddyService', () => {
           ),
       });
 
-      await expect(service.deleteRoute('gone.example.com')).resolves.not.toThrow();
+      await expect(
+        service.deleteRoute('gone.example.com'),
+      ).resolves.not.toThrow();
     });
 
     it('propagates errors unrelated to a missing object id', async () => {
