@@ -82,6 +82,9 @@ describe('SlackBoltService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (App as unknown as jest.Mock).mockImplementation(() => appMock);
+    (SocketModeReceiver as unknown as jest.Mock).mockImplementation(
+      () => receiverMock,
+    );
 
     service = new SlackBoltService(
       mockInstallationStore as unknown as SlackInstallationStore,

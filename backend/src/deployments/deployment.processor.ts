@@ -280,23 +280,32 @@ export class DeploymentProcessor extends WorkerHost {
       'Provisioning resources...',
     );
 
-    const maxRetries = 15;
+    const maxRetries = 20;
     const retryInterval = 10_000;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const resources = await this.db.resource.findMany({
-        where: {
-          environmentId: ctx.environment.id,
-          status: ResourceStatus.ready,
-        },
+        where: { environmentId: ctx.environment.id },
       });
 
-      if (resources.length === resourceCount) {
+      const failed = resources.filter(
+        (r) => r.status === ResourceStatus.failed,
+      );
+      if (failed.length > 0) {
+        const names = failed.map((r) => r.name).join(', ');
+        throw new DeploymentStepExecutionError(
+          `Resource provisioning failed for: ${names}`,
+        );
+      }
+
+      const ready = resources.filter((r) => r.status === ResourceStatus.ready);
+
+      if (ready.length === resourceCount) {
         const network = await this.docker.getOrCreateProjectNetwork(
           ctx.project.id,
         );
 
-        for (const r of resources) {
+        for (const r of ready) {
           if (r.containerId) {
             try {
               await this.docker.connectContainerToNetwork(
