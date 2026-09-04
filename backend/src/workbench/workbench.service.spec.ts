@@ -1,5 +1,6 @@
 import { WorkbenchService } from './workbench.service';
 import { DbService } from '@src/db/db.service';
+import { DockerService } from '@src/infrastructure/docker.service';
 import { ResourceType } from '@generated/client';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { PostgresDriver, MysqlDriver, MongoDriver } from './drivers';
@@ -35,13 +36,19 @@ describe('WorkbenchService', () => {
       },
     } as unknown as jest.Mocked<Pick<DbService, 'resource'>>;
 
-    service = new WorkbenchService(db as unknown as DbService);
+    const docker = {
+      inspectContainer: jest.fn(),
+    } as unknown as jest.Mocked<DockerService>;
+
+    service = new WorkbenchService(db as unknown as DbService, docker);
   });
 
   const mockResource = (type: ResourceType) => ({
     id: 'r1',
     type,
     name: 'db',
+    hostname: null,
+    containerId: null,
     credentials: {
       DATABASE_URL: 'protocol://host:1234/db',
     },

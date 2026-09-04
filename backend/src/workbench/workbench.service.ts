@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
+import { DockerService } from '@src/infrastructure/docker.service';
 import { ResourceType } from '@generated/client';
 import type {
   DatabaseDriver,
@@ -17,6 +18,7 @@ import {
   MONGO_QUERY_WHITELIST,
   SQL_QUERY_WHITELIST,
 } from '@src/common/types/workbench';
+import { INTERNAL_PORT } from '@src/common/types/resource';
 import { PostgresDriver, MysqlDriver, MongoDriver } from './drivers';
 
 const DRIVER_MAP: Record<
@@ -30,7 +32,10 @@ const DRIVER_MAP: Record<
 
 @Injectable()
 export class WorkbenchService {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly docker: DockerService,
+  ) {}
 
   async getSchema(
     resourceId: string,
@@ -39,7 +44,7 @@ export class WorkbenchService {
     const resource = await this.verifyOwnershipAndType(resourceId, userId);
     const driver = this.createDriver(
       resource.type,
-      resource.credentials as Record<string, string>,
+      await this.resolveConnectionCredentials(resource),
     );
 
     try {
@@ -65,7 +70,7 @@ export class WorkbenchService {
     const resource = await this.verifyOwnershipAndType(resourceId, userId);
     const driver = this.createDriver(
       resource.type,
-      resource.credentials as Record<string, string>,
+      await this.resolveConnectionCredentials(resource),
     );
 
     try {
@@ -86,7 +91,7 @@ export class WorkbenchService {
     const resource = await this.verifyOwnershipAndType(resourceId, userId);
     const driver = this.createDriver(
       resource.type,
-      resource.credentials as Record<string, string>,
+      await this.resolveConnectionCredentials(resource),
     );
 
     try {
@@ -107,7 +112,7 @@ export class WorkbenchService {
 
     const driver = this.createDriver(
       resource.type,
-      resource.credentials as Record<string, string>,
+      await this.resolveConnectionCredentials(resource),
     );
 
     const withTimeout = async <T>(promise: Promise<T>) => {
@@ -140,6 +145,47 @@ export class WorkbenchService {
     } finally {
       await driver.close();
     }
+  }
+
+  private async resolveConnectionCredentials(resource: {
+    type: ResourceType;
+    hostname: string | null;
+    containerId: string | null;
+    credentials: unknown;
+  }): Promise<Record<string, string>> {
+    const credentials = {
+      ...(resource.credentials as Record<string, string>),
+    };
+
+    if (!resource.hostname || !resource.containerId) {
+      return credentials;
+    }
+
+    const internalPort = INTERNAL_PORT[resource.type];
+    const info = await this.docker.inspectContainer(resource.containerId);
+    const hostPort =
+      info.NetworkSettings?.Ports?.[`${internalPort}/tcp`]?.[0]?.HostPort;
+
+    if (!hostPort) {
+      return credentials;
+    }
+
+    for (const key of Object.keys(credentials)) {
+      const upperKey = key.toUpperCase();
+
+      if (upperKey.includes('URL') || upperKey.includes('URI')) {
+        credentials[key] = credentials[key].replace(
+          `${resource.hostname}:${internalPort}`,
+          `127.0.0.1:${hostPort}`,
+        );
+      } else if (upperKey.includes('HOST')) {
+        credentials[key] = '127.0.0.1';
+      } else if (upperKey.includes('PORT')) {
+        credentials[key] = hostPort;
+      }
+    }
+
+    return credentials;
   }
 
   private createDriver(
