@@ -24,7 +24,8 @@ import { Skeleton } from "@/components/shared/skeleton";
 import { Button } from "@/components/ui/button";
 import { DeleteResourceDialog } from "@/components/resource/delete-resource-dialog";
 import { ClearResourceDialog } from "@/components/resource/clear-resource-dialog";
-import { ResourceTableData } from "@/components/resource/resource-table-data";
+import { RelationalTableData } from "@/components/resource/relational-table-data";
+import { NonRelationalTableData } from "@/components/resource/non-relational-table-data";
 import {
   cn,
   maskValue,
@@ -289,8 +290,21 @@ export default function ResourceDetailPage() {
                   description="Choose a table from the list to browse its data."
                   className="py-16"
                 />
+              ) : resource.type === "mongo" ? (
+                <NonRelationalTableData
+                  rows={tableData?.rows ?? []}
+                  isLoading={tableDataLoading}
+                  isError={tableDataError}
+                  onRetry={() => refetchTableData()}
+                  pagination={{
+                    totalCount: tableData?.meta.total ?? 0,
+                    pageSize: PAGE_SIZE,
+                    pageIndex: tablePage,
+                    onPageChange: setTablePage,
+                  }}
+                />
               ) : (
-                <ResourceTableData
+                <RelationalTableData
                   columns={tableData?.columns ?? []}
                   rows={tableData?.rows ?? []}
                   isLoading={tableDataLoading}
