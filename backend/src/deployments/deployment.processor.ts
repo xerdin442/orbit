@@ -261,10 +261,15 @@ export class DeploymentProcessor extends WorkerHost {
       (v) => `${v.key}=${this.encryption.decrypt(v.value)}`,
     );
 
+    if (!vars.some((v) => v.key === 'PORT')) {
+      ctx.variables.push(`PORT=${ctx.project.healthCheckPort}`);
+    }
+
+    const total = ctx.variables.length;
     await this.logService.append(
       deploymentId,
       LogLevel.INFO,
-      `${ctx.variables.length} environment variables loaded.`,
+      `${total} environment variable${total === 1 ? '' : 's'} loaded.`,
     );
   }
 
