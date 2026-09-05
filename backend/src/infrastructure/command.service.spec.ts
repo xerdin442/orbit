@@ -183,4 +183,60 @@ describe('CommandService', () => {
       );
     });
   });
+
+  describe('dockerBuild', () => {
+    it('spawns docker build with the context, dockerfile and tag', async () => {
+      const promise = service.dockerBuild(
+        '/tmp/build',
+        '/tmp/build/Dockerfile',
+        'project-1:abc123',
+      );
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith(
+        'docker',
+        [
+          'build',
+          '--file',
+          '/tmp/build/Dockerfile',
+          '--tag',
+          'project-1:abc123',
+          '/tmp/build',
+        ],
+        {
+          shell: false,
+          env: expect.objectContaining({ DOCKER_BUILDKIT: '1' }),
+        },
+      );
+    });
+
+    it('forwards buildArgs as --build-arg flags before the context path', async () => {
+      const promise = service.dockerBuild(
+        '/tmp/build',
+        '/tmp/build/Dockerfile',
+        'project-1:abc123',
+        ['NODE_ENV=production', 'API_URL=https://api.example.com'],
+      );
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith(
+        'docker',
+        [
+          'build',
+          '--file',
+          '/tmp/build/Dockerfile',
+          '--tag',
+          'project-1:abc123',
+          '--build-arg',
+          'NODE_ENV=production',
+          '--build-arg',
+          'API_URL=https://api.example.com',
+          '/tmp/build',
+        ],
+        expect.objectContaining({ shell: false }),
+      );
+    });
+  });
 });

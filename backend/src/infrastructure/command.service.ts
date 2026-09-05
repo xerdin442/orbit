@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { spawn } from 'child_process';
 import { CommandResult } from '@src/common/types';
+import { Secrets } from '@src/common/secrets';
 
 export type OnOutput = (data: string) => void;
 
@@ -102,5 +103,28 @@ export class CommandService {
     }
 
     return this.execute('railpack', args, onStdout, onStderr);
+  }
+
+  async dockerBuild(
+    contextPath: string,
+    dockerfilePath: string,
+    imageTag: string,
+    buildArgs?: string[],
+    onStdout?: OnOutput,
+    onStderr?: OnOutput,
+  ) {
+    const args = ['build', '--file', dockerfilePath, '--tag', imageTag];
+
+    for (const arg of buildArgs ?? []) {
+      args.push('--build-arg', arg);
+    }
+
+    args.push(contextPath);
+
+    return this.execute('docker', args, onStdout, onStderr, {
+      ...process.env,
+      DOCKER_HOST: `unix://${Secrets.DOCKER_SOCKET}`,
+      DOCKER_BUILDKIT: '1',
+    });
   }
 }
