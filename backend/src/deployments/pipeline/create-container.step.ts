@@ -11,10 +11,7 @@ import {
 
 function resolveContainerCommand(startCommand: string | null) {
   const trimmed = startCommand?.trim();
-
-  if (!trimmed) {
-    return undefined;
-  }
+  if (!trimmed) return undefined;
 
   return ['sh', '-c', trimmed];
 }

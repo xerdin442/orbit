@@ -23,9 +23,9 @@ describe('CaddyController', () => {
     it('authorizes a known active hostname', async () => {
       db.domain.findFirst.mockResolvedValue({ id: 'd1' });
 
-      await expect(
-        controller.tlsCheck('App.Example.Com'),
-      ).resolves.toEqual({ ok: true });
+      await expect(controller.tlsCheck('App.Example.Com')).resolves.toEqual({
+        ok: true,
+      });
 
       expect(db.domain.findFirst).toHaveBeenCalledWith({
         where: { hostname: 'app.example.com', status: DomainStatus.active },

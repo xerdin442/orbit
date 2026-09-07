@@ -547,9 +547,9 @@ describe('DeploymentsService', () => {
 
     it('throws if the deployment is not found', async () => {
       db.deployment.findFirst = jest.fn().mockResolvedValue(null);
-      await expect(
-        service.abortDeployment('dep-1', 'user-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.abortDeployment('dep-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

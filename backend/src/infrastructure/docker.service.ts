@@ -49,6 +49,43 @@ export class DockerService {
     return merged;
   }
 
+  async getContainerLogs(containerId: string, tailLines = 60): Promise<string> {
+    const container = this.docker.getContainer(containerId);
+    const rawBuffer = await container.logs({
+      follow: false,
+      tail: tailLines,
+      stdout: true,
+      stderr: true,
+    });
+
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+    this.docker.modem.demuxStream(
+      rawBuffer as unknown as NodeJS.ReadableStream,
+      stdout,
+      stderr,
+    );
+
+    const chunks: Buffer[] = [];
+    stdout.on('data', (c: Buffer) => chunks.push(c));
+    stderr.on('data', (c: Buffer) => chunks.push(c));
+
+    await new Promise<void>((resolve, reject) => {
+      let ended = 0;
+      const done = () => {
+        if (++ended === 2) resolve();
+      };
+      const onError = (err: Error) => reject(err);
+
+      stdout.on('end', done);
+      stderr.on('end', done);
+      stdout.on('error', onError);
+      stderr.on('error', onError);
+    });
+
+    return Buffer.concat(chunks).toString('utf-8').trim();
+  }
+
   async inspectImage(imageTag: string) {
     const image = this.docker.getImage(imageTag);
     return image.inspect();
@@ -103,6 +140,49 @@ export class DockerService {
   async removeVolume(name: string) {
     const volume = this.docker.getVolume(name);
     await volume.remove();
+  }
+
+  async deleteVolumeData(name: string, mountPath: string): Promise<void> {
+    const container = await this.docker.createContainer({
+      Image: 'busybox',
+      Cmd: ['sh', '-c', `rm -rf ${mountPath}/{*,.[!.]*} 2>/dev/null || true`],
+      HostConfig: {
+        Binds: [`${name}:${mountPath}`],
+        AutoRemove: true,
+      },
+    });
+
+    await container.start();
+    await container.wait();
+  }
+
+  async checkContainerHealth(
+    containerId: string,
+    waitTime: number,
+    interval: number,
+  ): Promise<boolean> {
+    const deadline = Date.now() + waitTime;
+
+    while (Date.now() < deadline) {
+      try {
+        const container = await this.inspectContainer(containerId);
+        const state = container.State;
+
+        if (state.Status === 'running' && state.Health?.Status === 'healthy') {
+          return true;
+        }
+
+        if (state.Status === 'exited' || state.Status === 'dead') {
+          return false;
+        }
+      } catch {
+        // not ready yet
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, interval));
+    }
+
+    return false;
   }
 
   private async getNetwork(name: string) {

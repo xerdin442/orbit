@@ -130,7 +130,9 @@ describe('ConfigureProxyStep', () => {
 
     const ctx = mockCtx();
 
-    await expect(step.execute(ctx)).rejects.toThrow(DeploymentStepExecutionError);
+    await expect(step.execute(ctx)).rejects.toThrow(
+      DeploymentStepExecutionError,
+    );
     expect(db.domain.create).not.toHaveBeenCalled();
     expect(caddy.syncEnvironment).not.toHaveBeenCalled();
   });
@@ -142,7 +144,11 @@ describe('ConfigureProxyStep', () => {
       .mockImplementation(({ data }) => Promise.resolve({ id: 'd1', ...data }));
 
     const ctx = mockCtx();
-    ctx.environment = { id: 'env-1', name: 'staging', branch: 'develop' } as any;
+    ctx.environment = {
+      id: 'env-1',
+      name: 'staging',
+      branch: 'develop',
+    } as any;
     await step.execute(ctx);
 
     expect(ctx.domain).toBe('my-app-staging-abc1234.192.168.1.55.sslip.io');

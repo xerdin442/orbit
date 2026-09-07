@@ -5,6 +5,7 @@ import {
   DeploymentStep,
   DeploymentContext,
   DeploymentStepName,
+  DeploymentStepExecutionError,
 } from '@src/common/types';
 
 export class StartContainerStep implements DeploymentStep {
@@ -23,5 +24,23 @@ export class StartContainerStep implements DeploymentStep {
     );
 
     await this.docker.startContainer(ctx.containerId);
+
+    const healthy = await this.docker.checkContainerHealth(
+      ctx.containerId,
+      60_000,
+      5000,
+    );
+
+    if (!healthy) {
+      const logs = await this.docker.getContainerLogs(ctx.containerId);
+
+      await this.log.append(
+        ctx.deployment.id,
+        LogLevel.WARN,
+        `Container failed health check. Recent logs:\n${logs}\n`,
+      );
+
+      throw new DeploymentStepExecutionError('Container failed to start.');
+    }
   }
 }
