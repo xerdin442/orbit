@@ -103,7 +103,8 @@ export function AttachResourcesStep({
       for (const type of selected) {
         const keys = defaults?.[type] ?? [];
         const credentials = keys.reduce<Record<string, string>>((acc, k) => {
-          acc[k.key] = keyOverrides[type]?.[k.key] || k.key;
+          const key = keyOverrides[type]?.[k.key] ?? k.key;
+          acc[key] = "";
           return acc;
         }, {});
 
