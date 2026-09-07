@@ -95,7 +95,8 @@ export function CreateResourceDialog({
     setSubmitting(true);
     try {
       const credentials = keys.reduce<Record<string, string>>((acc, k) => {
-        acc[k.key] = keyOverrides[k.key] || k.key;
+        const key = keyOverrides[k.key] ?? k.key;
+        acc[key] = "";
         return acc;
       }, {});
 
