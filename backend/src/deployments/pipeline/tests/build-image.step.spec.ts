@@ -28,7 +28,9 @@ const mockCtx = (overrides?: {
 
 describe('BuildImageStep', () => {
   let step: BuildImageStep;
-  let command: jest.Mocked<Pick<CommandService, 'railpackBuild' | 'dockerBuild'>>;
+  let command: jest.Mocked<
+    Pick<CommandService, 'railpackBuild' | 'dockerBuild'>
+  >;
   let log: jest.Mocked<Pick<LogService, 'append'>>;
 
   beforeEach(() => {
@@ -198,7 +200,9 @@ describe('BuildImageStep', () => {
       stderr: '',
     });
 
-    await step.execute(mockCtx({ project: { buildDirectory: 'services/api' } }));
+    await step.execute(
+      mockCtx({ project: { buildDirectory: 'services/api' } }),
+    );
 
     expect(mockAccess).toHaveBeenCalledWith(
       join('/tmp/build', 'services', 'api', 'Dockerfile'),

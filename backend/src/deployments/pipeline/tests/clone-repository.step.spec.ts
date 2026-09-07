@@ -14,7 +14,9 @@ jest.mock('fs/promises', () => ({
 
 const WORKSPACE = '/tmp/builds-12345';
 
-const mockCtx = (sourceOverrides: Record<string, unknown> = {}): DeploymentContext =>
+const mockCtx = (
+  sourceOverrides: Record<string, unknown> = {},
+): DeploymentContext =>
   ({
     deployment: { id: 'dep-1' },
     project: {

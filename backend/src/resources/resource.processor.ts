@@ -93,7 +93,11 @@ export class ResourceProcessor extends WorkerHost {
         data: { containerId: container.id },
       });
 
-      const healthy = await this.waitForHealth(container.id);
+      const healthy = await this.docker.checkContainerHealth(
+        container.id,
+        150_000,
+        5000,
+      );
 
       if (!healthy) {
         throw new Error('Resource health check failed');
@@ -239,11 +243,14 @@ export class ResourceProcessor extends WorkerHost {
   private async clearData(resourceId: string): Promise<void> {
     const resource = await this.db.resource.findUniqueOrThrow({
       where: { id: resourceId },
-      include: { environment: true },
+      include: {
+        environment: {
+          include: { project: { select: { ownerId: true } } },
+        },
+      },
     });
 
-    const containerId = resource.containerId;
-    const oldVolumeId = resource.volumeId;
+    const { containerId, type, environment } = resource;
 
     try {
       if (containerId) {
@@ -254,30 +261,19 @@ export class ResourceProcessor extends WorkerHost {
         }
       }
 
-      if (oldVolumeId) {
-        try {
-          await this.docker.removeVolume(oldVolumeId);
-        } catch {
-          // volume already gone
-        }
-      }
-
       const volumeName = `resource-${resourceId}-data`;
-      const volume = await this.docker.createVolume(volumeName);
-
-      await this.db.resource.update({
-        where: { id: resourceId },
-        data: { volumeId: volume.Name },
-      });
+      const mountPath = MOUNT_PATH[type];
+      await this.docker.deleteVolumeData(volumeName, mountPath);
 
       if (containerId) {
         await this.docker.startContainer(containerId);
 
-        const healthy = await this.waitForHealth(containerId);
-
-        if (!healthy) {
-          throw new Error('Resource health check failed');
-        }
+        const healthy = await this.docker.checkContainerHealth(
+          containerId,
+          150_000,
+          5000,
+        );
+        if (!healthy) throw new Error('Resource health check failed');
       }
 
       await this.db.resource.update({
@@ -285,14 +281,9 @@ export class ResourceProcessor extends WorkerHost {
         data: { status: ResourceStatus.ready },
       });
 
-      const env = await this.db.environment.findUniqueOrThrow({
-        where: { id: resource.environmentId },
-        include: { project: true },
-      });
-
       await this.activity.log(
         ActivityType.resource_data_cleared,
-        env.project.ownerId,
+        environment.project.ownerId,
         {
           resourceId,
           type: resource.type,
@@ -309,30 +300,5 @@ export class ResourceProcessor extends WorkerHost {
         data: { status: ResourceStatus.failed },
       });
     }
-  }
-
-  private async waitForHealth(containerId: string): Promise<boolean> {
-    const deadline = Date.now() + 180_000;
-
-    while (Date.now() < deadline) {
-      try {
-        const container = await this.docker.inspectContainer(containerId);
-        const state = container.State;
-
-        if (state.Status === 'running' && state.Health?.Status === 'healthy') {
-          return true;
-        }
-
-        if (state.Status === 'exited' || state.Status === 'dead') {
-          return false;
-        }
-      } catch {
-        // not ready yet
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    }
-
-    return false;
   }
 }

@@ -1,7 +1,10 @@
 import { CreateContainerStep } from '../create-container.step';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { LogService } from '@src/infrastructure/log.service';
-import { DeploymentContext } from '@src/common/types';
+import {
+  DeploymentContext,
+  DeploymentStepExecutionError,
+} from '@src/common/types';
 
 const mockCtx = (): DeploymentContext =>
   ({
@@ -54,15 +57,33 @@ describe('CreateContainerStep', () => {
   });
 
   it('overrides any Dockerfile CMD with the configured project start command', async () => {
-    const ctx = mockCtx() as DeploymentContext;
+    const ctx = mockCtx();
     ctx.project = {
       ...ctx.project,
       startCommand: 'npm run start:prod',
-    } as any;
+    };
 
     await step.execute(ctx);
 
     const options: any = (docker.createContainer as jest.Mock).mock.calls[0][0];
     expect(options.Cmd).toEqual(['sh', '-c', 'npm run start:prod']);
+  });
+
+  it('does not override the image CMD when no start command is configured', async () => {
+    await step.execute(mockCtx());
+
+    const options: any = (docker.createContainer as jest.Mock).mock.calls[0][0];
+    expect(options.Cmd).toBeUndefined();
+  });
+
+  it('rejects when the image tag is missing', async () => {
+    const ctx = mockCtx();
+    ctx.imageTag = null;
+
+    await expect(step.execute(ctx)).rejects.toThrow(
+      DeploymentStepExecutionError,
+    );
+    expect(docker.getOrCreateProjectNetwork).not.toHaveBeenCalled();
+    expect(docker.createContainer).not.toHaveBeenCalled();
   });
 });
