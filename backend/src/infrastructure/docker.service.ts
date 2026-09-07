@@ -63,6 +63,10 @@ export class DockerService {
     return this.docker.listImages();
   }
 
+  async pullImage(imageTag: string) {
+    return this.docker.pull(imageTag);
+  }
+
   async getOrCreateProjectNetwork(projectId: string) {
     const networkName = `project-${projectId}-network`;
 
