@@ -52,4 +52,17 @@ describe('CreateContainerStep', () => {
 
     expect(ctx.containerId).toBe('container-1');
   });
+
+  it('overrides any Dockerfile CMD with the configured project start command', async () => {
+    const ctx = mockCtx() as DeploymentContext;
+    ctx.project = {
+      ...ctx.project,
+      startCommand: 'npm run start:prod',
+    } as any;
+
+    await step.execute(ctx);
+
+    const options: any = (docker.createContainer as jest.Mock).mock.calls[0][0];
+    expect(options.Cmd).toEqual(['sh', '-c', 'npm run start:prod']);
+  });
 });
