@@ -56,6 +56,8 @@ export class ResourceProcessor extends WorkerHost {
 
       const envVars = this.buildEnvVars(resource.type, password);
 
+      await this.docker.pullImage(image);
+
       const container = await this.docker.createContainer({
         name: containerName,
         Image: image,
