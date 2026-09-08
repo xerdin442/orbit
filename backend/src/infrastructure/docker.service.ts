@@ -51,24 +51,28 @@ export class DockerService {
 
   async getContainerLogs(containerId: string, tailLines = 60): Promise<string> {
     const container = this.docker.getContainer(containerId);
-    const rawBuffer = await container.logs({
+    const rawLogs = await container.logs({
       follow: false,
       tail: tailLines,
       stdout: true,
       stderr: true,
     });
 
+    const rawStream = new PassThrough();
     const stdout = new PassThrough();
     const stderr = new PassThrough();
-    this.docker.modem.demuxStream(
-      rawBuffer as unknown as NodeJS.ReadableStream,
-      stdout,
-      stderr,
-    );
+    this.docker.modem.demuxStream(rawStream, stdout, stderr);
 
     const chunks: Buffer[] = [];
     stdout.on('data', (c: Buffer) => chunks.push(c));
     stderr.on('data', (c: Buffer) => chunks.push(c));
+
+    rawStream.on('end', () => {
+      stdout.end();
+      stderr.end();
+    });
+
+    rawStream.end(rawLogs);
 
     await new Promise<void>((resolve, reject) => {
       let ended = 0;
