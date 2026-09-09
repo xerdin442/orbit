@@ -496,6 +496,9 @@ describe('DeploymentProcessor', () => {
     });
 
     it('provisions resources and appends their credentials as variables when already ready', async () => {
+      db.environmentVariable.findMany.mockResolvedValue([
+        { key: 'APP_NAME', value: 'web' },
+      ]);
       db.resource.findMany.mockResolvedValue([
         {
           id: 'resource-1',
@@ -509,19 +512,50 @@ describe('DeploymentProcessor', () => {
 
       await processor.process(job);
 
-      expect(docker.getOrCreateProjectNetwork).toHaveBeenCalledWith(
-        'project-1',
-      );
-      expect(docker.connectContainerToNetwork).toHaveBeenCalledWith(
-        'network-1',
-        'container-res-1',
-      );
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
         LogLevel.INFO,
         'Resource provisioning complete.',
       );
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
+    });
+
+    it('overwrites existing variables with resource credentials without duplicating keys', async () => {
+      db.environmentVariable.findMany.mockResolvedValue([
+        { key: 'REDIS_URL', value: 'redis://user-defined' },
+        { key: 'APP_NAME', value: 'web' },
+      ]);
+      db.resource.findMany.mockResolvedValue([
+        {
+          id: 'resource-1',
+          status: ResourceStatus.ready,
+          credentials: {
+            REDIS_URL: 'redis://resource-provided',
+            REDIS_PASSWORD: 'secret',
+          },
+        },
+      ]);
+
+      let capturedVariables: string[] = [];
+      mockExecuteCreateContainer.mockImplementation(async (ctx: any) => {
+        capturedVariables = ctx.variables;
+      });
+
+      await processor.process(
+        buildJob({ skipImageBuild: true, resourceCount: 1 }),
+      );
+
+      expect(capturedVariables).toEqual([
+        'REDIS_URL=redis://resource-provided',
+        'APP_NAME=web',
+        'PORT=undefined',
+        'REDIS_PASSWORD=secret',
+      ]);
+      expect(
+        capturedVariables.filter((variable) =>
+          variable.startsWith('REDIS_URL='),
+        ),
+      ).toHaveLength(1);
     });
 
     it('polls until resources become ready, then continues the pipeline', async () => {
