@@ -69,6 +69,19 @@ describe('CreateContainerStep', () => {
     expect(options.Cmd).toEqual(['sh', '-c', 'npm run start:prod']);
   });
 
+  it('removes an existing sh -c prefix before creating the container command', async () => {
+    const ctx = mockCtx();
+    ctx.project = {
+      ...ctx.project,
+      startCommand: 'sh -c ./api_bin',
+    };
+
+    await step.execute(ctx);
+
+    const options: any = (docker.createContainer as jest.Mock).mock.calls[0][0];
+    expect(options.Cmd).toEqual(['sh', '-c', './api_bin']);
+  });
+
   it('does not override the image CMD when no start command is configured', async () => {
     await step.execute(mockCtx());
 

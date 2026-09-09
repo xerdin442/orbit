@@ -211,7 +211,12 @@ describe('RailwayProvider', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({
-            data: { variables: { DATABASE_URL: 'postgres://old' } },
+            data: {
+              variables: {
+                DATABASE_URL: 'postgres://old',
+                RAILWAY_ENVIRONMENT: 'production',
+              },
+            },
           }),
         })
         .mockResolvedValueOnce({
