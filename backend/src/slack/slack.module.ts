@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
-import { BullModule } from '@nestjs/bullmq';
+import { Module, OnModuleInit } from '@nestjs/common';
+import { BullModule, InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { DeploymentsModule } from '@src/deployments/deployments.module';
 import { SlackInstallationStore } from './slack-installation.store';
 import { SlackBoltService } from './slack-bolt.service';
@@ -24,4 +25,17 @@ import { SlackDeploymentEventsListener } from './events/deployment-events.listen
   ],
   exports: [SlackBoltService, SlackInstallationStore, SlackApiService],
 })
-export class SlackModule {}
+export class SlackModule implements OnModuleInit {
+  constructor(@InjectQueue('slack-api') private readonly slackQueue: Queue) {}
+
+  async onModuleInit() {
+    await this.slackQueue.add(
+      'cleanup-inactive-installations',
+      {},
+      {
+        repeat: { every: 24 * 60 * 60 * 1000 },
+        removeOnComplete: true,
+      },
+    );
+  }
+}
