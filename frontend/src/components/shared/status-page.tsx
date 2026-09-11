@@ -1,6 +1,5 @@
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
-import { Logo } from "@/components/logo";
+import { Ufo3Icon } from "@solar-icons/react/linear"
 import { Button } from "@/components/ui/button";
 
 interface StatusPageAction {
@@ -10,7 +9,7 @@ interface StatusPageAction {
 }
 
 interface StatusPageProps {
-  icon: LucideIcon;
+  icon: typeof Ufo3Icon;
   title: string;
   description: string;
   action: StatusPageAction;
@@ -24,14 +23,12 @@ export function StatusPage({
 }: StatusPageProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm rounded-xl bg-card border border-border p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-xl bg-card border border-border px-8 pb-9 pt-12 shadow-sm">
         <div className="flex flex-col items-center gap-6 text-center">
-          <Logo className="text-3xl text-foreground" />
-
           <div className="flex flex-col items-center gap-2.5">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <Icon
-                className="size-8 text-muted-foreground"
+                className="size-10.5 text-muted-foreground"
                 aria-hidden="true"
               />
             </div>

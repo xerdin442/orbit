@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertTriangle } from "lucide-react";
+import { DangerTriangleIcon } from "@solar-icons/react/linear"
 import { StatusPage } from "@/components/shared/status-page";
 
 export default function Error({
@@ -17,7 +17,7 @@ export default function Error({
 
   return (
     <StatusPage
-      icon={AlertTriangle}
+      icon={DangerTriangleIcon}
       title="Something went wrong"
       description="An unexpected error occurred. Please try again."
       action={{ label: "Try again", onClick: reset }}

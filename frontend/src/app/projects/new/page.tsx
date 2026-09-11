@@ -58,8 +58,8 @@ export default function NewProjectWizardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between border-b border-border px-6 py-5">
-        <Logo className="text-lg text-foreground" />
+      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+        <Logo className="text-[1.375rem] text-foreground" />
         <WizardProgress steps={STEP_LABELS} currentStep={state.step} />
         <Link
           href="/projects"
