@@ -41,7 +41,7 @@ describe('StartContainerStep', () => {
     expect(docker.startContainer).toHaveBeenCalledWith('container-1');
     expect(docker.checkContainerHealth).toHaveBeenCalledWith(
       'container-1',
-      60_000,
+      120_000,
       5000,
     );
     expect(docker.getContainerLogs).not.toHaveBeenCalled();
