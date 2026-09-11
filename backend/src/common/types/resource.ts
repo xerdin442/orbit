@@ -16,7 +16,7 @@ export const INTERNAL_PORT: Record<ResourceType, number> = {
 };
 
 export const MOUNT_PATH: Record<ResourceType, string> = {
-  postgres: '/var/lib/postgresql/data',
+  postgres: '/var/lib/postgresql',
   mysql: '/var/lib/mysql',
   redis: '/data',
   mongo: '/data/db',

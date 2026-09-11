@@ -487,12 +487,21 @@ describe('DeploymentProcessor', () => {
   });
 
   describe('process — resource provisioning', () => {
-    it('skips provisioning entirely when resourceCount is 0', async () => {
+    it('loads resource credentials during variable loading even when resourceCount is 0', async () => {
+      db.resource.findMany.mockResolvedValue([
+        {
+          id: 'resource-1',
+          status: ResourceStatus.ready,
+          credentials: { REDIS_URL: 'redis://localhost:6379' },
+        },
+      ]);
+
       const job = buildJob({ skipImageBuild: true, resourceCount: 0 });
 
       await processor.process(job);
 
-      expect(db.resource.findMany).not.toHaveBeenCalled();
+      expect(db.resource.findMany).toHaveBeenCalledTimes(1);
+      expect(mockExecuteCreateContainer).toHaveBeenCalledTimes(1);
     });
 
     it('provisions resources and appends their credentials as variables when already ready', async () => {
@@ -564,7 +573,10 @@ describe('DeploymentProcessor', () => {
         .mockResolvedValueOnce([]) // still not ready
         .mockResolvedValueOnce([
           { id: 'resource-1', status: ResourceStatus.ready, credentials: null },
-        ]);
+        ])
+        .mockResolvedValueOnce([
+          { id: 'resource-1', status: ResourceStatus.ready, credentials: null },
+        ]); // loaded again while merging resource credentials in loadVariables
 
       const job = buildJob({ skipImageBuild: true, resourceCount: 1 });
 
@@ -575,7 +587,7 @@ describe('DeploymentProcessor', () => {
 
       await promise;
 
-      expect(db.resource.findMany).toHaveBeenCalledTimes(3);
+      expect(db.resource.findMany).toHaveBeenCalledTimes(4);
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
     });
 
