@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Ufo3Icon } from "@solar-icons/react/linear/ufo-3";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import { Logo } from "@/components/logo";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { api } from "@/lib/api";
 
@@ -22,11 +22,11 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="w-full max-w-sm rounded-xl bg-card border border-border p-8 shadow-sm">
+      <div className="w-full max-w-sm rounded-xl bg-card border border-border p-8 pt-9 shadow-sm">
         <div className="flex flex-col items-center gap-6">
-          <Logo className="text-3xl text-foreground" />
+          <Ufo3Icon size={40} color="#ff5600" />
 
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex flex-col items-center gap-3 text-center -mt-2">
             <h1 className="text-2xl font-medium text-foreground">
               A better way to ship software.
             </h1>

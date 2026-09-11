@@ -140,7 +140,7 @@ export function Sidebar({ projects, user }: SidebarProps) {
         <div className="flex items-center gap-2 p-3">
           {!sidebarCollapsed && (
             <Link href="/projects" className="flex-1 min-w-0">
-              <Logo className="text-lg text-sidebar-foreground truncate" />
+              <Logo className="text-[1.375rem] text-sidebar-foreground truncate" />
             </Link>
           )}
           <button
