@@ -27,7 +27,7 @@ export class StartContainerStep implements DeploymentStep {
 
     const healthy = await this.docker.checkContainerHealth(
       ctx.containerId,
-      60_000,
+      120_000,
       5000,
     );
 
