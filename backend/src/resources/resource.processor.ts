@@ -91,7 +91,7 @@ export class ResourceProcessor extends WorkerHost {
       const healthy = await this.docker.checkContainerHealth(
         container.id,
         150_000,
-        5000,
+        true,
       );
 
       if (!healthy) {
@@ -277,7 +277,7 @@ export class ResourceProcessor extends WorkerHost {
         const healthy = await this.docker.checkContainerHealth(
           containerId,
           150_000,
-          5000,
+          true,
         );
         if (!healthy) throw new Error('Resource health check failed');
       }
