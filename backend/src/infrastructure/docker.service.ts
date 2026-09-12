@@ -163,7 +163,7 @@ export class DockerService {
   async checkContainerHealth(
     containerId: string,
     waitTime: number,
-    interval: number,
+    resourceCheck: boolean = false,
   ): Promise<boolean> {
     const deadline = Date.now() + waitTime;
 
@@ -172,7 +172,11 @@ export class DockerService {
         const container = await this.inspectContainer(containerId);
         const state = container.State;
 
-        if (state.Status === 'running' && state.Health?.Status === 'healthy') {
+        if (state.Status === 'running') {
+          if (resourceCheck && state.Health?.Status !== 'healthy') {
+            throw new Error('Resource container not ready yet');
+          }
+
           return true;
         }
 
@@ -183,7 +187,7 @@ export class DockerService {
         // not ready yet
       }
 
-      await new Promise((resolve) => setTimeout(resolve, interval));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
     }
 
     return false;
