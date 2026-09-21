@@ -27,7 +27,7 @@ services:
     image: caddy:2-alpine
     container_name: orbit-caddy
     restart: unless-stopped
-    command: ["caddy", "run", "--config", "/etc/caddy/caddy.json"]
+    command: ["caddy", "run", "--resume", "--config", "/etc/caddy/caddy.json"]
     environment:
       - CADDY_ON_DEMAND_ASK=${CADDY_ON_DEMAND_ASK}
       - ACME_EMAIL=${ACME_EMAIL}
