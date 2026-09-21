@@ -275,8 +275,25 @@ describe('isNoiseRequest', () => {
     expect(isNoiseRequest('/f.WOFF2')).toBe(true);
   });
 
+  it('flags scanner probes for hidden files', () => {
+    expect(isNoiseRequest('/.env')).toBe(true);
+    expect(isNoiseRequest('/api/.env')).toBe(true);
+    expect(isNoiseRequest('/.env.production')).toBe(true);
+    expect(isNoiseRequest('/../.env')).toBe(true);
+    expect(isNoiseRequest('/%2e%2e%2f%2eenv')).toBe(true);
+    expect(isNoiseRequest('/.git/HEAD')).toBe(true);
+    expect(isNoiseRequest('/.git/config')).toBe(true);
+    expect(isNoiseRequest('/.vscode/sftp.json')).toBe(true);
+    expect(isNoiseRequest('/.DS_Store')).toBe(true);
+    expect(isNoiseRequest('/.well-known/pki-validation/ABC123.txt')).toBe(true);
+  });
+
   it('does not flag application routes', () => {
     expect(isNoiseRequest('/')).toBe(false);
+    expect(isNoiseRequest('/environment')).toBe(false);
+    expect(isNoiseRequest('/.environment')).toBe(false);
+    expect(isNoiseRequest('/gitlab')).toBe(false);
+    expect(isNoiseRequest('/%E0%A4%A')).toBe(false);
     expect(isNoiseRequest('/login')).toBe(false);
     expect(isNoiseRequest('/api/users')).toBe(false);
     expect(isNoiseRequest('/api/users.json')).toBe(false);

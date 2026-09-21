@@ -6,7 +6,7 @@ const NOISE_PATH_PREFIXES = [
   '/_astro/', // Astro — hashed bundles
   '/_app/', // SvelteKit — reserved dir: /_app/immutable/*, /_app/version.json
   '/_vercel/', // @vercel/analytics + @vercel/speed-insights beacons
-  '/.well-known/appspecific/', // Chrome DevTools probe on every page load
+  '/.well-known/', // Chrome DevTools probe on every page load, SSL certification challenges
 ];
 
 const NOISE_PATH_EXTENSIONS = [
@@ -32,6 +32,21 @@ const NOISE_PATH_EXTENSIONS = [
   '.otf',
   '.eot',
 ];
+
+const SCANNER_PROBE_PATTERNS = [
+  /(^|\/)\.env(\.[^/]*)?$/i, // .env, api/.env, .env.production
+  /(^|\/)\.git(\/|$)/i,
+  /(^|\/)\.vscode\//i,
+  /(^|\/)\.DS_Store$/i,
+];
+
+function decodePath(path: string): string {
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
 
 function getHeader(headers: unknown, name: string): string | undefined {
   if (typeof headers !== 'object' || headers === null) return undefined;
@@ -76,6 +91,11 @@ function normalizeQuery(rawQuery: string): string | undefined {
 
 export function isNoiseRequest(path: string): boolean {
   if (NOISE_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    return true;
+  }
+
+  const decoded = decodePath(path);
+  if (SCANNER_PROBE_PATTERNS.some((pattern) => pattern.test(decoded))) {
     return true;
   }
 
