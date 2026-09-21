@@ -105,7 +105,13 @@ export class DockerService {
   }
 
   async pullImage(imageTag: string) {
-    return this.docker.pull(imageTag);
+    const stream = await this.docker.pull(imageTag);
+
+    await new Promise<void>((resolve, reject) => {
+      this.docker.modem.followProgress(stream, (err) =>
+        err ? reject(err) : resolve(),
+      );
+    });
   }
 
   async getOrCreateProjectNetwork(projectId: string) {
