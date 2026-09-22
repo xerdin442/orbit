@@ -40,8 +40,10 @@ export class ResourceProcessor extends WorkerHost {
       include: { environment: true },
     });
 
+    const volumeName = `resource-${resourceId}-data`;
+    const containerName = `resource-${resourceId}`;
+
     try {
-      const volumeName = `resource-${resourceId}-data`;
       const volume = await this.docker.createVolume(volumeName);
 
       await this.db.resource.update({
@@ -49,7 +51,6 @@ export class ResourceProcessor extends WorkerHost {
         data: { volumeId: volume.Name },
       });
 
-      const containerName = `resource-${resourceId}`;
       const image = IMAGE_MAP[resource.type];
       const port = INTERNAL_PORT[resource.type];
       const password = randomBytes(16).toString('hex');
@@ -143,6 +144,19 @@ export class ResourceProcessor extends WorkerHost {
       this.logger.error(
         `Resource provisioning failed: ${resourceId} - ${error instanceof Error ? error.message : String(error)}`,
       );
+
+      try {
+        await this.docker.stopContainer(containerName);
+        await this.docker.removeContainer(containerName);
+      } catch {
+        // container was never created, or already gone
+      }
+
+      try {
+        await this.docker.removeVolume(volumeName);
+      } catch {
+        // volume was never created, or already gone
+      }
 
       await this.db.resource.update({
         where: { id: resourceId },

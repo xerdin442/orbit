@@ -115,6 +115,7 @@ export interface CleanupJob {
   projectId?: string;
   environmentId?: string;
   deploymentContainerIds: string[];
+  deploymentImageTags: string[];
   resourceContainers: { containerId?: string; volumeId?: string }[];
   networkName?: string;
 }
