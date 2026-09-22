@@ -124,6 +124,8 @@ export class DeploymentProcessor extends WorkerHost {
             ctx.commitSha,
             ctx.commitMessage,
           );
+          ctx.deployment.commitSha = ctx.commitSha;
+          ctx.deployment.commitMessage = ctx.commitMessage;
         }
 
         if (step.name === DeploymentStepName.CreateContainer) {

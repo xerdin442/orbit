@@ -362,6 +362,14 @@ describe('isNoiseRequest', () => {
     ).toBe(true);
   });
 
+  it('flags WordPress scanner sweeps', () => {
+    expect(isNoiseRequest('/wp-json/batch/v1')).toBe(true);
+    expect(isNoiseRequest('/wp-admin/setup-config.php')).toBe(true);
+    expect(isNoiseRequest('/wp-content/uploads/x.php')).toBe(true);
+    expect(isNoiseRequest('/wp-includes/wlwmanifest.xml')).toBe(true);
+    expect(isNoiseRequest('/wp-login.php')).toBe(true);
+  });
+
   it('flags static asset extensions', () => {
     expect(isNoiseRequest('/favicon.ico')).toBe(true);
     expect(isNoiseRequest('/assets/logo.svg')).toBe(true);
