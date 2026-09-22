@@ -8,6 +8,7 @@ const NOISE_PATH_PREFIXES = [
   '/_vercel/', // @vercel/analytics + @vercel/speed-insights beacons
   '/@vite/', // Vite — hashed bundles, /@vite/client, /@vite/env
   '/.well-known/', // Chrome DevTools probe on every page load, SSL certification challenges
+  '/wp', // WordPress scanner sweeps — /wp-json/, /wp-admin/, /wp-content/, /wp-includes/, /wp-login.php
 ];
 
 const NOISE_PATH_EXTENSIONS = [

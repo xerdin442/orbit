@@ -261,6 +261,51 @@ describe('DeploymentProcessor', () => {
       );
     });
 
+    it('carries the commit resolved mid-pipeline through every Slack event, including completion', async () => {
+      mockExecuteResolveCommit.mockImplementation(async (ctx) => {
+        ctx.commitSha = 'resolved-sha';
+        ctx.commitMessage = 'resolved commit message';
+      });
+
+      const job = buildJob({
+        skipImageBuild: false,
+        deployment: {
+          id: DEPLOYMENT_ID,
+          environmentId: ENVIRONMENT_ID,
+          imageTag: 'app:latest',
+          commitSha: '',
+          commitMessage: null,
+        },
+      } as never);
+
+      await processor.process(job);
+
+      // Status events from BuildImage onward (statusForStep maps
+      // StartContainer/HealthCheck/ConfigureProxy/ActivateDeployment to
+      // 'deploying') fire after the commit is resolved and the fix syncs it
+      // onto ctx.deployment, so they should all carry the resolved commit.
+      const deployingCalls = eventEmitter.emit.mock.calls.filter(
+        ([eventName, event]) =>
+          eventName === 'deployment.status.changed' &&
+          event.status === BuildStatus.deploying,
+      );
+      expect(deployingCalls.length).toBeGreaterThan(0);
+      for (const [, event] of deployingCalls) {
+        expect(event.deployment.commitSha).toBe('resolved-sha');
+        expect(event.deployment.commitMessage).toBe(
+          'resolved commit message',
+        );
+      }
+
+      const [, completedEvent] = eventEmitter.emit.mock.calls.find(
+        ([eventName]) => eventName === 'deployment.completed',
+      )!;
+      expect(completedEvent.deployment.commitSha).toBe('resolved-sha');
+      expect(completedEvent.deployment.commitMessage).toBe(
+        'resolved commit message',
+      );
+    });
+
     it('skips the build steps when skipImageBuild is true', async () => {
       const job = buildJob({ skipImageBuild: true });
 
