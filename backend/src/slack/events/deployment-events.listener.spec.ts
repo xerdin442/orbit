@@ -78,7 +78,7 @@ describe('SlackDeploymentEventsListener', () => {
         mockDeployment,
         mockProject,
         mockEnvironment,
-        'https://my-project.example.com',
+        'my-project-a1b2c3d.apps.example.com',
         slackMetadata,
       ),
     );
@@ -100,7 +100,27 @@ describe('SlackDeploymentEventsListener', () => {
     expect(header.text.text).toContain(':white_check_mark:');
 
     const actions = blocks.find((b: any) => b.type === 'actions');
-    expect(actions.elements[0].url).toBe('https://my-project.example.com');
+    expect(actions.elements[0].url).toBe(
+      'https://my-project-a1b2c3d.apps.example.com',
+    );
+  });
+
+  it('prefixes a bare hostname with https:// for the Open Deployment button', async () => {
+    await listener.handleCompleted(
+      new DeploymentCompletedEvent(
+        mockDeployment,
+        mockProject,
+        mockEnvironment,
+        'ticketing-bot-y0vb6y0.apps.orbit.io',
+        slackMetadata,
+      ),
+    );
+
+    const args = slackApi.enqueue.mock.calls[0][2];
+    const actions = args.blocks.find((b: any) => b.type === 'actions');
+    expect(actions.elements[0].url).toBe(
+      'https://ticketing-bot-y0vb6y0.apps.orbit.io',
+    );
   });
 
   it('updates the card to rolled_back on deployment.completed for rollback', async () => {
@@ -114,7 +134,7 @@ describe('SlackDeploymentEventsListener', () => {
         rollbackDeployment,
         mockProject,
         mockEnvironment,
-        'https://my-project.example.com',
+        'my-project-a1b2c3d.apps.example.com',
         slackMetadata,
       ),
     );
