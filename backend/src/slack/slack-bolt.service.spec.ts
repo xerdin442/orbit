@@ -316,7 +316,7 @@ describe('SlackBoltService', () => {
       );
     });
 
-    it('reports when there is nothing to roll back to', async () => {
+    it('reports when there is nothing to roll back to, without posting an orphaned status card', async () => {
       mockDb.deployment.findFirst.mockResolvedValue(null);
 
       await actionHandler('deploy_confirm')({
@@ -327,8 +327,10 @@ describe('SlackBoltService', () => {
         respond,
       });
 
+      expect(mockSlackApi.call).not.toHaveBeenCalled();
       expect(mockDeployments.findForRollback).not.toHaveBeenCalled();
       expect(mockQueue.add).not.toHaveBeenCalled();
+      expect(respond).toHaveBeenCalledTimes(1);
       expect(respond).toHaveBeenCalledWith(
         expect.objectContaining({
           text: expect.stringContaining('No previous successful deployment'),
