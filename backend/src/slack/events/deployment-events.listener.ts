@@ -40,7 +40,7 @@ export class SlackDeploymentEventsListener {
         deployment.trigger === DeploymentTrigger.rollback
           ? 'rolled_back'
           : 'success',
-      url: domain,
+      url: `https://${domain}`,
       startedAt: slackMetadata?.startedAt,
       completedAt: deployment.completedAt ?? new Date(),
       commitSha: deployment.commitSha,
