@@ -90,6 +90,12 @@ export class ResourcesService {
   async delete(id: string, userId: string) {
     const resource = await this.findById(id, userId);
 
+    if (resource.status === ResourceStatus.provisioning) {
+      throw new ConflictException(
+        'Resource is still being provisioned; wait for it to finish or fail before deleting',
+      );
+    }
+
     if (resource.containerId) {
       try {
         await this.docker.stopContainer(resource.containerId);

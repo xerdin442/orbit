@@ -31,7 +31,11 @@ export class CleanupService {
     const environments = await this.db.environment.findMany({
       where: { projectId },
       include: {
-        deployments: { where: { containerId: { not: null } } },
+        deployments: {
+          where: {
+            OR: [{ containerId: { not: null } }, { imageTag: { not: null } }],
+          },
+        },
         resources: {
           where: {
             OR: [{ containerId: { not: null } }, { volumeId: { not: null } }],
@@ -41,6 +45,7 @@ export class CleanupService {
     });
 
     const deploymentContainerIds: string[] = [];
+    const deploymentImageTags = new Set<string>();
     const resourceContainers: { containerId?: string; volumeId?: string }[] =
       [];
 
@@ -48,6 +53,9 @@ export class CleanupService {
       for (const deployment of env.deployments) {
         if (deployment.containerId) {
           deploymentContainerIds.push(deployment.containerId);
+        }
+        if (deployment.imageTag) {
+          deploymentImageTags.add(deployment.imageTag);
         }
       }
 
@@ -71,6 +79,7 @@ export class CleanupService {
     await this.cleanupQueue.add('project-cleanup', {
       projectId,
       deploymentContainerIds,
+      deploymentImageTags: [...deploymentImageTags],
       resourceContainers,
       networkName: `project-${projectId}-network`,
     });
@@ -84,7 +93,11 @@ export class CleanupService {
       where: { id: environmentId },
       include: {
         project: true,
-        deployments: { where: { containerId: { not: null } } },
+        deployments: {
+          where: {
+            OR: [{ containerId: { not: null } }, { imageTag: { not: null } }],
+          },
+        },
         resources: {
           where: {
             OR: [{ containerId: { not: null } }, { volumeId: { not: null } }],
@@ -100,6 +113,14 @@ export class CleanupService {
     const deploymentContainerIds = env.deployments
       .map((d) => d.containerId)
       .filter((id): id is string => !!id);
+
+    const deploymentImageTags = [
+      ...new Set(
+        env.deployments
+          .map((d) => d.imageTag)
+          .filter((tag): tag is string => !!tag),
+      ),
+    ];
 
     const resourceContainers = env.resources.map((r) => ({
       containerId: r.containerId ?? undefined,
@@ -124,6 +145,7 @@ export class CleanupService {
     await this.cleanupQueue.add('environment-cleanup', {
       environmentId,
       deploymentContainerIds,
+      deploymentImageTags,
       resourceContainers,
     });
   }

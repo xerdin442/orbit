@@ -59,7 +59,11 @@ describe('CleanupService', () => {
       db.environment.findMany.mockResolvedValue([
         {
           id: 'env-1',
-          deployments: [{ containerId: 'dep-c1' }],
+          deployments: [
+            { containerId: 'dep-c1', imageTag: 'app-1:sha1' },
+            { containerId: null, imageTag: 'app-1:sha2' },
+            { containerId: 'dep-c2', imageTag: 'app-1:sha1' },
+          ],
           resources: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
         },
       ]);
@@ -78,7 +82,8 @@ describe('CleanupService', () => {
       );
       expect(queue.add).toHaveBeenCalledWith('project-cleanup', {
         projectId: 'proj-1',
-        deploymentContainerIds: ['dep-c1'],
+        deploymentContainerIds: ['dep-c1', 'dep-c2'],
+        deploymentImageTags: ['app-1:sha1', 'app-1:sha2'],
         resourceContainers: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
         networkName: 'project-proj-1-network',
       });
@@ -102,7 +107,7 @@ describe('CleanupService', () => {
         id: 'env-1',
         projectId: 'proj-1',
         project: { ownerId: 'user-1' },
-        deployments: [{ containerId: 'dep-c1' }],
+        deployments: [{ containerId: 'dep-c1', imageTag: 'app-1:sha1' }],
         resources: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
       });
 
@@ -119,6 +124,7 @@ describe('CleanupService', () => {
       expect(queue.add).toHaveBeenCalledWith('environment-cleanup', {
         environmentId: 'env-1',
         deploymentContainerIds: ['dep-c1'],
+        deploymentImageTags: ['app-1:sha1'],
         resourceContainers: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
       });
     });
@@ -156,7 +162,11 @@ describe('CleanupProcessor', () => {
   let docker: jest.Mocked<
     Pick<
       DockerService,
-      'stopContainer' | 'removeContainer' | 'removeVolume' | 'removeNetwork'
+      | 'stopContainer'
+      | 'removeContainer'
+      | 'removeImage'
+      | 'removeVolume'
+      | 'removeNetwork'
     >
   >;
 
@@ -164,6 +174,7 @@ describe('CleanupProcessor', () => {
     docker = {
       stopContainer: jest.fn(),
       removeContainer: jest.fn(),
+      removeImage: jest.fn(),
       removeVolume: jest.fn(),
       removeNetwork: jest.fn(),
     };
@@ -178,11 +189,12 @@ describe('CleanupProcessor', () => {
     processor = module.get(CleanupProcessor);
   });
 
-  it('cleans up containers, volumes, and networks', async () => {
+  it('cleans up containers, images, volumes, and networks', async () => {
     const job = {
       data: {
         projectId: 'proj-1',
         deploymentContainerIds: ['dep-c1'],
+        deploymentImageTags: ['app-1:sha1', 'app-1:sha2'],
         resourceContainers: [{ containerId: 'res-c1', volumeId: 'res-v1' }],
         networkName: 'project-proj-1-network',
       },
@@ -192,9 +204,26 @@ describe('CleanupProcessor', () => {
 
     expect(docker.stopContainer).toHaveBeenCalledWith('dep-c1');
     expect(docker.removeContainer).toHaveBeenCalledWith('dep-c1');
+    expect(docker.removeImage).toHaveBeenCalledWith('app-1:sha1');
+    expect(docker.removeImage).toHaveBeenCalledWith('app-1:sha2');
     expect(docker.stopContainer).toHaveBeenCalledWith('res-c1');
     expect(docker.removeContainer).toHaveBeenCalledWith('res-c1');
     expect(docker.removeVolume).toHaveBeenCalledWith('res-v1');
     expect(docker.removeNetwork).toHaveBeenCalledWith('project-proj-1-network');
+  });
+
+  it('swallows image removal errors', async () => {
+    docker.removeImage.mockRejectedValue(new Error('no such image'));
+
+    const job = {
+      data: {
+        projectId: 'proj-1',
+        deploymentContainerIds: [],
+        deploymentImageTags: ['app-1:sha1'],
+        resourceContainers: [],
+      },
+    } as unknown as Job<CleanupJob>;
+
+    await expect(processor.process(job)).resolves.toBeUndefined();
   });
 });

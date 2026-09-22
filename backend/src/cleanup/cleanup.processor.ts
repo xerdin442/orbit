@@ -17,6 +17,7 @@ export class CleanupProcessor extends WorkerHost {
       projectId,
       environmentId,
       deploymentContainerIds,
+      deploymentImageTags,
       resourceContainers,
       networkName,
     } = job.data;
@@ -27,6 +28,14 @@ export class CleanupProcessor extends WorkerHost {
 
     for (const containerId of deploymentContainerIds) {
       await this.stopAndRemoveContainer(containerId);
+    }
+
+    for (const imageTag of deploymentImageTags) {
+      try {
+        await this.docker.removeImage(imageTag);
+      } catch {
+        // image already removed
+      }
     }
 
     for (const resource of resourceContainers) {
