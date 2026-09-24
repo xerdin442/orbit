@@ -113,6 +113,20 @@ describe('CommandService', () => {
     });
   });
 
+  describe('gitCheckout', () => {
+    it('spawns git checkout with correct args', async () => {
+      const promise = service.gitCheckout('/tmp/build', 'abc123');
+      mockChild.emit('close', 0);
+      await promise;
+
+      expect(spawn).toHaveBeenCalledWith(
+        'git',
+        ['-C', '/tmp/build', 'checkout', 'abc123'],
+        { shell: false },
+      );
+    });
+  });
+
   describe('railpackBuild', () => {
     it('spawns railpack build with correct args', async () => {
       const promise = service.railpackBuild('/tmp/build', 'project-1:abc123');

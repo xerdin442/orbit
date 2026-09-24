@@ -1,4 +1,4 @@
-import { rm } from 'fs/promises';
+import { mkdtemp, rm } from 'fs/promises';
 import type { Job } from 'bullmq';
 import type { EventEmitter2 } from '@nestjs/event-emitter';
 import { DeploymentProcessor } from './deployment.processor';
@@ -7,6 +7,7 @@ import {
   LogLevel,
   ActivityType,
   ResourceStatus,
+  LifecycleStatus,
 } from '@generated/enums';
 import { DeploymentJob, DeploymentStepExecutionError } from '@src/common/types';
 import type { DockerService } from '@src/infrastructure/docker.service';
@@ -20,6 +21,7 @@ import type { GitHubService } from '@src/github/github.service';
 import type { EncryptionService } from '@src/infrastructure/encryption.service';
 
 jest.mock('fs/promises', () => ({
+  mkdtemp: jest.fn().mockResolvedValue('/tmp/builds-abc'),
   rm: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -110,6 +112,7 @@ describe('DeploymentProcessor', () => {
   let docker: {
     stopContainer: jest.Mock;
     removeContainer: jest.Mock;
+    removeImage: jest.Mock;
     getOrCreateProjectNetwork: jest.Mock;
     connectContainerToNetwork: jest.Mock;
   };
@@ -119,6 +122,7 @@ describe('DeploymentProcessor', () => {
     environment: { findUnique: jest.Mock };
     environmentVariable: { findMany: jest.Mock };
     resource: { findMany: jest.Mock };
+    deployment: { findMany: jest.Mock; updateMany: jest.Mock };
   };
   let logService: {
     append: jest.Mock;
@@ -147,10 +151,12 @@ describe('DeploymentProcessor', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    (mkdtemp as jest.Mock).mockResolvedValue('/tmp/builds-abc');
 
     docker = {
       stopContainer: jest.fn().mockResolvedValue(undefined),
       removeContainer: jest.fn().mockResolvedValue(undefined),
+      removeImage: jest.fn().mockResolvedValue(undefined),
       getOrCreateProjectNetwork: jest
         .fn()
         .mockResolvedValue({ id: 'network-1' }),
@@ -162,6 +168,10 @@ describe('DeploymentProcessor', () => {
       environment: { findUnique: jest.fn().mockResolvedValue(buildEnv()) },
       environmentVariable: { findMany: jest.fn().mockResolvedValue([]) },
       resource: { findMany: jest.fn().mockResolvedValue([]) },
+      deployment: {
+        findMany: jest.fn().mockResolvedValue([]),
+        updateMany: jest.fn().mockResolvedValue(undefined),
+      },
     };
     logService = {
       append: jest.fn().mockResolvedValue(undefined),
@@ -292,9 +302,7 @@ describe('DeploymentProcessor', () => {
       expect(deployingCalls.length).toBeGreaterThan(0);
       for (const [, event] of deployingCalls) {
         expect(event.deployment.commitSha).toBe('resolved-sha');
-        expect(event.deployment.commitMessage).toBe(
-          'resolved commit message',
-        );
+        expect(event.deployment.commitMessage).toBe('resolved commit message');
       }
 
       const [, completedEvent] = eventEmitter.emit.mock.calls.find(
@@ -498,6 +506,22 @@ describe('DeploymentProcessor', () => {
       await expect(processor.process(job)).rejects.toThrow(
         'Environment not found',
       );
+      expect(mkdtemp).not.toHaveBeenCalled();
+    });
+
+    it('creates a workspace when the image needs to be built', async () => {
+      await processor.process(buildJob({ skipImageBuild: false }));
+
+      expect(mkdtemp).toHaveBeenCalledWith(expect.stringContaining('builds-'));
+      expect(mockExecuteCloneRepository).toHaveBeenCalledWith(
+        expect.objectContaining({ workspace: '/tmp/builds-abc' }),
+      );
+    });
+
+    it('does not create a workspace when reusing an existing image', async () => {
+      await processor.process(buildJob({ skipImageBuild: true }));
+
+      expect(mkdtemp).not.toHaveBeenCalled();
     });
   });
 
@@ -677,6 +701,92 @@ describe('DeploymentProcessor', () => {
         'Resource provisioning failed for: cache',
       );
       expect(mockExecuteCreateContainer).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('process — prune-images job', () => {
+    function pruneJob(): Job<DeploymentJob> {
+      return {
+        name: 'prune-images',
+        data: {},
+      } as unknown as Job<DeploymentJob>;
+    }
+
+    it('removes and nulls a stale image, deduping repeated tags', async () => {
+      db.deployment.findMany
+        .mockResolvedValueOnce([{ imageTag: 'app-1:active-sha' }]) // protected
+        .mockResolvedValueOnce([
+          { imageTag: 'app-1:old-sha' },
+          { imageTag: 'app-1:old-sha' },
+        ]); // candidates
+
+      await processor.process(pruneJob());
+
+      expect(db.deployment.findMany).toHaveBeenNthCalledWith(1, {
+        where: {
+          imageTag: { not: null },
+          OR: [
+            { lifecycleStatus: LifecycleStatus.active },
+            { completedAt: { gte: expect.any(Date) } },
+          ],
+        },
+        select: { imageTag: true },
+      });
+      expect(db.deployment.findMany).toHaveBeenNthCalledWith(2, {
+        where: {
+          lifecycleStatus: LifecycleStatus.inactive,
+          imageTag: { not: null },
+          completedAt: { lt: expect.any(Date) },
+        },
+        select: { imageTag: true },
+      });
+
+      expect(docker.removeImage).toHaveBeenCalledTimes(1);
+      expect(docker.removeImage).toHaveBeenCalledWith('app-1:old-sha');
+      expect(db.deployment.updateMany).toHaveBeenCalledWith({
+        where: { imageTag: { in: ['app-1:old-sha'] } },
+        data: { imageTag: null },
+      });
+
+      // never touches the normal deploy pipeline
+      expect(deployments.findById).not.toHaveBeenCalled();
+      expect(mockExecuteCloneRepository).not.toHaveBeenCalled();
+    });
+
+    it('never removes an image still referenced by an active or recent deployment (rollback reuse)', async () => {
+      db.deployment.findMany
+        .mockResolvedValueOnce([{ imageTag: 'app-1:shared-sha' }]) // protected
+        .mockResolvedValueOnce([{ imageTag: 'app-1:shared-sha' }]); // same tag, also a candidate
+
+      await processor.process(pruneJob());
+
+      expect(docker.removeImage).not.toHaveBeenCalled();
+      expect(db.deployment.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when there are no stale images', async () => {
+      db.deployment.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await processor.process(pruneJob());
+
+      expect(docker.removeImage).not.toHaveBeenCalled();
+      expect(db.deployment.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('nulls the imageTag even when the Docker removal itself fails', async () => {
+      db.deployment.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ imageTag: 'app-1:old-sha' }]);
+      docker.removeImage.mockRejectedValue(new Error('no such image'));
+
+      await expect(processor.process(pruneJob())).resolves.toBeUndefined();
+
+      expect(db.deployment.updateMany).toHaveBeenCalledWith({
+        where: { imageTag: { in: ['app-1:old-sha'] } },
+        data: { imageTag: null },
+      });
     });
   });
 });

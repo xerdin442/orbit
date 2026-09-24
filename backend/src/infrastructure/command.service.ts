@@ -68,6 +68,10 @@ export class CommandService {
     return this.execute('git', ['-C', targetPath, 'rev-parse', 'HEAD']);
   }
 
+  async gitCheckout(targetPath: string, commitSha: string) {
+    return this.execute('git', ['-C', targetPath, 'checkout', commitSha]);
+  }
+
   async gitLog(targetPath: string) {
     return this.execute('git', [
       '-C',
