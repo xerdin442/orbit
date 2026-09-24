@@ -14,11 +14,17 @@ const mockCtx = (): DeploymentContext =>
 
 describe('ResolveCommitStep', () => {
   let step: ResolveCommitStep;
-  let command: jest.Mocked<Pick<CommandService, 'gitRevParse' | 'gitLog'>>;
+  let command: jest.Mocked<
+    Pick<CommandService, 'gitRevParse' | 'gitLog' | 'gitCheckout'>
+  >;
   let log: jest.Mocked<Pick<LogService, 'append'>>;
 
   beforeEach(() => {
-    command = { gitRevParse: jest.fn(), gitLog: jest.fn() };
+    command = {
+      gitRevParse: jest.fn(),
+      gitLog: jest.fn(),
+      gitCheckout: jest.fn(),
+    };
     log = { append: jest.fn() };
     step = new ResolveCommitStep(
       command as unknown as CommandService,
@@ -67,6 +73,45 @@ describe('ResolveCommitStep', () => {
     });
 
     await expect(step.execute(mockCtx())).rejects.toThrow(
+      DeploymentStepExecutionError,
+    );
+  });
+
+  it('checks out a pre-known commit instead of resolving HEAD (redeploy, or rollback with a pruned image)', async () => {
+    command.gitCheckout.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+
+    const ctx = mockCtx();
+    ctx.commitSha = 'old-sha-123';
+    ctx.commitMessage = 'original commit message';
+
+    await step.execute(ctx);
+
+    expect(command.gitCheckout).toHaveBeenCalledWith(
+      '/tmp/build',
+      'old-sha-123',
+    );
+    expect(command.gitRevParse).not.toHaveBeenCalled();
+    expect(command.gitLog).not.toHaveBeenCalled();
+    // unchanged — same commit, same message
+    expect(ctx.commitSha).toBe('old-sha-123');
+    expect(ctx.commitMessage).toBe('original commit message');
+  });
+
+  it('throws when checking out a pre-known commit fails', async () => {
+    command.gitCheckout.mockResolvedValue({
+      exitCode: 1,
+      stdout: '',
+      stderr: 'fatal: reference is not a tree',
+    });
+
+    const ctx = mockCtx();
+    ctx.commitSha = 'old-sha-123';
+
+    await expect(step.execute(ctx)).rejects.toThrow(
       DeploymentStepExecutionError,
     );
   });

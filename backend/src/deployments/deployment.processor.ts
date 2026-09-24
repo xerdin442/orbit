@@ -1,4 +1,6 @@
-import { rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { mkdtemp, rm } from 'fs/promises';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { Job } from 'bullmq';
@@ -7,6 +9,7 @@ import {
   ActivityType,
   LogLevel,
   BuildStatus,
+  LifecycleStatus,
   ResourceStatus,
 } from '@generated/client';
 import type { Deployment } from '@generated/client';
@@ -43,6 +46,8 @@ import {
   BuildImageStep,
 } from './pipeline';
 
+const IMAGE_RETENTION_MS = 14 * 24 * 60 * 60 * 1000;
+
 @Processor('deployments')
 export class DeploymentProcessor extends WorkerHost {
   private readonly logger = Logger(DeploymentProcessor.name);
@@ -63,11 +68,15 @@ export class DeploymentProcessor extends WorkerHost {
   }
 
   async process(job: Job<DeploymentJob>): Promise<void> {
+    if (job.name === 'prune-images') {
+      return this.pruneOldImages();
+    }
+
     const { deployment, skipImageBuild, resourceCount, slackMetadata } =
       job.data;
     const deploymentId = deployment.id;
 
-    const ctx = await this.buildContext(deployment);
+    const ctx = await this.buildContext(deployment, skipImageBuild);
 
     if (resourceCount && resourceCount > 0) {
       try {
@@ -189,8 +198,59 @@ export class DeploymentProcessor extends WorkerHost {
     );
   }
 
+  private async pruneOldImages(): Promise<void> {
+    const cutoff = new Date(Date.now() - IMAGE_RETENTION_MS);
+
+    const protectedDeployments = await this.db.deployment.findMany({
+      where: {
+        imageTag: { not: null },
+        OR: [
+          { lifecycleStatus: LifecycleStatus.active },
+          { completedAt: { gte: cutoff } },
+        ],
+      },
+      select: { imageTag: true },
+    });
+    const protectedTags = new Set(
+      protectedDeployments.map((d) => d.imageTag as string),
+    );
+
+    const candidates = await this.db.deployment.findMany({
+      where: {
+        lifecycleStatus: LifecycleStatus.inactive,
+        imageTag: { not: null },
+        completedAt: { lt: cutoff },
+      },
+      select: { imageTag: true },
+    });
+
+    const staleTags = new Set(
+      candidates
+        .map((d) => d.imageTag as string)
+        .filter((tag) => !protectedTags.has(tag)),
+    );
+
+    for (const imageTag of staleTags) {
+      try {
+        await this.docker.removeImage(imageTag);
+      } catch (error) {
+        this.logger.error(
+          `Failed to remove image ${imageTag}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    if (staleTags.size > 0) {
+      await this.db.deployment.updateMany({
+        where: { imageTag: { in: [...staleTags] } },
+        data: { imageTag: null },
+      });
+    }
+  }
+
   private async buildContext(
     deployment: Deployment,
+    skipImageBuild?: boolean,
   ): Promise<DeploymentContext> {
     await this.logService.append(
       deployment.id,
@@ -207,11 +267,15 @@ export class DeploymentProcessor extends WorkerHost {
       throw new Error('Environment not found');
     }
 
+    const workspace = skipImageBuild
+      ? ''
+      : await mkdtemp(join(tmpdir(), 'builds-'));
+
     return {
       deployment,
       project: env.project,
       environment: env,
-      workspace: '',
+      workspace,
       imageTag: deployment.imageTag,
       commitSha: deployment.commitSha,
       commitMessage: deployment.commitMessage ?? '',

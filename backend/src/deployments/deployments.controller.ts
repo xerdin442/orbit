@@ -73,7 +73,7 @@ export class DeploymentsController {
 
     await this.deployQueue.add('rollback', {
       deployment,
-      skipImageBuild: true,
+      skipImageBuild: deployment.imageTag !== null,
     });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };

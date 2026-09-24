@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'fs/promises';
+import { rm } from 'fs/promises';
 import { CloneRepositoryStep } from '../clone-repository.step';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
@@ -8,7 +8,6 @@ import { DeploymentStepExecutionError } from '@src/common/types';
 import { LogLevel } from '@generated/client';
 
 jest.mock('fs/promises', () => ({
-  mkdtemp: jest.fn().mockResolvedValue('/tmp/builds-12345'),
   rm: jest.fn().mockResolvedValue(undefined),
 }));
 
@@ -27,7 +26,7 @@ const mockCtx = (
       },
     },
     environment: { branch: 'main' },
-    workspace: '',
+    workspace: WORKSPACE,
   }) as DeploymentContext;
 
 describe('CloneRepositoryStep', () => {
@@ -39,7 +38,6 @@ describe('CloneRepositoryStep', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    (mkdtemp as jest.Mock).mockResolvedValue(WORKSPACE);
     (rm as jest.Mock).mockResolvedValue(undefined);
 
     command = { gitClone: jest.fn() };
@@ -57,7 +55,6 @@ describe('CloneRepositoryStep', () => {
 
     await step.execute(mockCtx());
 
-    expect(mkdtemp).toHaveBeenCalledWith(expect.stringContaining('builds-'));
     expect(command.gitClone).toHaveBeenCalledWith(
       'https://github.com/owner/repo',
       'main',
