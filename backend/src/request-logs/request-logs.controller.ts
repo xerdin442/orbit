@@ -9,9 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import type { RequestLog } from '@generated/client';
 import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
-import type { AuthenticatedRequest } from '@src/common/types';
+import type { AuthenticatedRequest, RequestLogView } from '@src/common/types';
 import { RequestLogsService } from './request-logs.service';
 import { FilterRequestLogsDto } from './dto/request-log.dto';
 
@@ -52,14 +51,14 @@ export class RequestLogsController {
     }, 15_000);
 
     const sent = new Set<string>();
-    const send = (entry: RequestLog) => {
+    const send = (entry: RequestLogView) => {
       if (sent.has(entry.id)) return;
       sent.add(entry.id);
       res.write(`data: ${JSON.stringify(entry)}\n\n`);
     };
 
     let replaying = true;
-    const pending: RequestLog[] = [];
+    const pending: RequestLogView[] = [];
 
     const subscription = stream.subscribe({
       next: (entry) => (replaying ? pending.push(entry) : send(entry)),

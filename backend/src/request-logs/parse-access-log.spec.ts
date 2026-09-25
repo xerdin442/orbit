@@ -139,6 +139,21 @@ describe('parseAccessLogLine', () => {
     }
   });
 
+  it('drops WordPress REST and phpinfo probes made against the site root', () => {
+    const line = (uri: string) =>
+      JSON.stringify({
+        logger: 'http.log.access',
+        ts: 1756334364.682,
+        request: { method: 'POST', host: 'app.example.com', uri },
+        status: 404,
+        duration: 0.01,
+      });
+
+    expect(parseAccessLogLine(line('/?rest_route=%2Fbatch%2Fv1'))).toBeNull();
+    expect(parseAccessLogLine(line('/?phpinfo=1'))).toBeNull();
+    expect(parseAccessLogLine(line('/?page=2'))).not.toBeNull();
+  });
+
   it('keeps real navigations', () => {
     const line = JSON.stringify({
       logger: 'http.log.access',
@@ -349,6 +364,49 @@ describe('parseAccessLogLine', () => {
   });
 });
 
+describe('clientIp extraction', () => {
+  it('prefers client_ip over remote_ip', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'GET',
+        host: 'app.example.com',
+        uri: '/',
+        client_ip: '203.0.113.5',
+        remote_ip: '10.0.0.1',
+      },
+      status: 200,
+      duration: 0.01,
+    });
+
+    expect(parseAccessLogLine(line)?.clientIp).toBe('203.0.113.5');
+  });
+
+  it('falls back to remote_ip when client_ip is absent', () => {
+    const line = JSON.stringify({
+      logger: 'http.log.access',
+      request: {
+        method: 'GET',
+        host: 'app.example.com',
+        uri: '/',
+        remote_ip: '10.0.0.1',
+      },
+      status: 200,
+      duration: 0.01,
+    });
+
+    expect(parseAccessLogLine(line)?.clientIp).toBe('10.0.0.1');
+  });
+
+  it('returns undefined for an unparseable or non-access-log line', () => {
+    expect(parseAccessLogLine('not json')?.clientIp).toBeUndefined();
+    expect(
+      parseAccessLogLine(JSON.stringify({ logger: 'http.log.error' }))
+        ?.clientIp,
+    ).toBeUndefined();
+  });
+});
+
 describe('isNoiseRequest', () => {
   it('flags framework internals', () => {
     expect(isNoiseRequest('/_next/static/chunks/main.js')).toBe(true);
@@ -404,11 +462,15 @@ describe('isNoiseRequest', () => {
     expect(isNoiseRequest('/service-account.json')).toBe(true);
     expect(isNoiseRequest('/app/service-account.json')).toBe(true);
     expect(
-      isNoiseRequest('/root/.config/gcloud/application_default_credentials.json'),
+      isNoiseRequest(
+        '/root/.config/gcloud/application_default_credentials.json',
+      ),
     ).toBe(true);
     expect(isNoiseRequest('/root/.config/gcloud/credentials.db')).toBe(true);
     expect(
-      isNoiseRequest('/home/node/.config/gcloud/application_default_credentials.json'),
+      isNoiseRequest(
+        '/home/node/.config/gcloud/application_default_credentials.json',
+      ),
     ).toBe(true);
   });
 
@@ -420,17 +482,98 @@ describe('isNoiseRequest', () => {
     expect(isNoiseRequest('/feed.xml')).toBe(false);
   });
 
+  it('flags any dot-file or dot-directory probe', () => {
+    expect(isNoiseRequest('/.svn/entries')).toBe(true);
+    expect(isNoiseRequest('/.svn/wc.db')).toBe(true);
+    expect(isNoiseRequest('/.ssh/id_rsa')).toBe(true);
+    expect(isNoiseRequest('/.kube/config')).toBe(true);
+    expect(isNoiseRequest('/.terraform/terraform.tfstate')).toBe(true);
+    expect(isNoiseRequest('/.github/workflows/ci.yml')).toBe(true);
+    expect(isNoiseRequest('/.idea/webServers.xml')).toBe(true);
+    expect(isNoiseRequest('/.claude/settings.json')).toBe(true);
+    expect(isNoiseRequest('/.anthropic/config.json')).toBe(true);
+    expect(isNoiseRequest('/.netrc')).toBe(true);
+    expect(isNoiseRequest('/.env-sample')).toBe(true);
+    expect(isNoiseRequest('/.env~')).toBe(true);
+    expect(isNoiseRequest('/.environment')).toBe(true);
+    expect(isNoiseRequest('/.wp-config.php.swp')).toBe(true);
+  });
+
+  it('flags server-side script and config/secret file probes', () => {
+    expect(isNoiseRequest('/xmlrpc.php')).toBe(true);
+    expect(isNoiseRequest('/phpinfo.php')).toBe(true);
+    expect(isNoiseRequest('/admin/phpinfo.php')).toBe(true);
+    expect(isNoiseRequest('/config/database.yml')).toBe(true);
+    expect(isNoiseRequest('/docker-compose.yml')).toBe(true);
+    expect(isNoiseRequest('/serverless.yaml')).toBe(true);
+    expect(isNoiseRequest('/netlify.toml')).toBe(true);
+    expect(isNoiseRequest('/settings.py')).toBe(true);
+    expect(isNoiseRequest('/config/environment.rb')).toBe(true);
+    expect(isNoiseRequest('/database.sql')).toBe(true);
+    expect(isNoiseRequest('/db.bak')).toBe(true);
+    expect(isNoiseRequest('/terraform.tfstate')).toBe(true);
+    expect(isNoiseRequest('/terraform.tfstate.backup')).toBe(true);
+    expect(isNoiseRequest('/terraform.tfvars')).toBe(true);
+    expect(isNoiseRequest('/privkey.pem')).toBe(true);
+    expect(isNoiseRequest('/s3.key')).toBe(true);
+    expect(isNoiseRequest('/composer.lock')).toBe(true);
+    expect(isNoiseRequest('/stripe/webhook_secret.env')).toBe(true);
+  });
+
+  it('flags secret-bearing JSON and credential file names', () => {
+    expect(isNoiseRequest('/aws.json')).toBe(true);
+    expect(isNoiseRequest('/config/aws.json')).toBe(true);
+    expect(isNoiseRequest('/aws-credentials.json')).toBe(true);
+    expect(isNoiseRequest('/stripe.json')).toBe(true);
+    expect(isNoiseRequest('/plugins/payments/stripe.json')).toBe(true);
+    expect(isNoiseRequest('/credentials.json')).toBe(true);
+    expect(isNoiseRequest('/client_secret.json')).toBe(true);
+    expect(isNoiseRequest('/service-account-credentials.json')).toBe(true);
+    expect(isNoiseRequest('/appsettings.Production.json')).toBe(true);
+    expect(isNoiseRequest('/amplify/team-provider-info.json')).toBe(true);
+    expect(isNoiseRequest('/claude_desktop_config.json')).toBe(true);
+    expect(isNoiseRequest('/sftp.json')).toBe(true);
+    expect(isNoiseRequest('/terraform/terraform.tfvars.json')).toBe(true);
+    expect(isNoiseRequest('/aws/s3/credentials')).toBe(true);
+    expect(isNoiseRequest('/s3/credentials')).toBe(true);
+    expect(isNoiseRequest('/id_rsa')).toBe(true);
+    expect(isNoiseRequest('/Dockerfile')).toBe(true);
+    expect(isNoiseRequest('/phpinfo')).toBe(true);
+    expect(isNoiseRequest('/nginx-status')).toBe(true);
+  });
+
+  it('flags robots.txt crawler hits', () => {
+    expect(isNoiseRequest('/robots.txt')).toBe(true);
+    expect(isNoiseRequest('/blog/robots.txt')).toBe(true);
+    expect(isNoiseRequest('/ROBOTS.TXT')).toBe(true);
+    expect(isNoiseRequest('/robots.txt.bak')).toBe(true);
+    expect(isNoiseRequest('/my-robots.txt')).toBe(false);
+  });
+
+  it('flags framework debug endpoints and CMS subdirectory probes', () => {
+    expect(isNoiseRequest('/_ignition/execute-solution')).toBe(true);
+    expect(isNoiseRequest('/_profiler/phpinfo')).toBe(true);
+    expect(isNoiseRequest('/symfony/_profiler/phpinfo')).toBe(true);
+    expect(isNoiseRequest('/cgi-bin/printenv.pl')).toBe(true);
+    expect(isNoiseRequest('/_darcs/prefs/binaries')).toBe(true);
+    expect(isNoiseRequest('/wordpress/')).toBe(true);
+  });
+
   it('does not flag application routes', () => {
     expect(isNoiseRequest('/')).toBe(false);
     expect(isNoiseRequest('/environment')).toBe(false);
-    expect(isNoiseRequest('/.environment')).toBe(false);
+    expect(isNoiseRequest('/api/stripe/webhook')).toBe(false);
+    expect(isNoiseRequest('/api/credentials')).toBe(false);
+    expect(isNoiseRequest('/settings')).toBe(false);
+    expect(isNoiseRequest('/settings.json')).toBe(false);
+    expect(isNoiseRequest('/blog/')).toBe(false);
+    expect(isNoiseRequest('/feed')).toBe(false);
     expect(isNoiseRequest('/gitlab')).toBe(false);
     expect(isNoiseRequest('/%E0%A4%A')).toBe(false);
     expect(isNoiseRequest('/login')).toBe(false);
     expect(isNoiseRequest('/api/users')).toBe(false);
     expect(isNoiseRequest('/api/users.json')).toBe(false);
     expect(isNoiseRequest('/sitemap.xml')).toBe(false);
-    expect(isNoiseRequest('/robots.txt')).toBe(false);
     expect(isNoiseRequest('/reports/2024.q1')).toBe(false);
     expect(isNoiseRequest('/config.json')).toBe(false);
     expect(isNoiseRequest('/api/config')).toBe(false);

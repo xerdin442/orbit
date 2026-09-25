@@ -185,6 +185,7 @@ model RequestLog {
   statusCode Int
   durationMs Int
   hostname   String
+  clientIp   String?
 
   environmentId String
   environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
@@ -192,6 +193,7 @@ model RequestLog {
   @@index([environmentId])
   @@index([environmentId, timestamp])
   @@index([environmentId, path])
+  @@index([clientIp, timestamp])
 }
 
 model Deployment {
