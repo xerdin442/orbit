@@ -1,13 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import { Prisma, type RequestLog } from '@generated/client';
+import { Prisma } from '@generated/client';
 import { DbService } from '@src/db/db.service';
 import type {
   PaginatedResult,
   ParsedAccessLogLine,
+  RequestLogView,
   StatusClass,
 } from '@src/common/types';
 import type { FilterRequestLogsDto } from './dto/request-log.dto';
+
+const PUBLIC_FIELDS = { omit: { clientIp: true } } as const;
 
 function statusClassRange(statusClass: StatusClass): {
   gte: number;
@@ -19,20 +22,21 @@ function statusClassRange(statusClass: StatusClass): {
 
 @Injectable()
 export class RequestLogsService {
-  private readonly streams = new Map<string, Subject<RequestLog>>();
+  private readonly streams = new Map<string, Subject<RequestLogView>>();
 
   constructor(private readonly db: DbService) {}
 
   async append(
     environmentId: string,
     entry: ParsedAccessLogLine,
-  ): Promise<RequestLog> {
+  ): Promise<RequestLogView> {
     const created = await this.db.requestLog.create({
       data: {
         environmentId,
         ...entry,
         method: entry.method.toUpperCase(),
       },
+      ...PUBLIC_FIELDS,
     });
 
     const stream = this.streams.get(environmentId);
@@ -41,19 +45,37 @@ export class RequestLogsService {
     return created;
   }
 
+  async deleteRecentByClientIp(
+    clientIp: string,
+    windowMs: number,
+  ): Promise<number> {
+    const { count } = await this.db.requestLog.deleteMany({
+      where: {
+        clientIp,
+        timestamp: { gte: new Date(Date.now() - windowMs) },
+      },
+    });
+
+    return count;
+  }
+
   async subscribeForUser(
     environmentId: string,
     userId: string,
-  ): Promise<Subject<RequestLog>> {
+  ): Promise<Subject<RequestLogView>> {
     await this.verifyEnvironmentOwnership(environmentId, userId);
     return this.subscribe(environmentId);
   }
 
-  async getRecent(environmentId: string, limit = 20): Promise<RequestLog[]> {
+  async getRecent(
+    environmentId: string,
+    limit = 20,
+  ): Promise<RequestLogView[]> {
     const rows = await this.db.requestLog.findMany({
       where: { environmentId },
       orderBy: { timestamp: 'desc' },
       take: limit,
+      ...PUBLIC_FIELDS,
     });
 
     return rows.reverse();
@@ -63,7 +85,7 @@ export class RequestLogsService {
     environmentId: string,
     userId: string,
     filters: FilterRequestLogsDto,
-  ): Promise<PaginatedResult<RequestLog>> {
+  ): Promise<PaginatedResult<RequestLogView>> {
     await this.verifyEnvironmentOwnership(environmentId, userId);
 
     const page = filters?.page ?? 1;
@@ -91,6 +113,7 @@ export class RequestLogsService {
         orderBy: { timestamp: 'desc' },
         take: limit,
         skip: (page - 1) * limit,
+        ...PUBLIC_FIELDS,
       }),
       this.db.requestLog.count({ where }),
     ]);
@@ -108,11 +131,11 @@ export class RequestLogsService {
     };
   }
 
-  private subscribe(environmentId: string): Subject<RequestLog> {
+  private subscribe(environmentId: string): Subject<RequestLogView> {
     const existing = this.streams.get(environmentId);
     if (existing) return existing;
 
-    const stream = new Subject<RequestLog>();
+    const stream = new Subject<RequestLogView>();
     this.streams.set(environmentId, stream);
     return stream;
   }

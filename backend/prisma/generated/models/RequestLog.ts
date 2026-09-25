@@ -45,6 +45,7 @@ export type RequestLogMinAggregateOutputType = {
   statusCode: number | null
   durationMs: number | null
   hostname: string | null
+  clientIp: string | null
   environmentId: string | null
 }
 
@@ -57,6 +58,7 @@ export type RequestLogMaxAggregateOutputType = {
   statusCode: number | null
   durationMs: number | null
   hostname: string | null
+  clientIp: string | null
   environmentId: string | null
 }
 
@@ -69,6 +71,7 @@ export type RequestLogCountAggregateOutputType = {
   statusCode: number
   durationMs: number
   hostname: number
+  clientIp: number
   environmentId: number
   _all: number
 }
@@ -93,6 +96,7 @@ export type RequestLogMinAggregateInputType = {
   statusCode?: true
   durationMs?: true
   hostname?: true
+  clientIp?: true
   environmentId?: true
 }
 
@@ -105,6 +109,7 @@ export type RequestLogMaxAggregateInputType = {
   statusCode?: true
   durationMs?: true
   hostname?: true
+  clientIp?: true
   environmentId?: true
 }
 
@@ -117,6 +122,7 @@ export type RequestLogCountAggregateInputType = {
   statusCode?: true
   durationMs?: true
   hostname?: true
+  clientIp?: true
   environmentId?: true
   _all?: true
 }
@@ -216,6 +222,7 @@ export type RequestLogGroupByOutputType = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp: string | null
   environmentId: string
   _count: RequestLogCountAggregateOutputType | null
   _avg: RequestLogAvgAggregateOutputType | null
@@ -251,6 +258,7 @@ export type RequestLogWhereInput = {
   statusCode?: Prisma.IntFilter<"RequestLog"> | number
   durationMs?: Prisma.IntFilter<"RequestLog"> | number
   hostname?: Prisma.StringFilter<"RequestLog"> | string
+  clientIp?: Prisma.StringNullableFilter<"RequestLog"> | string | null
   environmentId?: Prisma.StringFilter<"RequestLog"> | string
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
 }
@@ -264,6 +272,7 @@ export type RequestLogOrderByWithRelationInput = {
   statusCode?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   hostname?: Prisma.SortOrder
+  clientIp?: Prisma.SortOrderInput | Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   environment?: Prisma.EnvironmentOrderByWithRelationInput
 }
@@ -280,6 +289,7 @@ export type RequestLogWhereUniqueInput = Prisma.AtLeast<{
   statusCode?: Prisma.IntFilter<"RequestLog"> | number
   durationMs?: Prisma.IntFilter<"RequestLog"> | number
   hostname?: Prisma.StringFilter<"RequestLog"> | string
+  clientIp?: Prisma.StringNullableFilter<"RequestLog"> | string | null
   environmentId?: Prisma.StringFilter<"RequestLog"> | string
   environment?: Prisma.XOR<Prisma.EnvironmentScalarRelationFilter, Prisma.EnvironmentWhereInput>
 }, "id">
@@ -293,6 +303,7 @@ export type RequestLogOrderByWithAggregationInput = {
   statusCode?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   hostname?: Prisma.SortOrder
+  clientIp?: Prisma.SortOrderInput | Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   _count?: Prisma.RequestLogCountOrderByAggregateInput
   _avg?: Prisma.RequestLogAvgOrderByAggregateInput
@@ -313,6 +324,7 @@ export type RequestLogScalarWhereWithAggregatesInput = {
   statusCode?: Prisma.IntWithAggregatesFilter<"RequestLog"> | number
   durationMs?: Prisma.IntWithAggregatesFilter<"RequestLog"> | number
   hostname?: Prisma.StringWithAggregatesFilter<"RequestLog"> | string
+  clientIp?: Prisma.StringNullableWithAggregatesFilter<"RequestLog"> | string | null
   environmentId?: Prisma.StringWithAggregatesFilter<"RequestLog"> | string
 }
 
@@ -325,6 +337,7 @@ export type RequestLogCreateInput = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp?: string | null
   environment: Prisma.EnvironmentCreateNestedOneWithoutRequestLogsInput
 }
 
@@ -337,6 +350,7 @@ export type RequestLogUncheckedCreateInput = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp?: string | null
   environmentId: string
 }
 
@@ -349,6 +363,7 @@ export type RequestLogUpdateInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutRequestLogsNestedInput
 }
 
@@ -361,6 +376,7 @@ export type RequestLogUncheckedUpdateInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -373,6 +389,7 @@ export type RequestLogCreateManyInput = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp?: string | null
   environmentId: string
 }
 
@@ -385,6 +402,7 @@ export type RequestLogUpdateManyMutationInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RequestLogUncheckedUpdateManyInput = {
@@ -396,6 +414,7 @@ export type RequestLogUncheckedUpdateManyInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
@@ -418,6 +437,7 @@ export type RequestLogCountOrderByAggregateInput = {
   statusCode?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   hostname?: Prisma.SortOrder
+  clientIp?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
 }
 
@@ -435,6 +455,7 @@ export type RequestLogMaxOrderByAggregateInput = {
   statusCode?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   hostname?: Prisma.SortOrder
+  clientIp?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
 }
 
@@ -447,6 +468,7 @@ export type RequestLogMinOrderByAggregateInput = {
   statusCode?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   hostname?: Prisma.SortOrder
+  clientIp?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
 }
 
@@ -506,6 +528,7 @@ export type RequestLogCreateWithoutEnvironmentInput = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp?: string | null
 }
 
 export type RequestLogUncheckedCreateWithoutEnvironmentInput = {
@@ -517,6 +540,7 @@ export type RequestLogUncheckedCreateWithoutEnvironmentInput = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp?: string | null
 }
 
 export type RequestLogCreateOrConnectWithoutEnvironmentInput = {
@@ -557,6 +581,7 @@ export type RequestLogScalarWhereInput = {
   statusCode?: Prisma.IntFilter<"RequestLog"> | number
   durationMs?: Prisma.IntFilter<"RequestLog"> | number
   hostname?: Prisma.StringFilter<"RequestLog"> | string
+  clientIp?: Prisma.StringNullableFilter<"RequestLog"> | string | null
   environmentId?: Prisma.StringFilter<"RequestLog"> | string
 }
 
@@ -569,6 +594,7 @@ export type RequestLogCreateManyEnvironmentInput = {
   statusCode: number
   durationMs: number
   hostname: string
+  clientIp?: string | null
 }
 
 export type RequestLogUpdateWithoutEnvironmentInput = {
@@ -580,6 +606,7 @@ export type RequestLogUpdateWithoutEnvironmentInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RequestLogUncheckedUpdateWithoutEnvironmentInput = {
@@ -591,6 +618,7 @@ export type RequestLogUncheckedUpdateWithoutEnvironmentInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RequestLogUncheckedUpdateManyWithoutEnvironmentInput = {
@@ -602,6 +630,7 @@ export type RequestLogUncheckedUpdateManyWithoutEnvironmentInput = {
   statusCode?: Prisma.IntFieldUpdateOperationsInput | number
   durationMs?: Prisma.IntFieldUpdateOperationsInput | number
   hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  clientIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -615,6 +644,7 @@ export type RequestLogSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   statusCode?: boolean
   durationMs?: boolean
   hostname?: boolean
+  clientIp?: boolean
   environmentId?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["requestLog"]>
@@ -628,6 +658,7 @@ export type RequestLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   statusCode?: boolean
   durationMs?: boolean
   hostname?: boolean
+  clientIp?: boolean
   environmentId?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["requestLog"]>
@@ -641,6 +672,7 @@ export type RequestLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   statusCode?: boolean
   durationMs?: boolean
   hostname?: boolean
+  clientIp?: boolean
   environmentId?: boolean
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["requestLog"]>
@@ -654,10 +686,11 @@ export type RequestLogSelectScalar = {
   statusCode?: boolean
   durationMs?: boolean
   hostname?: boolean
+  clientIp?: boolean
   environmentId?: boolean
 }
 
-export type RequestLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "timestamp" | "method" | "path" | "query" | "statusCode" | "durationMs" | "hostname" | "environmentId", ExtArgs["result"]["requestLog"]>
+export type RequestLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "timestamp" | "method" | "path" | "query" | "statusCode" | "durationMs" | "hostname" | "clientIp" | "environmentId", ExtArgs["result"]["requestLog"]>
 export type RequestLogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
 }
@@ -682,6 +715,7 @@ export type $RequestLogPayload<ExtArgs extends runtime.Types.Extensions.Internal
     statusCode: number
     durationMs: number
     hostname: string
+    clientIp: string | null
     environmentId: string
   }, ExtArgs["result"]["requestLog"]>
   composites: {}
@@ -1115,6 +1149,7 @@ export interface RequestLogFieldRefs {
   readonly statusCode: Prisma.FieldRef<"RequestLog", 'Int'>
   readonly durationMs: Prisma.FieldRef<"RequestLog", 'Int'>
   readonly hostname: Prisma.FieldRef<"RequestLog", 'String'>
+  readonly clientIp: Prisma.FieldRef<"RequestLog", 'String'>
   readonly environmentId: Prisma.FieldRef<"RequestLog", 'String'>
 }
     

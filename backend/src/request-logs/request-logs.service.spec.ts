@@ -2,8 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { RequestLogsService } from './request-logs.service';
 import { DbService } from '@src/db/db.service';
-import type { ParsedAccessLogLine } from '@src/common/types';
-import type { RequestLog } from '@generated/client';
+import type { ParsedAccessLogLine, RequestLogView } from '@src/common/types';
 
 describe('RequestLogsService', () => {
   let service: RequestLogsService;
@@ -15,6 +14,7 @@ describe('RequestLogsService', () => {
         create: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+        deleteMany: jest.fn(),
       },
       environment: { findFirst: jest.fn() },
     } as unknown as jest.Mocked<Pick<DbService, 'requestLog' | 'environment'>>;
@@ -35,7 +35,7 @@ describe('RequestLogsService', () => {
     hostname: 'app.example.com',
   };
 
-  const created: RequestLog = {
+  const created: RequestLogView = {
     id: 'req-1',
     environmentId: 'env-1',
     timestamp: new Date(),
@@ -48,7 +48,7 @@ describe('RequestLogsService', () => {
       db.requestLog.create = jest.fn().mockResolvedValue(created);
       db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
 
-      const received: RequestLog[] = [];
+      const received: RequestLogView[] = [];
       const subscribed = await service.subscribeForUser('env-1', 'user-1');
       subscribed.subscribe((e) => received.push(e));
 
@@ -56,6 +56,7 @@ describe('RequestLogsService', () => {
 
       expect(db.requestLog.create).toHaveBeenCalledWith({
         data: { environmentId: 'env-1', ...line, method: 'GET' },
+        omit: { clientIp: true },
       });
       expect(received).toHaveLength(1);
       expect(received[0].path).toBe('/api/users');
@@ -74,6 +75,40 @@ describe('RequestLogsService', () => {
 
       expect(db.requestLog.create).toHaveBeenCalledWith({
         data: { environmentId: 'env-1', ...line, method: 'GET' },
+        omit: { clientIp: true },
+      });
+    });
+
+    it('stores the client IP but never returns it to subscribers', async () => {
+      db.requestLog.create = jest.fn().mockResolvedValue(created);
+
+      await service.append('env-1', { ...line, clientIp: '203.0.113.5' });
+
+      expect(db.requestLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ clientIp: '203.0.113.5' }),
+        omit: { clientIp: true },
+      });
+    });
+  });
+
+  describe('deleteRecentByClientIp', () => {
+    afterEach(() => jest.useRealTimers());
+
+    it('deletes only rows from that IP inside the window, across environments', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-09-25T12:00:30Z'));
+      db.requestLog.deleteMany = jest.fn().mockResolvedValue({ count: 7 });
+
+      const removed = await service.deleteRecentByClientIp(
+        '203.0.113.5',
+        15_000,
+      );
+
+      expect(removed).toBe(7);
+      expect(db.requestLog.deleteMany).toHaveBeenCalledWith({
+        where: {
+          clientIp: '203.0.113.5',
+          timestamp: { gte: new Date('2026-09-25T12:00:15Z') },
+        },
       });
     });
   });
@@ -96,7 +131,7 @@ describe('RequestLogsService', () => {
 
   describe('getRecent', () => {
     it('returns the most recent entries in chronological (oldest-first) order', async () => {
-      const newer: RequestLog = { ...created, id: 'req-2', path: '/newer' };
+      const newer: RequestLogView = { ...created, id: 'req-2', path: '/newer' };
       db.requestLog.findMany = jest.fn().mockResolvedValue([newer, created]);
 
       const result = await service.getRecent('env-1');
@@ -105,6 +140,7 @@ describe('RequestLogsService', () => {
         where: { environmentId: 'env-1' },
         orderBy: { timestamp: 'desc' },
         take: 20,
+        omit: { clientIp: true },
       });
       expect(result).toEqual([created, newer]);
     });
@@ -143,6 +179,7 @@ describe('RequestLogsService', () => {
         orderBy: { timestamp: 'desc' },
         take: 20,
         skip: 0,
+        omit: { clientIp: true },
       });
       expect(result.meta).toEqual({
         total: 1,

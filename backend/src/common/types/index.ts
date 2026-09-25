@@ -5,6 +5,7 @@ import type {
   Source,
   Environment,
   Prisma,
+  RequestLog,
 } from '@generated/client';
 
 export interface AuthenticatedRequest extends Request {
@@ -89,7 +90,10 @@ export interface ParsedAccessLogLine {
   statusCode: number;
   durationMs: number;
   timestamp?: Date;
+  clientIp?: string;
 }
+
+export type RequestLogView = Omit<RequestLog, 'clientIp'>;
 
 export const STATUS_CLASSES = ['2xx', '3xx', '4xx', '5xx'] as const;
 export type StatusClass = (typeof STATUS_CLASSES)[number];
