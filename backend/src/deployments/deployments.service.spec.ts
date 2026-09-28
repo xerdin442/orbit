@@ -252,6 +252,28 @@ describe('DeploymentsService', () => {
       );
     });
 
+    it('throws if the target failed, even though it is inactive', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        lifecycleStatus: LifecycleStatus.inactive,
+        buildStatus: BuildStatus.failed,
+      });
+      await expect(service.findForRollback('dep-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('throws if the target is the currently active deployment', async () => {
+      db.deployment.findFirst = jest.fn().mockResolvedValue({
+        id: 'dep-1',
+        lifecycleStatus: LifecycleStatus.active,
+        buildStatus: BuildStatus.ready,
+      });
+      await expect(service.findForRollback('dep-1', 'user-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
     it('creates a rollback deployment when the target is ready/inactive', async () => {
       db.deployment.findFirst = jest.fn().mockResolvedValue({
         id: 'dep-1',
