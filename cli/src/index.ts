@@ -12,6 +12,7 @@ import {
   registerInfoCommand,
   registerRedeployCommand,
   registerRollbackCommand,
+  registerAbortCommand,
 } from "./commands/index.js";
 import { setApiUrl } from "./lib/config.js";
 
@@ -41,5 +42,6 @@ registerDomainCommands(program);
 registerInfoCommand(program);
 registerRedeployCommand(program);
 registerRollbackCommand(program);
+registerAbortCommand(program);
 
 program.parse();

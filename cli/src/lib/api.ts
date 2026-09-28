@@ -1,5 +1,4 @@
 import { ensureAuth, getApiUrl } from "./config.js";
-import { error } from "./format.js";
 
 interface ApiError {
   error?: { message?: string };
@@ -36,12 +35,12 @@ async function request<T>(
   });
 
   if (response.status === 401) {
-    error(
+    throw new OrbitApiError(
       authHeaders
         ? "Invalid or unauthorized project access token."
-        : "Not authenticated. Run `orbit auth login`.",
+        : "Session expired or invalid. Run `orbit auth login`.",
+      401,
     );
-    process.exit(1);
   }
 
   if (!response.ok) {

@@ -99,6 +99,8 @@ The interactive flow asks for:
 5. **.env file** _(optional)_ — path to a `.env` file to preload environment variables
 6. **Deploy now?** — trigger the first deployment immediately
 
+After the project is created, the CLI prints its project access token (needed for [CI/CD deploys](#deploying-from-cicd)). Store it as a secret right away; you can also find it later on the project's page in the dashboard.
+
 At the end, the CLI links your current directory to the project. Subsequent commands (`deploy`, `logs`, `list`, `env`, `domains`, `info`) work without specifying project IDs.
 
 ### Linking an existing project
@@ -191,7 +193,7 @@ orbit env ls
 orbit env set DATABASE_URL "postgresql://localhost:5432/db"
 ```
 
-This triggers an automatic redeploy of your application.
+This triggers an automatic redeploy of your application. If nothing is live yet, the change is saved and applies on the next deploy.
 
 ### Delete a variable
 
@@ -199,11 +201,11 @@ This triggers an automatic redeploy of your application.
 orbit env rm DATABASE_URL
 ```
 
-You'll be asked to confirm, since this triggers a redeploy.
+You'll be asked to confirm. Like `set`, this triggers a redeploy if something is live.
 
 ### Import from a .env file
 
-Bulk-import variables are parsed from a `.env` file. Existing keys are updated, new keys are created — all in a single deployment:
+Bulk-import variables are parsed from a `.env` file. Existing keys are updated, new keys are created — all in a single redeploy (reusing the live image), or a full deployment if nothing is live yet. Variables with empty values are skipped with a warning, and if a key appears more than once, the last value wins:
 
 ```bash
 orbit env import .env
@@ -216,7 +218,7 @@ Importing 3 variables...
 DATABASE_URL ✔ (updated)
 REDIS_URL ✔ (new)
 SECRET_KEY ✔ (new)
-Import complete. Deployment triggered: dep-abc123
+Import complete. Redeploy triggered: dep-abc123
 
 Run `orbit logs dep-abc123` to follow.
 ```
@@ -242,7 +244,10 @@ The CLI displays the exact DNS record to configure:
   Type:  CNAME
   Host:  app
   Value: 192.168.1.55.sslip.io
+⚠ The record must not be proxied. If your DNS provider offers a proxy (e.g. Cloudflare's orange cloud), set it to DNS only.
 ```
+
+For a multi-level subdomain such as `api.staging.example.com`, the host is everything left of the apex (`api.staging`).
 
 ### Remove a domain
 
@@ -261,11 +266,12 @@ orbit info
 ```bash
 Project:     my-app
 Environment: production (branch: main)
-Status:      [ready] (30/07/2026, 14:35:22)
-Commit:      abc1234
+Live:        [ready] abc1234 (30/07/2026, 14:35:22)
 URLs:
              https://my-app.192.168.1.55.sslip.io
 ```
+
+`Live` is the deployment currently serving traffic. If a newer deployment is in progress or failed, it's shown on an extra `Latest:` line.
 
 If no domains are active yet:
 
@@ -295,7 +301,7 @@ Rollback to a previous deployment:
 orbit rollback
 ```
 
-This automatically picks the second-to-last deployment. To rollback to a specific one:
+This automatically picks the most recent successful deployment that isn't currently live. Only successful, inactive deployments can be rolled back to. To rollback to a specific one:
 
 ```bash
 orbit rollback <deployment-id>
@@ -306,6 +312,22 @@ Add `--follow` to stream logs:
 ```bash
 orbit rollback --follow
 ```
+
+## Abort
+
+Stop an in-progress deployment:
+
+```bash
+orbit abort
+```
+
+This targets the latest deployment of the linked environment, and fails if it has already finished. To abort a specific one:
+
+```bash
+orbit abort <deployment-id>
+```
+
+You'll be asked to confirm. Only deployments that are still in progress (pending, cloning, building or deploying) can be aborted.
 
 ## Complete Workflow
 
@@ -374,3 +396,4 @@ orbit env --help
 | `orbit info` | Show project and deployment status |
 | `orbit redeploy` | Redeploy with existing image |
 | `orbit rollback [id]` | Rollback to a previous deployment |
+| `orbit abort [id]` | Abort an in-progress deployment |

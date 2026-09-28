@@ -28,6 +28,7 @@ interface CreatedProject {
   project: {
     id: string;
     name: string;
+    secretAccessToken: string;
     source: {
       repositoryUrl: string;
       defaultBranch: string;
@@ -166,6 +167,11 @@ export function registerInitCommand(program: Command) {
         });
 
         success(`Project "${name}" created.`);
+        console.log(
+          `\nFor CI deploys, store this project access token as a secret:\n` +
+            `  ${created.project.secretAccessToken}\n` +
+            `Then run: orbit deploy --token <token> --project ${created.project.id}\n`,
+        );
 
         const { deploy } = await inquirer.prompt<{ deploy: boolean }>([
           {
