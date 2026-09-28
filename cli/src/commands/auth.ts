@@ -1,12 +1,6 @@
 import type { Command } from "commander";
 import { api, OrbitApiError } from "../lib/api.js";
-import {
-  clearAll,
-  setToken,
-  clearToken,
-  ensureAuth,
-  setApiUrl,
-} from "../lib/config.js";
+import { clearAll, setToken, clearToken, ensureAuth } from "../lib/config.js";
 import { success, error, info } from "../lib/format.js";
 import { startAuthServer } from "../lib/auth-server.js";
 
@@ -23,12 +17,8 @@ export function registerAuthCommands(program: Command) {
   auth
     .command("login")
     .description("Authenticate with GitHub")
-    .option("--api-url <url>", "Orbit API URL")
-    .action(async (options: { apiUrl?: string }) => {
-      if (options.apiUrl) {
-        setApiUrl(options.apiUrl);
-      }
-
+    .option("--api-url <url>", "Orbit API URL (saved for later commands)")
+    .action(async () => {
       try {
         const token = await startAuthServer();
         setToken(token);
