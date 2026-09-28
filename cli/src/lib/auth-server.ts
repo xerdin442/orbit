@@ -4,12 +4,29 @@ import {
   type ServerResponse,
 } from "node:http";
 import type { AddressInfo } from "node:net";
-import { exec } from "node:child_process";
-import { getApiUrl } from "./config.js";
+import { spawn } from "node:child_process";
+import { apiFetch } from "./api.js";
+import { info } from "./format.js";
+
+const GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize?";
+
+function openBrowser(url: string) {
+  const [command, args]: [string, string[]] =
+    process.platform === "darwin"
+      ? ["open", [url]]
+      : process.platform === "win32"
+        ? // Opens the default browser without going through cmd.exe.
+          ["rundll32", ["url.dll,FileProtocolHandler", url]]
+        : ["xdg-open", [url]];
+
+  spawn(command, args, { stdio: "ignore", detached: true })
+    .on("error", () => {})
+    .unref();
+}
 
 async function fetchLoginUrl(redirectUri: string): Promise<string> {
-  const response = await fetch(
-    `${getApiUrl()}/auth/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
+  const response = await apiFetch(
+    `/auth/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
   );
 
   if (!response.ok) {
@@ -79,18 +96,17 @@ export function startAuthServer(): Promise<string> {
         return;
       }
 
-      const platform = process.platform;
-      const openCmd =
-        platform === "darwin"
-          ? "open"
-          : platform === "win32"
-            ? 'start ""'
-            : "xdg-open";
+      if (!loginUrl.startsWith(GITHUB_AUTHORIZE_URL)) {
+        finish(
+          new Error("Could not start login: unexpected authorization URL"),
+        );
+        return;
+      }
 
-      exec(`${openCmd} "${loginUrl}"`, () => {});
+      openBrowser(loginUrl);
 
       console.log(`Opening browser for authentication...`);
-      console.log(`If the browser doesn't open, visit:\n${loginUrl}`);
+      console.log(`If the browser doesn't open, visit:\n${info(loginUrl)}`);
     });
   });
 }

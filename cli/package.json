@@ -1,19 +1,46 @@
 {
-  "name": "orbit-cli",
+  "name": "@xerdin442/orbit-cli",
+  "version": "1.0.0-rc.1",
+  "description": "CLI for deploying apps on Orbit, a self-hosted PaaS",
   "type": "module",
-  "version": "1.0.0",
-  "description": "CLI for deploying apps on Orbit",
   "bin": {
     "orbit": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.12"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "typecheck": "tsc --noEmit",
+    "prepack": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "orbit",
+    "paas",
+    "deploy",
+    "cli",
+    "self-hosted"
+  ],
+  "author": "Mudiakevwe Ovwurhughen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xerdin442/orbit.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/xerdin442/orbit/tree/main/cli#readme",
+  "bugs": {
+    "url": "https://github.com/xerdin442/orbit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "chalk": "^6.0.0",
     "commander": "^15.0.0",

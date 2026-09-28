@@ -14,20 +14,42 @@ import {
   registerRollbackCommand,
   registerAbortCommand,
 } from "./commands/index.js";
-import { setApiUrl } from "./lib/config.js";
+import { createRequire } from "node:module";
+import { getApiUrl, setApiUrl } from "./lib/config.js";
+
+const { version } = createRequire(import.meta.url)("../package.json") as {
+  version: string;
+};
+
+// Commands that only touch local config and work without an API URL
+const OFFLINE_COMMANDS = new Set(["auth logout", "auth reset"]);
 
 const program = new Command();
 
 program
   .name("orbit")
   .description("Deploy apps on Orbit — your self-hosted PaaS")
-  .version("1.0.0")
-  .option("--api-url <url>", "Orbit API URL", process.env.ORBIT_API_URL);
+  .version(version)
+  .option(
+    "--api-url <url>",
+    "Orbit API URL (saved for later commands; ORBIT_API_URL overrides it)",
+  );
 
-program.hook("preAction", async (thisCommand) => {
-  const opts = thisCommand.optsWithGlobals() as { apiUrl?: string };
+program.hook("preAction", (_thisCommand, actionCommand) => {
+  const opts = actionCommand.optsWithGlobals() as { apiUrl?: string };
   if (opts.apiUrl) {
     setApiUrl(opts.apiUrl);
+  }
+
+  const parent = actionCommand.parent;
+  const fullName =
+    parent && parent !== program
+      ? `${parent.name()} ${actionCommand.name()}`
+      : actionCommand.name();
+
+  // Display setup instructions if there is no default server
+  if (!OFFLINE_COMMANDS.has(fullName)) {
+    getApiUrl();
   }
 });
 

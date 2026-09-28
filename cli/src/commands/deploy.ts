@@ -64,34 +64,42 @@ export function registerDeployCommand(program: Command) {
     .option("-f, --follow", "Stream logs after triggering deployment")
     .option(
       "--token <secretAccessToken>",
-      "Project access token for CI/CD without authentication",
+      "Project access token for CI/CD without authentication (or set ORBIT_TOKEN)",
     )
-    .option("--project <projectId>", "Project ID (required with --token)")
+    .option(
+      "--project <projectId>",
+      "Project ID, required with a token (or set ORBIT_PROJECT_ID)",
+    )
     .action(
       async (options: {
         follow?: boolean;
         token?: string;
         project?: string;
       }) => {
+        const projectToken = options.token || process.env.ORBIT_TOKEN;
+        const projectId = options.project || process.env.ORBIT_PROJECT_ID;
+
         try {
           const spinner = ora("Triggering deployment...").start();
 
           let result: DeployResult;
           let jwt: string | undefined;
 
-          if (options.token) {
-            if (!options.project) {
+          if (projectToken) {
+            if (!projectId) {
               spinner.stop();
-              error("--project is required when using --token.");
+              error(
+                "A project ID is required with a project token: pass --project or set ORBIT_PROJECT_ID.",
+              );
               process.exit(1);
             }
 
             const branch = getCurrentBranch();
 
             result = await api.post<DeployResult>(
-              `/projects/${options.project}/deploy?branch=${encodeURIComponent(branch)}`,
+              `/projects/${projectId}/deploy?branch=${encodeURIComponent(branch)}`,
               {},
-              { "x-project-token": options.token },
+              { "x-project-token": projectToken },
             );
           } else {
             const { ctx, token } = ensureContext();
@@ -113,8 +121,8 @@ export function registerDeployCommand(program: Command) {
               await streamLogs(jwt, result.deploymentId);
             } else {
               await pollDeploymentStatus(
-                options.project!,
-                options.token!,
+                projectId!,
+                projectToken!,
                 result.deploymentId,
               );
             }

@@ -15,20 +15,32 @@ export class OrbitApiError extends Error {
   }
 }
 
+export async function apiFetch(
+  path: string,
+  init?: RequestInit,
+): Promise<Response> {
+  const apiUrl = getApiUrl();
+  try {
+    return await fetch(`${apiUrl}${path}`, init);
+  } catch {
+    throw new Error(
+      `Could not reach the Orbit API at ${apiUrl}. Check that the URL is correct and the server is running.`,
+    );
+  }
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
   authHeaders?: Record<string, string>,
 ): Promise<T> {
-  const url = `${getApiUrl()}${path}`;
-
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(authHeaders ?? { Authorization: `Bearer ${ensureAuth()}` }),
   };
 
-  const response = await fetch(url, {
+  const response = await apiFetch(path, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
