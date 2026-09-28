@@ -11,6 +11,26 @@ interface EnvVariable {
   value: string;
 }
 
+interface Environment {
+  currentDeploymentId: string | null;
+}
+
+async function hasLiveDeployment(
+  projectId: string,
+  environmentId: string,
+): Promise<boolean> {
+  const env = await api.get<Environment>(
+    `/projects/${projectId}/environments/${environmentId}`,
+  );
+  return !!env.currentDeploymentId;
+}
+
+function redeployNote(live: boolean): string {
+  return live
+    ? "Redeploy triggered."
+    : "This change will apply on the next deploy (nothing is live yet).";
+}
+
 export function registerEnvCommands(program: Command) {
   const env = program
     .command("env")
@@ -51,11 +71,19 @@ export function registerEnvCommands(program: Command) {
     .action(async (key: string, value: string) => {
       const { ctx } = ensureContext();
 
+      if (value === "") {
+        error(
+          "Value cannot be empty. Use `orbit env rm` to remove a variable.",
+        );
+        process.exit(1);
+      }
+
       try {
         const existing = await api.get<EnvVariable[]>(
           `/projects/${ctx.projectId}/environments/${ctx.environmentId}/variables`,
         );
         const existingVar = existing.find((v) => v.key === key);
+        const live = await hasLiveDeployment(ctx.projectId, ctx.environmentId);
 
         if (existingVar) {
           await api.patch(
@@ -69,7 +97,7 @@ export function registerEnvCommands(program: Command) {
           );
         }
 
-        success(`Variable "${key}" set. Redeploy triggered.`);
+        success(`Variable "${key}" set. ${redeployNote(live)}`);
       } catch (err) {
         error(err instanceof Error ? err.message : "Failed to set variable");
         process.exit(1);
@@ -87,6 +115,7 @@ export function registerEnvCommands(program: Command) {
           `/projects/${ctx.projectId}/environments/${ctx.environmentId}/variables`,
         );
         const existingVar = existing.find((v) => v.key === key);
+        const live = await hasLiveDeployment(ctx.projectId, ctx.environmentId);
 
         if (!existingVar) {
           error(`Variable "${key}" not found.`);
@@ -97,7 +126,7 @@ export function registerEnvCommands(program: Command) {
           {
             type: "confirm",
             name: "confirm",
-            message: `Delete "${key}"? This will trigger a redeploy.`,
+            message: `Delete "${key}"?${live ? " This will trigger a redeploy." : ""}`,
             default: false,
           },
         ]);
@@ -108,7 +137,7 @@ export function registerEnvCommands(program: Command) {
           `/projects/${ctx.projectId}/environments/variables/${existingVar.id}`,
         );
 
-        success(`Variable "${key}" deleted. Redeploy triggered.`);
+        success(`Variable "${key}" deleted. ${redeployNote(live)}`);
       } catch (err) {
         error(err instanceof Error ? err.message : "Failed to delete variable");
         process.exit(1);
@@ -123,7 +152,21 @@ export function registerEnvCommands(program: Command) {
 
       try {
         const content = await fs.readFile(filePath, "utf-8");
-        const vars = parseEnvFile(content);
+        const byKey = new Map<string, string>();
+        const empty: string[] = [];
+        for (const { key, value } of parseEnvFile(content)) {
+          if (value === "") {
+            empty.push(key);
+            byKey.delete(key);
+          } else {
+            byKey.set(key, value);
+          }
+        }
+        const vars = [...byKey].map(([key, value]) => ({ key, value }));
+
+        if (empty.length > 0) {
+          warn(`Skipping variables with empty values: ${empty.join(", ")}`);
+        }
 
         if (vars.length === 0) {
           error("No variables found in file.");
