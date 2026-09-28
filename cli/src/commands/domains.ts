@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import inquirer from "inquirer";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { success, error, printTable } from "../lib/format.js";
+import { success, error, warn, printTable } from "../lib/format.js";
 
 interface Domain {
   id: string;
@@ -64,6 +64,9 @@ export function registerDomainCommands(program: Command) {
         console.log(`  Type:  ${dns.recordType}`);
         console.log(`  Host:  ${dns.host}`);
         console.log(`  Value: ${dns.value}`);
+        warn(
+          "The record must not be proxied. If your DNS provider offers a proxy (e.g. Cloudflare's orange cloud), set it to DNS only.",
+        );
       } catch (err) {
         error(err instanceof Error ? err.message : "Failed to add domain");
         process.exit(1);

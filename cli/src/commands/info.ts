@@ -17,6 +17,7 @@ interface Environment {
   id: string;
   name: string;
   branch: string;
+  currentDeploymentId: string | null;
 }
 
 interface Deployment {
@@ -33,6 +34,11 @@ interface PaginatedDeployments {
 interface Domain {
   hostname: string;
   status: string;
+}
+
+function describe(d: Deployment): string {
+  const commit = d.commitSha ? ` ${shortSha(d.commitSha)}` : "";
+  return `${statusBadge(d.buildStatus)}${commit} (${formatTimestamp(d.createdAt)})`;
 }
 
 export function registerInfoCommand(program: Command) {
@@ -55,20 +61,22 @@ export function registerInfoCommand(program: Command) {
         ]);
 
         const latest = deps.data[0];
+        const live = env.currentDeploymentId
+          ? latest?.id === env.currentDeploymentId
+            ? latest
+            : await api.get<Deployment>(
+                `/deployments/${env.currentDeploymentId}`,
+              )
+          : undefined;
         const activeDomains = domains.filter((d) => d.status === "active");
 
         console.log(`Project:     ${project.name}`);
         console.log(`Environment: ${env.name} (branch: ${env.branch})`);
+        console.log(`Live:        ${live ? describe(live) : "not deployed"}`);
 
-        if (latest) {
-          console.log(
-            `Status:      ${statusBadge(latest.buildStatus)} (${formatTimestamp(latest.createdAt)})`,
-          );
-          if (latest.commitSha) {
-            console.log(`Commit:      ${shortSha(latest.commitSha)}`);
-          }
-        } else {
-          console.log("Status:      not deployed");
+        // Surface a newer in-progress or failed deployment that isn't live.
+        if (latest && latest.id !== live?.id) {
+          console.log(`Latest:      ${describe(latest)}`);
         }
 
         if (activeDomains.length > 0) {
