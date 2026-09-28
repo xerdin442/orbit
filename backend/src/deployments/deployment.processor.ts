@@ -171,13 +171,13 @@ export class DeploymentProcessor extends WorkerHost {
       }
     }
 
-    await this.deployments.markCompleted(deploymentId);
-
     await this.logService.append(
       deploymentId,
       LogLevel.SUCCESS,
       `Congratulations! Your deployment is now live at ${ctx.domain}`,
     );
+
+    await this.deployments.markCompleted(deploymentId);
     this.logService.complete(deploymentId);
 
     this.eventEmitter.emit(
@@ -440,7 +440,6 @@ export class DeploymentProcessor extends WorkerHost {
     failedStage?: BuildStatus,
   ): Promise<void> {
     await this.deployments.markFailed(ctx.deployment.id, failedStage);
-    await this.deployments.markCompleted(ctx.deployment.id);
 
     await this.activity.log(
       ActivityType.deployment_failed,
@@ -454,6 +453,8 @@ export class DeploymentProcessor extends WorkerHost {
         LogLevel.ERROR,
         error.message,
       );
+
+      await this.deployments.markCompleted(ctx.deployment.id);
       this.logService.complete(ctx.deployment.id);
 
       this.eventEmitter.emit(
@@ -473,6 +474,8 @@ export class DeploymentProcessor extends WorkerHost {
       LogLevel.ERROR,
       'Internal server error',
     );
+
+    await this.deployments.markCompleted(ctx.deployment.id);
     this.logService.complete(ctx.deployment.id);
 
     this.eventEmitter.emit(

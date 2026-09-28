@@ -250,6 +250,7 @@ describe('EnvironmentsService', () => {
       db.environment.findUnique.mockResolvedValue({
         id: 'env-1',
         projectId: 'proj-1',
+        currentDeploymentId: 'dep-0',
       });
       db.project.findFirst.mockResolvedValue({
         id: 'proj-1',
@@ -275,6 +276,28 @@ describe('EnvironmentsService', () => {
         skipImageBuild: true,
       });
       expect(activity.log).toHaveBeenCalled();
+    });
+
+    it('saves without redeploying when nothing is live yet', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+        currentDeploymentId: null,
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
+
+      await service.createVariable('env-1', 'user-1', {
+        key: 'KEY',
+        value: 'secret',
+      });
+
+      expect(db.environmentVariable.create).toHaveBeenCalled();
+      expect(deployments.triggerRedeployment).not.toHaveBeenCalled();
+      expect(queue.add).not.toHaveBeenCalled();
     });
 
     it('skips redeploy when skipRedeploy is true', async () => {
@@ -329,6 +352,7 @@ describe('EnvironmentsService', () => {
       db.environment.findUnique.mockResolvedValue({
         id: 'env-1',
         projectId: 'proj-1',
+        currentDeploymentId: 'dep-0',
       });
       db.project.findFirst.mockResolvedValue({
         id: 'proj-1',
@@ -417,7 +441,7 @@ describe('EnvironmentsService', () => {
 
   describe('updateVariable', () => {
     it('updates only the value when key is omitted', async () => {
-      db.environmentVariable.findUnique.mockResolvedValue({
+      db.environmentVariable.findFirst.mockResolvedValueOnce({
         id: 'v1',
         key: 'KEY',
         environmentId: 'env-1',
@@ -441,7 +465,7 @@ describe('EnvironmentsService', () => {
     });
 
     it('updates only the key when value is omitted', async () => {
-      db.environmentVariable.findUnique.mockResolvedValue({
+      db.environmentVariable.findFirst.mockResolvedValueOnce({
         id: 'v1',
         key: 'OLD_KEY',
         environmentId: 'env-1',
@@ -465,7 +489,7 @@ describe('EnvironmentsService', () => {
     });
 
     it('updates both key and value when both are provided', async () => {
-      db.environmentVariable.findUnique.mockResolvedValue({
+      db.environmentVariable.findFirst.mockResolvedValueOnce({
         id: 'v1',
         key: 'OLD_KEY',
         environmentId: 'env-1',
@@ -491,7 +515,7 @@ describe('EnvironmentsService', () => {
     });
 
     it('throws if variable does not exist', async () => {
-      db.environmentVariable.findUnique.mockResolvedValue(null);
+      db.environmentVariable.findFirst.mockResolvedValueOnce(null);
 
       await expect(
         service.updateVariable('missing', 'user-1', { value: 'x' }),
@@ -501,7 +525,7 @@ describe('EnvironmentsService', () => {
     });
 
     it('throws if renaming to a key that already exists in the environment', async () => {
-      db.environmentVariable.findUnique.mockResolvedValue({
+      db.environmentVariable.findFirst.mockResolvedValueOnce({
         id: 'v1',
         key: 'OLD_KEY',
         environmentId: 'env-1',
@@ -519,7 +543,7 @@ describe('EnvironmentsService', () => {
     });
 
     it('does not check for conflicts when the key is unchanged', async () => {
-      db.environmentVariable.findUnique.mockResolvedValue({
+      db.environmentVariable.findFirst.mockResolvedValueOnce({
         id: 'v1',
         key: 'KEY',
         environmentId: 'env-1',
@@ -537,7 +561,64 @@ describe('EnvironmentsService', () => {
         value: 'new_secret',
       });
 
-      expect(db.environmentVariable.findFirst).not.toHaveBeenCalled();
+      expect(db.environmentVariable.findFirst).toHaveBeenCalledTimes(1);
+    });
+
+    it("scopes the lookup to the caller's projects", async () => {
+      db.environmentVariable.findFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateVariable('v1', 'intruder', { value: 'x' }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(db.environmentVariable.findFirst).toHaveBeenCalledWith({
+        where: { id: 'v1', environment: { project: { ownerId: 'intruder' } } },
+        include: { environment: true },
+      });
+      expect(db.environmentVariable.update).not.toHaveBeenCalled();
+      expect(deployments.triggerRedeployment).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteVariable', () => {
+    it('deletes and redeploys when the caller owns the variable', async () => {
+      db.environmentVariable.findFirst.mockResolvedValueOnce({
+        id: 'v1',
+        key: 'KEY',
+        environment: {
+          id: 'env-1',
+          projectId: 'proj-1',
+          currentDeploymentId: 'dep-0',
+        },
+      });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
+
+      await service.deleteVariable('v1', 'user-1');
+
+      expect(db.environmentVariable.findFirst).toHaveBeenCalledWith({
+        where: { id: 'v1', environment: { project: { ownerId: 'user-1' } } },
+        include: { environment: true },
+      });
+      expect(db.environmentVariable.delete).toHaveBeenCalledWith({
+        where: { id: 'v1' },
+      });
+      expect(deployments.triggerRedeployment).toHaveBeenCalledWith(
+        'env-1',
+        'user-1',
+      );
+    });
+
+    it("throws and deletes nothing for another user's variable", async () => {
+      db.environmentVariable.findFirst.mockResolvedValueOnce(null);
+
+      await expect(service.deleteVariable('v1', 'intruder')).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(db.environmentVariable.delete).not.toHaveBeenCalled();
+      expect(deployments.triggerRedeployment).not.toHaveBeenCalled();
     });
   });
 
