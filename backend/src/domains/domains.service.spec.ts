@@ -96,6 +96,29 @@ describe('DomainsService', () => {
       });
     });
 
+    it('uses every label left of the apex as the CNAME host', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
+      db.domain.create = jest.fn().mockResolvedValue({
+        id: 'd1',
+        hostname: 'api.staging.example.com',
+        type: DomainType.custom,
+        status: DomainStatus.pending,
+      });
+
+      const result = await service.addCustomDomain(
+        'env-1',
+        'api.staging.example.com',
+        'user-1',
+      );
+
+      expect(result).toEqual({
+        recordType: 'CNAME',
+        host: 'api.staging',
+        value: '192.168.1.55.sslip.io',
+      });
+    });
+
     it('returns A record for apex domain', async () => {
       db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest.fn().mockResolvedValue(null);

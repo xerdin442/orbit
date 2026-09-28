@@ -30,6 +30,7 @@ describe('DeploymentsService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         count: jest.fn(),
       },
     } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'deployment'>>;
@@ -449,12 +450,23 @@ describe('DeploymentsService', () => {
   });
 
   describe('updateBuildStatus', () => {
-    it('updates build status', async () => {
-      await service.updateBuildStatus('dep-1', BuildStatus.cloning);
-      expect(db.deployment.update).toHaveBeenCalledWith({
-        where: { id: 'dep-1' },
+    it('updates build status unless the deployment was aborted', async () => {
+      const result = await service.updateBuildStatus(
+        'dep-1',
+        BuildStatus.cloning,
+      );
+      expect(db.deployment.updateMany).toHaveBeenCalledWith({
+        where: { id: 'dep-1', buildStatus: { not: BuildStatus.aborted } },
         data: { buildStatus: BuildStatus.cloning },
       });
+      expect(result).toBe(true);
+    });
+
+    it('returns false when the deployment was aborted', async () => {
+      db.deployment.updateMany = jest.fn().mockResolvedValue({ count: 0 });
+      await expect(
+        service.updateBuildStatus('dep-1', BuildStatus.cloning),
+      ).resolves.toBe(false);
     });
   });
 
@@ -500,26 +512,32 @@ describe('DeploymentsService', () => {
 
   describe('markFailed', () => {
     it('sets failed and aborted', async () => {
-      await service.markFailed('dep-1');
-      expect(db.deployment.update).toHaveBeenCalledWith({
-        where: { id: 'dep-1' },
+      const result = await service.markFailed('dep-1');
+      expect(db.deployment.updateMany).toHaveBeenCalledWith({
+        where: { id: 'dep-1', buildStatus: { not: BuildStatus.aborted } },
         data: {
           buildStatus: BuildStatus.failed,
           lifecycleStatus: LifecycleStatus.aborted,
         },
       });
+      expect(result).toBe(true);
     });
 
     it('records the stage the deployment failed at', async () => {
       await service.markFailed('dep-1', BuildStatus.building);
-      expect(db.deployment.update).toHaveBeenCalledWith({
-        where: { id: 'dep-1' },
+      expect(db.deployment.updateMany).toHaveBeenCalledWith({
+        where: { id: 'dep-1', buildStatus: { not: BuildStatus.aborted } },
         data: {
           buildStatus: BuildStatus.failed,
           failedStage: BuildStatus.building,
           lifecycleStatus: LifecycleStatus.aborted,
         },
       });
+    });
+
+    it('returns false and leaves an aborted deployment alone', async () => {
+      db.deployment.updateMany = jest.fn().mockResolvedValue({ count: 0 });
+      await expect(service.markFailed('dep-1')).resolves.toBe(false);
     });
   });
 
@@ -533,8 +551,18 @@ describe('DeploymentsService', () => {
 
       await service.abortDeployment('dep-1', 'user-1');
 
-      expect(db.deployment.update).toHaveBeenCalledWith({
-        where: { id: 'dep-1' },
+      expect(db.deployment.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: 'dep-1',
+          buildStatus: {
+            in: [
+              BuildStatus.pending,
+              BuildStatus.cloning,
+              BuildStatus.building,
+              BuildStatus.deploying,
+            ],
+          },
+        },
         data: {
           buildStatus: BuildStatus.aborted,
           failedStage: BuildStatus.building,
@@ -573,5 +601,24 @@ describe('DeploymentsService', () => {
         NotFoundException,
       );
     });
+
+    it.each([BuildStatus.ready, BuildStatus.failed, BuildStatus.aborted])(
+      'refuses to abort a %s deployment, leaving resources alone',
+      async (buildStatus) => {
+        db.deployment.findFirst = jest.fn().mockResolvedValue({
+          id: 'dep-1',
+          environmentId: 'env-1',
+          buildStatus,
+        });
+        db.deployment.updateMany = jest.fn().mockResolvedValue({ count: 0 });
+
+        await expect(
+          service.abortDeployment('dep-1', 'user-1', ['res-1']),
+        ).rejects.toThrow(BadRequestException);
+
+        expect(activity.log).not.toHaveBeenCalled();
+        expect(resources.delete).not.toHaveBeenCalled();
+      },
+    );
   });
 });
