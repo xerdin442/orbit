@@ -137,7 +137,7 @@ export default function DeploymentsListPage() {
         const d = row.original;
         const isActive = d.lifecycleStatus === "active";
         const canRollback =
-          d.lifecycleStatus === "inactive" || d.buildStatus === "ready";
+          d.lifecycleStatus === "inactive" && d.buildStatus === "ready";
 
         return (
           <div className="flex items-center justify-end gap-2">

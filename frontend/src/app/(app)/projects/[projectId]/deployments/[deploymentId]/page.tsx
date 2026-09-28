@@ -105,7 +105,7 @@ export default function DeploymentDetailPage() {
 
   const isActive = deployment.lifecycleStatus === "active";
   const canRollback =
-    deployment.lifecycleStatus === "inactive" ||
+    deployment.lifecycleStatus === "inactive" &&
     deployment.buildStatus === "ready";
 
   return (
