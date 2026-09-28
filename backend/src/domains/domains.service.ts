@@ -9,6 +9,7 @@ import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
 import { Secrets } from '@src/common/secrets';
+import { splitHostname } from '@src/common/util';
 import { ActivityType, DomainType, DomainStatus } from '@generated/client';
 import type { DnsInstructions } from '@src/common/types';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
@@ -159,20 +160,19 @@ export class DomainsService {
   }
 
   private getDnsInstructions(hostname: string): DnsInstructions {
-    const parts = hostname.split('.');
-    const isApex = parts.length <= 2;
+    const { isApex, recordName } = splitHostname(hostname);
 
     if (isApex) {
       return {
         recordType: 'A',
-        host: '@',
+        host: recordName,
         value: Secrets.INGRESS_IP,
       };
     }
 
     return {
       recordType: 'CNAME',
-      host: parts[0],
+      host: recordName,
       value: Secrets.INGRESS_HOST,
     };
   }

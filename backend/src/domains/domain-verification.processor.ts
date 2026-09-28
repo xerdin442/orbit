@@ -6,6 +6,7 @@ import { DbService } from '@src/db/db.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { Secrets } from '@src/common/secrets';
+import { splitHostname } from '@src/common/util';
 import { ActivityType, DomainStatus } from '@generated/client';
 
 const dnsResolve4 = promisify(resolve4);
@@ -44,8 +45,7 @@ export class DomainVerificationProcessor extends WorkerHost {
           });
         }
 
-        const parts = domain.hostname.split('.');
-        const isApex = parts.length <= 2;
+        const { isApex } = splitHostname(domain.hostname);
 
         let verified = false;
 

@@ -181,12 +181,12 @@ describe('DeploymentProcessor', () => {
       findById: jest
         .fn()
         .mockResolvedValue({ buildStatus: BuildStatus.pending }),
-      updateBuildStatus: jest.fn().mockResolvedValue(undefined),
+      updateBuildStatus: jest.fn().mockResolvedValue(true),
       updateCommit: jest.fn().mockResolvedValue(undefined),
       updateBuildImage: jest.fn().mockResolvedValue(undefined),
       updateContainerId: jest.fn().mockResolvedValue(undefined),
       markCompleted: jest.fn().mockResolvedValue(undefined),
-      markFailed: jest.fn().mockResolvedValue(undefined),
+      markFailed: jest.fn().mockResolvedValue(true),
     };
     activity = {
       log: jest.fn().mockResolvedValue(undefined),
@@ -416,6 +416,54 @@ describe('DeploymentProcessor', () => {
         recursive: true,
         force: true,
       });
+    });
+  });
+
+  describe('process — abort racing the pipeline', () => {
+    it('treats a refused status write as an abort instead of carrying on', async () => {
+      // Aborted after the step-boundary check passed but before the status write.
+      deployments.updateBuildStatus.mockResolvedValueOnce(false);
+
+      const job = buildJob({ skipImageBuild: true });
+
+      await processor.process(job);
+
+      expect(mockExecuteCreateContainer).not.toHaveBeenCalled();
+      expect(logService.append).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        LogLevel.INFO,
+        'Deployment has been aborted.',
+      );
+      expect(logService.complete).toHaveBeenCalledWith(DEPLOYMENT_ID);
+      expect(deployments.markCompleted).not.toHaveBeenCalled();
+    });
+
+    it('keeps an aborted deployment aborted when the in-flight step then throws', async () => {
+      mockExecuteStartContainer.mockRejectedValue(new Error('killed'));
+      deployments.markFailed.mockResolvedValueOnce(false);
+
+      const job = buildJob({ skipImageBuild: true });
+
+      // Not rethrown: the error is a side effect of the abort, not a system error.
+      await expect(processor.process(job)).resolves.toBeUndefined();
+
+      expect(activity.log).not.toHaveBeenCalledWith(
+        ActivityType.deployment_failed,
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(logService.append).not.toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        LogLevel.ERROR,
+        expect.anything(),
+      );
+      expect(logService.append).toHaveBeenCalledWith(
+        DEPLOYMENT_ID,
+        LogLevel.INFO,
+        'Deployment has been aborted.',
+      );
+      expect(deployments.markCompleted).not.toHaveBeenCalled();
+      expect(mockExecuteHealthCheck).not.toHaveBeenCalled();
     });
   });
 
