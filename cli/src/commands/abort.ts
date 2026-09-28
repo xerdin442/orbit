@@ -48,9 +48,7 @@ export function registerAbortCommand(program: Command) {
 
         if (!confirm) return;
 
-        await api.post(`/deployments/${deploymentId}/abort`, {
-          marked_resources: [],
-        });
+        await api.post(`/deployments/${deploymentId}/abort`);
         success(`Deployment ${deploymentId} aborted.`);
       } catch (err) {
         error(err instanceof Error ? err.message : "Abort failed");

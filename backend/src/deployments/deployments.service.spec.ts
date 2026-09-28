@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DeploymentsService } from './deployments.service';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { ResourcesService } from '@src/resources/resources.service';
 import {
   NotFoundException,
   ConflictException,
@@ -20,7 +19,6 @@ describe('DeploymentsService', () => {
   let service: DeploymentsService;
   let db: jest.Mocked<Pick<DbService, 'environment' | 'deployment'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
-  let resources: jest.Mocked<Pick<ResourcesService, 'delete'>>;
 
   beforeEach(async () => {
     db = {
@@ -36,14 +34,12 @@ describe('DeploymentsService', () => {
     } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'deployment'>>;
 
     activity = { log: jest.fn() };
-    resources = { delete: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DeploymentsService,
         { provide: DbService, useValue: db },
         { provide: ActivityService, useValue: activity },
-        { provide: ResourcesService, useValue: resources },
       ],
     }).compile();
 
@@ -575,24 +571,6 @@ describe('DeploymentsService', () => {
         'user-1',
         { deploymentId: 'dep-1', environmentId: 'env-1' },
       );
-      expect(resources.delete).not.toHaveBeenCalled();
-    });
-
-    it('deletes the given resources, ignoring ones that fail to delete', async () => {
-      db.deployment.findFirst = jest.fn().mockResolvedValue({
-        id: 'dep-1',
-        environmentId: 'env-1',
-        buildStatus: BuildStatus.building,
-      });
-      resources.delete = jest
-        .fn()
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('already gone'));
-
-      await service.abortDeployment('dep-1', 'user-1', ['res-1', 'res-2']);
-
-      expect(resources.delete).toHaveBeenCalledWith('res-1', 'user-1');
-      expect(resources.delete).toHaveBeenCalledWith('res-2', 'user-1');
     });
 
     it('throws if the deployment is not found', async () => {
@@ -603,7 +581,7 @@ describe('DeploymentsService', () => {
     });
 
     it.each([BuildStatus.ready, BuildStatus.failed, BuildStatus.aborted])(
-      'refuses to abort a %s deployment, leaving resources alone',
+      'refuses to abort a %s deployment',
       async (buildStatus) => {
         db.deployment.findFirst = jest.fn().mockResolvedValue({
           id: 'dep-1',
@@ -613,11 +591,10 @@ describe('DeploymentsService', () => {
         db.deployment.updateMany = jest.fn().mockResolvedValue({ count: 0 });
 
         await expect(
-          service.abortDeployment('dep-1', 'user-1', ['res-1']),
+          service.abortDeployment('dep-1', 'user-1'),
         ).rejects.toThrow(BadRequestException);
 
         expect(activity.log).not.toHaveBeenCalled();
-        expect(resources.delete).not.toHaveBeenCalled();
       },
     );
   });

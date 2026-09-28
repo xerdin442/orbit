@@ -14,7 +14,6 @@ import {
   Prisma,
   Deployment,
 } from '@generated/client';
-import { ResourcesService } from '@src/resources/resources.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { FilterDeploymentsDto } from './dto/deployment.dto';
 import { PaginatedResult } from '@src/common/types';
@@ -31,7 +30,6 @@ export class DeploymentsService {
   constructor(
     private readonly db: DbService,
     private readonly activity: ActivityService,
-    private readonly resources: ResourcesService,
   ) {}
 
   async createDeployment(
@@ -284,7 +282,7 @@ export class DeploymentsService {
     return count > 0;
   }
 
-  async abortDeployment(id: string, userId: string, resourceIds?: string[]) {
+  async abortDeployment(id: string, userId: string) {
     const deployment = await this.findById(id, userId);
 
     const { count } = await this.db.deployment.updateMany({
@@ -307,16 +305,6 @@ export class DeploymentsService {
       deploymentId: id,
       environmentId: deployment.environmentId,
     });
-
-    if (resourceIds) {
-      for (const id of resourceIds) {
-        try {
-          await this.resources.delete(id, userId);
-        } catch {
-          // resource already gone or never created
-        }
-      }
-    }
   }
 
   private async verifyEnvironmentOwnership(
