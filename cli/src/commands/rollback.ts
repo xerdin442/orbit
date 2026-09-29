@@ -1,12 +1,13 @@
 import type { Command } from "commander";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { error, success } from "../lib/format.js";
+import { success } from "../lib/format.js";
 import {
   pickRollbackTarget,
   type DeploymentSummary,
 } from "../lib/deployments.js";
 import { streamLogs } from "./logs.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface PaginatedDeployments {
   data: DeploymentSummary[];
@@ -34,8 +35,7 @@ export function registerRollbackCommand(program: Command) {
           const target = pickRollbackTarget(deps.data);
 
           if (!target) {
-            error("No previous successful deployment to rollback to.");
-            process.exit(1);
+            fail("No previous successful deployment to rollback to.");
           }
 
           deploymentId = target.id;
@@ -53,8 +53,7 @@ export function registerRollbackCommand(program: Command) {
           console.log(`\nRun \`orbit logs ${result.deploymentId}\` to follow.`);
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : "Rollback failed");
-        process.exit(1);
+        failWith(err, "Rollback failed");
       }
     });
 }

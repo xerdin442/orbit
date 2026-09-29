@@ -2,9 +2,10 @@ import type { Command } from "commander";
 import ora from "ora";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { success, error, warn, statusBadge } from "../lib/format.js";
+import { success, warn, statusBadge } from "../lib/format.js";
 import { getCurrentBranch } from "../lib/git.js";
 import { streamLogs } from "./logs.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface DeployResult {
   deploymentId: string;
@@ -28,10 +29,16 @@ async function pollDeploymentStatus(
   const deadline = Date.now() + POLL_TIMEOUT_MS;
 
   while (Date.now() < deadline) {
-    const status = await api.get<DeployStatus>(
-      `/projects/${projectId}/deploy/${deploymentId}`,
-      { "x-project-token": token },
-    );
+    let status: DeployStatus;
+    try {
+      status = await api.get<DeployStatus>(
+        `/projects/${projectId}/deploy/${deploymentId}`,
+        { "x-project-token": token },
+      );
+    } catch (err) {
+      spinner.stop();
+      throw err;
+    }
 
     if (status.buildStatus === "ready") {
       spinner.succeed(
@@ -44,7 +51,7 @@ async function pollDeploymentStatus(
 
     if (status.buildStatus === "failed" || status.buildStatus === "aborted") {
       spinner.fail(`Deployment ${status.buildStatus}.`);
-      process.exit(1);
+      fail();
     }
 
     spinner.text = `Waiting for deployment to finish... ${statusBadge(status.buildStatus)}`;
@@ -54,7 +61,7 @@ async function pollDeploymentStatus(
   spinner.warn(
     "Build status check timed out. Check the dashboard to confirm the deployment status.",
   );
-  process.exit(1);
+  fail();
 }
 
 export function registerDeployCommand(program: Command) {
@@ -79,8 +86,10 @@ export function registerDeployCommand(program: Command) {
         const projectToken = options.token || process.env.ORBIT_TOKEN;
         const projectId = options.project || process.env.ORBIT_PROJECT_ID;
 
+        const spinner = ora("Triggering deployment...");
+
         try {
-          const spinner = ora("Triggering deployment...").start();
+          spinner.start();
 
           let result: DeployResult;
           let jwt: string | undefined;
@@ -88,10 +97,9 @@ export function registerDeployCommand(program: Command) {
           if (projectToken) {
             if (!projectId) {
               spinner.stop();
-              error(
+              fail(
                 "A project ID is required with a project token: pass --project or set ORBIT_PROJECT_ID.",
               );
-              process.exit(1);
             }
 
             const branch = getCurrentBranch();
@@ -132,8 +140,8 @@ export function registerDeployCommand(program: Command) {
             );
           }
         } catch (err) {
-          error(err instanceof Error ? err.message : "Deploy failed");
-          process.exit(1);
+          if (spinner.isSpinning) spinner.stop();
+          failWith(err, "Deploy failed");
         }
       },
     );

@@ -1,8 +1,9 @@
 import type { Command } from "commander";
 import { api, OrbitApiError } from "../lib/api.js";
 import { clearAll, setToken, clearToken, ensureAuth } from "../lib/config.js";
-import { success, error, info } from "../lib/format.js";
+import { success, info } from "../lib/format.js";
 import { startAuthServer } from "../lib/auth-server.js";
+import { failWith } from "../lib/exit.js";
 
 interface ProfileResponse {
   id: string;
@@ -24,8 +25,7 @@ export function registerAuthCommands(program: Command) {
         setToken(token);
         success("Logged in successfully.");
       } catch (err) {
-        error(err instanceof Error ? err.message : "Login failed");
-        process.exit(1);
+        failWith(err, "Login failed");
       }
     });
 
@@ -53,10 +53,7 @@ export function registerAuthCommands(program: Command) {
           clearToken();
           info("Session expired. Run `orbit auth login`.");
         } else {
-          error(
-            err instanceof Error ? err.message : "Failed to fetch user profile",
-          );
-          process.exit(1);
+          failWith(err, "Failed to fetch user profile");
         }
       }
     });

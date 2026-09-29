@@ -2,8 +2,9 @@ import type { Command } from "commander";
 import inquirer from "inquirer";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { error, success } from "../lib/format.js";
+import { success } from "../lib/format.js";
 import { isInProgress, type DeploymentSummary } from "../lib/deployments.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface PaginatedDeployments {
   data: DeploymentSummary[];
@@ -24,8 +25,7 @@ export function registerAbortCommand(program: Command) {
 
           const latest = deps.data[0];
           if (!latest || !isInProgress(latest.buildStatus)) {
-            error("No deployment in progress.");
-            process.exit(1);
+            fail("No deployment in progress.");
           }
 
           deploymentId = latest.id;
@@ -45,8 +45,7 @@ export function registerAbortCommand(program: Command) {
         await api.post(`/deployments/${deploymentId}/abort`);
         success(`Deployment ${deploymentId} aborted.`);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Abort failed");
-        process.exit(1);
+        failWith(err, "Abort failed");
       }
     });
 }

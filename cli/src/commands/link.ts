@@ -2,7 +2,8 @@ import type { Command } from "commander";
 import inquirer from "inquirer";
 import { api } from "../lib/api.js";
 import { setContext, ensureAuth } from "../lib/config.js";
-import { success, error } from "../lib/format.js";
+import { success } from "../lib/format.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface Project {
   id: string;
@@ -25,8 +26,7 @@ export function registerLinkCommand(program: Command) {
         const projects = await api.get<Project[]>("/projects");
 
         if (projects.length === 0) {
-          error("No projects found. Run `orbit init` to create one.");
-          process.exit(1);
+          fail("No projects found. Run `orbit init` to create one.");
         }
 
         const { projectId } = await inquirer.prompt<{ projectId: string }>([
@@ -71,8 +71,7 @@ export function registerLinkCommand(program: Command) {
           `Linked to project "${project?.name ?? "unknown"}" (${environments.find((e) => e.id === environmentId)?.name ?? ""}).`,
         );
       } catch (err) {
-        error(err instanceof Error ? err.message : "Link failed");
-        process.exit(1);
+        failWith(err, "Link failed");
       }
     });
 }
