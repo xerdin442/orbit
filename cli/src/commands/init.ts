@@ -67,7 +67,7 @@ export function registerInitCommand(program: Command) {
 
         const { inst } = await inquirer.prompt<{ inst: Installation }>([
           {
-            type: "list",
+            type: "select",
             name: "inst",
             message: "Select a GitHub installation:",
             choices: installations.map((i) => ({
@@ -85,7 +85,7 @@ export function registerInitCommand(program: Command) {
 
         const { repo } = await inquirer.prompt<{ repo: string }>([
           {
-            type: "list",
+            type: "select",
             name: "repo",
             message: "Select a repository:",
             choices: repos.map((r) => ({
@@ -103,7 +103,7 @@ export function registerInitCommand(program: Command) {
 
         const { branch } = await inquirer.prompt<{ branch: string }>([
           {
-            type: "list",
+            type: "select",
             name: "branch",
             message: "Select the default branch:",
             choices: branches.map((b) => b.name),

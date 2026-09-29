@@ -31,7 +31,7 @@ export function registerLinkCommand(program: Command) {
 
         const { projectId } = await inquirer.prompt<{ projectId: string }>([
           {
-            type: "list",
+            type: "select",
             name: "projectId",
             message: "Select a project:",
             choices: projects.map((p) => ({
@@ -49,7 +49,7 @@ export function registerLinkCommand(program: Command) {
           environmentId: string;
         }>([
           {
-            type: "list",
+            type: "select",
             name: "environmentId",
             message: "Select an environment:",
             choices: environments.map((env) => ({
