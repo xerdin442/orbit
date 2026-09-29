@@ -1,8 +1,9 @@
 import type { Command } from "commander";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { error, success } from "../lib/format.js";
+import { success } from "../lib/format.js";
 import { streamLogs } from "./logs.js";
+import { failWith } from "../lib/exit.js";
 
 interface DeployResult {
   deploymentId: string;
@@ -30,8 +31,7 @@ export function registerRedeployCommand(program: Command) {
           console.log(`\nRun \`orbit logs ${result.deploymentId}\` to follow.`);
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : "Redeploy failed");
-        process.exit(1);
+        failWith(err, "Redeploy failed");
       }
     });
 }

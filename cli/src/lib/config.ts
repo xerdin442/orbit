@@ -1,5 +1,6 @@
 import Conf from "conf";
-import { error, warn } from "./format.js";
+import { warn } from "./format.js";
+import { fail } from "./exit.js";
 
 interface OrbitContext {
   projectId: string;
@@ -38,15 +39,13 @@ function normalizeApiUrl(raw: string): string {
   try {
     url = new URL(raw);
   } catch {
-    error(
+    fail(
       `Invalid Orbit API URL: "${raw}". Expected e.g. https://<your-orbit-host>/api`,
     );
-    process.exit(1);
   }
 
   if (url.protocol !== "https:" && url.protocol !== "http:") {
-    error(`Invalid Orbit API URL: "${raw}". It must start with https://`);
-    process.exit(1);
+    fail(`Invalid Orbit API URL: "${raw}". It must start with https://`);
   }
 
   const isLocal = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
@@ -64,8 +63,7 @@ export function getApiUrl(): string {
   const raw = process.env.ORBIT_API_URL || config.get("apiUrl");
 
   if (!raw) {
-    error(API_URL_NOTICE);
-    process.exit(1);
+    fail(API_URL_NOTICE);
   }
 
   return normalizeApiUrl(raw);
@@ -94,8 +92,7 @@ export function clearAll() {
 export function ensureAuth(): string {
   const token = config.get("token");
   if (!token) {
-    error("Not authenticated. Run `orbit auth login` first.");
-    process.exit(1);
+    fail("Not authenticated. Run `orbit auth login` first.");
   }
   return token;
 }
@@ -108,8 +105,7 @@ export function ensureContext(): {
 
   const ctx = config.get("currentContext");
   if (!ctx) {
-    error("No linked environment. Run `orbit link` first.");
-    process.exit(1);
+    fail("No linked environment. Run `orbit link` first.");
   }
 
   return { ctx, token };

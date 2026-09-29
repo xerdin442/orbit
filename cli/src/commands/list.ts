@@ -2,12 +2,12 @@ import type { Command } from "commander";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
 import {
-  error,
   statusBadge,
   shortSha,
   formatDuration,
   printTable,
 } from "../lib/format.js";
+import { failWith } from "../lib/exit.js";
 
 interface Deployment {
   id: string;
@@ -56,8 +56,7 @@ export function registerListCommand(program: Command) {
 
         printTable(headers, rows);
       } catch (err) {
-        error(err instanceof Error ? err.message : "List failed");
-        process.exit(1);
+        failWith(err, "List failed");
       }
     });
 }

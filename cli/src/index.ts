@@ -16,6 +16,7 @@ import {
 } from "./commands/index.js";
 import { createRequire } from "node:module";
 import { getApiUrl, setApiUrl } from "./lib/config.js";
+import { CliExit } from "./lib/exit.js";
 
 const { version } = createRequire(import.meta.url)("../package.json") as {
   version: string;
@@ -66,4 +67,11 @@ registerRedeployCommand(program);
 registerRollbackCommand(program);
 registerAbortCommand(program);
 
-program.parse();
+try {
+  await program.parseAsync();
+} catch (err) {
+  if (!(err instanceof CliExit)) throw err;
+
+  process.exitCode = err.code;
+  setTimeout(() => process.exit(err.code), 2_000).unref();
+}

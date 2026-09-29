@@ -3,8 +3,9 @@ import inquirer from "inquirer";
 import fs from "fs-extra";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { success, error, warn, printTable } from "../lib/format.js";
+import { success, warn, printTable } from "../lib/format.js";
 import { parseEnvFile, prepareImport } from "../lib/env-file.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface EnvVariable {
   id: string;
@@ -61,8 +62,7 @@ export function registerEnvCommands(program: Command) {
 
         printTable(headers, rows);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to list variables");
-        process.exit(1);
+        failWith(err, "Failed to list variables");
       }
     });
 
@@ -73,10 +73,7 @@ export function registerEnvCommands(program: Command) {
       const { ctx } = ensureContext();
 
       if (value === "") {
-        error(
-          "Value cannot be empty. Use `orbit env rm` to remove a variable.",
-        );
-        process.exit(1);
+        fail("Value cannot be empty. Use `orbit env rm` to remove a variable.");
       }
 
       try {
@@ -100,8 +97,7 @@ export function registerEnvCommands(program: Command) {
 
         success(`Variable "${key}" set. ${redeployNote(live)}`);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to set variable");
-        process.exit(1);
+        failWith(err, "Failed to set variable");
       }
     });
 
@@ -119,8 +115,7 @@ export function registerEnvCommands(program: Command) {
         const live = await hasLiveDeployment(ctx.projectId, ctx.environmentId);
 
         if (!existingVar) {
-          error(`Variable "${key}" not found.`);
-          process.exit(1);
+          fail(`Variable "${key}" not found.`);
         }
 
         const { confirm } = await inquirer.prompt<{ confirm: boolean }>([
@@ -140,8 +135,7 @@ export function registerEnvCommands(program: Command) {
 
         success(`Variable "${key}" deleted. ${redeployNote(live)}`);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to delete variable");
-        process.exit(1);
+        failWith(err, "Failed to delete variable");
       }
     });
 
@@ -160,8 +154,7 @@ export function registerEnvCommands(program: Command) {
         }
 
         if (vars.length === 0) {
-          error("No variables found in file.");
-          process.exit(1);
+          fail("No variables found in file.");
         }
 
         warn(`Importing ${vars.length} variables...`);
@@ -212,8 +205,7 @@ export function registerEnvCommands(program: Command) {
 
         console.log(`\nRun \`orbit logs ${result.deploymentId}\` to follow.`);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Import failed");
-        process.exit(1);
+        failWith(err, "Import failed");
       }
     });
 }

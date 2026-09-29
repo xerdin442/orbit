@@ -1,12 +1,8 @@
 import type { Command } from "commander";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import {
-  error,
-  statusBadge,
-  shortSha,
-  formatTimestamp,
-} from "../lib/format.js";
+import { statusBadge, shortSha, formatTimestamp } from "../lib/format.js";
+import { failWith } from "../lib/exit.js";
 
 interface Project {
   id: string;
@@ -88,8 +84,7 @@ export function registerInfoCommand(program: Command) {
           console.log("URLs:        No active domains");
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : "Info failed");
-        process.exit(1);
+        failWith(err, "Info failed");
       }
     });
 }
