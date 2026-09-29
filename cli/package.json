@@ -4,7 +4,7 @@
   "description": "CLI for deploying apps on Orbit, a self-hosted PaaS",
   "type": "module",
   "bin": {
-    "orbit": "./dist/index.js"
+    "orbit": "dist/index.js"
   },
   "files": [
     "dist",
@@ -41,9 +41,6 @@
   "homepage": "https://github.com/xerdin442/orbit/tree/main/cli#readme",
   "bugs": {
     "url": "https://github.com/xerdin442/orbit/issues"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "dependencies": {
     "chalk": "^6.0.0",
