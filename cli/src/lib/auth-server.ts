@@ -24,7 +24,7 @@ function openBrowser(url: string) {
     .unref();
 }
 
-async function fetchLoginUrl(redirectUri: string): Promise<string> {
+export async function fetchLoginUrl(redirectUri: string): Promise<string> {
   const response = await apiFetch(
     `/auth/github?redirect_uri=${encodeURIComponent(redirectUri)}`,
   );
@@ -38,6 +38,11 @@ async function fetchLoginUrl(redirectUri: string): Promise<string> {
   const json = (await response.json()) as { data?: { url?: string } };
   if (!json.data?.url) {
     throw new Error("Could not start login: no authorization URL returned");
+  }
+
+  // The backend should only ever return GitHub's authorize URL
+  if (!json.data.url.startsWith(GITHUB_AUTHORIZE_URL)) {
+    throw new Error("Could not start login: unexpected authorization URL");
   }
 
   return json.data.url;
@@ -96,17 +101,11 @@ export function startAuthServer(): Promise<string> {
         return;
       }
 
-      if (!loginUrl.startsWith(GITHUB_AUTHORIZE_URL)) {
-        finish(
-          new Error("Could not start login: unexpected authorization URL"),
-        );
-        return;
-      }
-
       openBrowser(loginUrl);
 
       console.log(`Opening browser for authentication...`);
-      console.log(`If the browser doesn't open, visit:\n${info(loginUrl)}`);
+      console.log(`If the browser doesn't open, visit:`);
+      info(loginUrl);
     });
   });
 }
