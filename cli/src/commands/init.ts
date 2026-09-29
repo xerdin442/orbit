@@ -5,7 +5,7 @@ import fs from "fs-extra";
 import { api } from "../lib/api.js";
 import { setContext, ensureAuth } from "../lib/config.js";
 import { success, error } from "../lib/format.js";
-import { parseEnvFile } from "./env.js";
+import { parseEnvFile } from "../lib/env-file.js";
 
 interface Installation {
   id: string;

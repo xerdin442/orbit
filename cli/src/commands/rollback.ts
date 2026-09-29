@@ -2,15 +2,14 @@ import type { Command } from "commander";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
 import { error, success } from "../lib/format.js";
+import {
+  pickRollbackTarget,
+  type DeploymentSummary,
+} from "../lib/deployments.js";
 import { streamLogs } from "./logs.js";
 
-interface Deployment {
-  id: string;
-  lifecycleStatus: string;
-}
-
 interface PaginatedDeployments {
-  data: Deployment[];
+  data: DeploymentSummary[];
 }
 
 interface DeployResult {
@@ -28,14 +27,11 @@ export function registerRollbackCommand(program: Command) {
 
       try {
         if (!deploymentId) {
-          // Only a successful deployment that isn't currently live can be rolled back to.
           const deps = await api.get<PaginatedDeployments>(
             `/environments/${ctx.environmentId}/deployments?status=ready&limit=20`,
           );
 
-          const target = deps.data.find(
-            (d) => d.lifecycleStatus === "inactive",
-          );
+          const target = pickRollbackTarget(deps.data);
 
           if (!target) {
             error("No previous successful deployment to rollback to.");

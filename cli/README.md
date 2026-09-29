@@ -48,7 +48,7 @@ The saved API URL, your session token and the linked project live in a config fi
 | macOS | `~/Library/Preferences/orbit-nodejs/config.json` |
 | Windows | `%APPDATA%\orbit-nodejs\Config\config.json` |
 
-`orbit auth reset` clears it.
+`orbit auth reset` clears it. To keep the config somewhere else (for example a separate profile per Orbit instance), set `ORBIT_CONFIG_DIR` to a directory; the file is then `$ORBIT_CONFIG_DIR/config.json`.
 
 ## Authentication
 

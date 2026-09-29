@@ -3,17 +3,11 @@ import inquirer from "inquirer";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
 import { error, success } from "../lib/format.js";
-
-interface Deployment {
-  id: string;
-  buildStatus: string;
-}
+import { isInProgress, type DeploymentSummary } from "../lib/deployments.js";
 
 interface PaginatedDeployments {
-  data: Deployment[];
+  data: DeploymentSummary[];
 }
-
-const IN_PROGRESS = ["pending", "cloning", "building", "deploying"];
 
 export function registerAbortCommand(program: Command) {
   program
@@ -29,7 +23,7 @@ export function registerAbortCommand(program: Command) {
           );
 
           const latest = deps.data[0];
-          if (!latest || !IN_PROGRESS.includes(latest.buildStatus)) {
+          if (!latest || !isInProgress(latest.buildStatus)) {
             error("No deployment in progress.");
             process.exit(1);
           }

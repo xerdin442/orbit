@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
 import { success, error, warn, printTable } from "../lib/format.js";
+import { parseEnvFile, prepareImport } from "../lib/env-file.js";
 
 interface EnvVariable {
   id: string;
@@ -152,17 +153,7 @@ export function registerEnvCommands(program: Command) {
 
       try {
         const content = await fs.readFile(filePath, "utf-8");
-        const byKey = new Map<string, string>();
-        const empty: string[] = [];
-        for (const { key, value } of parseEnvFile(content)) {
-          if (value === "") {
-            empty.push(key);
-            byKey.delete(key);
-          } else {
-            byKey.set(key, value);
-          }
-        }
-        const vars = [...byKey].map(([key, value]) => ({ key, value }));
+        const { vars, empty } = prepareImport(parseEnvFile(content));
 
         if (empty.length > 0) {
           warn(`Skipping variables with empty values: ${empty.join(", ")}`);
@@ -225,34 +216,4 @@ export function registerEnvCommands(program: Command) {
         process.exit(1);
       }
     });
-}
-
-export function parseEnvFile(
-  content: string,
-): { key: string; value: string }[] {
-  const vars: { key: string; value: string }[] = [];
-
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim();
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
-
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx === -1) continue;
-
-    const key = trimmed.slice(0, eqIdx).trim();
-    let value = trimmed.slice(eqIdx + 1).trim();
-
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    if (key) {
-      vars.push({ key, value });
-    }
-  }
-
-  return vars;
 }
