@@ -1,0 +1,82 @@
+name: CLI Release
+
+# Publishes @xerdin442/orbit-cli when a `cli-v<version>` tag is pushed, e.g.:
+#   git tag cli-v1.0.0-rc.2 && git push origin cli-v1.0.0-rc.2
+# Prereleases (versions containing "-") go to the `next` dist-tag, others to `latest`.
+#
+# Auth is npm trusted publishing (OIDC): no NPM_TOKEN secret. It must be enabled
+# on npmjs.com (package → Settings → Trusted Publisher → GitHub Actions) for
+# xerdin442/orbit with workflow file `cli-release.yml`.
+
+on:
+  push:
+    tags: ["cli-v*"]
+
+# One release at a time; never cancel a publish midway.
+concurrency:
+  group: cli-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # create the GitHub Release
+  id-token: write # OIDC token for npm trusted publishing + provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Update npm
+        run: npm install -g npm@^11.5.1
+
+      - name: Resolve version and dist-tag
+        id: version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#cli-v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+          if [[ "$PKG_VERSION" == *-* ]]; then
+            echo "dist_tag=next" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dist_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - name: Publish to npm
+        run: npm publish --tag "${{ steps.version.outputs.dist_tag }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DIST_TAG: ${{ steps.version.outputs.dist_tag }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "CLI $VERSION" \
+            --notes "Published to npm as [@xerdin442/orbit-cli@$VERSION](https://www.npmjs.com/package/@xerdin442/orbit-cli/v/$VERSION) (dist-tag \`$DIST_TAG\`).
+
+          \`\`\`bash
+          npm install -g @xerdin442/orbit-cli@$VERSION
+          \`\`\`" \
+            ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}
