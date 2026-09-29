@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { stripVTControlCharacters } from "node:util";
 
 const STATUS_COLORS: Record<string, typeof chalk.red> = {
   ready: chalk.green,
@@ -33,25 +34,38 @@ export function formatTimestamp(date: Date | string): string {
   return new Date(date).toLocaleString();
 }
 
-export function printTable(headers: string[], rows: string[][]): void {
-  const colWidths = headers.map((h, i) => {
-    const maxData = rows.reduce(
-      (max, row) => Math.max(max, (row[i] ?? "").length),
-      0,
-    );
-    return Math.max(h.length, maxData);
-  });
+function visibleWidth(text: string): number {
+  return stripVTControlCharacters(text).length;
+}
 
-  const headerLine = headers
-    .map((h, i) => chalk.bold(h.padEnd(colWidths[i]!)))
-    .join("  ");
+function padVisible(text: string, width: number): string {
+  return text + " ".repeat(Math.max(0, width - visibleWidth(text)));
+}
 
-  console.log(headerLine);
+export function formatTable(headers: string[], rows: string[][]): string[] {
+  const colWidths = headers.map((h, i) =>
+    rows.reduce(
+      (max, row) => Math.max(max, visibleWidth(row[i] ?? "")),
+      visibleWidth(h),
+    ),
+  );
 
-  for (const row of rows) {
-    const line = row
-      .map((cell, i) => (cell ?? "").padEnd(colWidths[i]!))
+  const lastCol = headers.length - 1;
+  const formatRow = (cells: string[], style = (s: string) => s) =>
+    cells
+      .map((cell, i) =>
+        style(i === lastCol ? cell : padVisible(cell, colWidths[i]!)),
+      )
       .join("  ");
+
+  return [
+    formatRow(headers, chalk.bold),
+    ...rows.map((row) => formatRow(headers.map((_, i) => row[i] ?? ""))),
+  ];
+}
+
+export function printTable(headers: string[], rows: string[][]): void {
+  for (const line of formatTable(headers, rows)) {
     console.log(line);
   }
 }

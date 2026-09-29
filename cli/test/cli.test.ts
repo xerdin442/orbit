@@ -47,25 +47,35 @@ function orbit(args: string[], env: Record<string, string> = {}) {
   };
 }
 
-/** Like orbit(), but async so a fake API in this process can answer, and timed. */
+/**
+ * Like orbit(), but async so a fake API in this process can answer. `exitDelayMs` is
+ * the time from the last output to exit: how long the process lingered after it was
+ * done, independent of Node's startup time (which varies with machine load).
+ */
 function orbitAsync(args: string[], env: Record<string, string> = {}) {
   const baseEnv = { ...process.env };
   delete baseEnv.ORBIT_API_URL;
-  const started = Date.now();
 
-  return new Promise<{ status: number | null; output: string; ms: number }>(
-    (resolve) => {
-      const child = spawn(process.execPath, [bin, ...args], {
-        env: { ...baseEnv, ORBIT_CONFIG_DIR: configDir, NO_COLOR: "1", ...env },
-      });
-      let output = "";
-      child.stdout.on("data", (chunk) => (output += chunk));
-      child.stderr.on("data", (chunk) => (output += chunk));
-      child.on("close", (status) =>
-        resolve({ status, output, ms: Date.now() - started }),
-      );
-    },
-  );
+  return new Promise<{
+    status: number | null;
+    output: string;
+    exitDelayMs: number;
+  }>((resolve) => {
+    const child = spawn(process.execPath, [bin, ...args], {
+      env: { ...baseEnv, ORBIT_CONFIG_DIR: configDir, NO_COLOR: "1", ...env },
+    });
+    let output = "";
+    let lastOutputAt = Date.now();
+    const collect = (chunk: Buffer) => {
+      output += chunk;
+      lastOutputAt = Date.now();
+    };
+    child.stdout.on("data", collect);
+    child.stderr.on("data", collect);
+    child.on("close", (status) =>
+      resolve({ status, output, exitDelayMs: Date.now() - lastOutputAt }),
+    );
+  });
 }
 
 /** A logged-in, linked config pointing at the given API. */
@@ -233,7 +243,7 @@ describe("failing after an API request", () => {
   it("explains that the managed domain can't be removed, and exits 1 promptly", async () => {
     writeLinkedConfig(apiUrl);
 
-    const { status, output, ms } = await orbitAsync([
+    const { status, output, exitDelayMs } = await orbitAsync([
       "domains",
       "rm",
       "demo-abc1234.apps.example.test",
@@ -242,8 +252,9 @@ describe("failing after an API request", () => {
     expect(status).toBe(1);
     expect(output).toContain("managed Orbit domain and can't be removed");
     expect(output).not.toContain("Assertion failed");
-    // Exits on its own, well before the 2s safety net in index.ts would force it.
-    expect(ms).toBeLessThan(1_500);
+    // Exits on its own right after printing, rather than lingering until the 2s
+    // safety net in index.ts forces it.
+    expect(exitDelayMs).toBeLessThan(1_000);
   });
 
   it("reports a missing domain as not found", async () => {
