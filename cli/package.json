@@ -1,6 +1,6 @@
 {
   "name": "@xerdin442/orbit-cli",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.5",
   "description": "CLI for deploying apps on Orbit, a self-hosted PaaS",
   "type": "module",
   "bin": {
