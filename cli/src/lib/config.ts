@@ -53,8 +53,11 @@ export function ensureAuth(): string {
   return token;
 }
 
-export function ensureContext(): NonNullable<OrbitContext> {
-  ensureAuth();
+export function ensureContext(): {
+  ctx: NonNullable<OrbitContext>;
+  token: string;
+} {
+  const token = ensureAuth();
 
   const ctx = config.get("currentContext");
   if (!ctx) {
@@ -62,5 +65,5 @@ export function ensureContext(): NonNullable<OrbitContext> {
     process.exit(1);
   }
 
-  return ctx;
+  return { ctx, token };
 }
