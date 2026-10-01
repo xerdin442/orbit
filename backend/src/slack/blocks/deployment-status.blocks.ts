@@ -1,4 +1,5 @@
 import type { Block, KnownBlock } from '@slack/types';
+import { BuildStatus } from '@generated/client';
 
 interface StatusCardParams {
   project: string;
@@ -14,6 +15,9 @@ interface StatusCardParams {
   url?: string;
   commitSha?: string;
   commitMessage?: string;
+  startedAt?: string;
+  duration?: string;
+  triggeredBy?: string;
 }
 
 const STATUS_EMOJI: Record<StatusCardParams['status'], string> = {
@@ -36,11 +40,50 @@ const STATUS_LABEL: Record<StatusCardParams['status'], string> = {
   no_deployments: 'No Deployments',
 };
 
+export const BUILD_STATUS_TO_CARD_STATUS: Record<
+  BuildStatus,
+  StatusCardParams['status']
+> = {
+  pending: 'queued',
+  cloning: 'building',
+  building: 'building',
+  deploying: 'deploying',
+  ready: 'success',
+  failed: 'failed',
+  aborted: 'failed',
+};
+
+export function formatDuration(startMs: number, endMs: number): string {
+  const diff = Math.max(0, endMs - startMs);
+  const seconds = Math.floor(diff / 1000) % 60;
+  const minutes = Math.floor(diff / 60000) % 60;
+  const hours = Math.floor(diff / 3600000);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+
+  return `${seconds}s`;
+}
+
 export function buildDeploymentStatusBlocks(
   params: StatusCardParams,
 ): (Block | KnownBlock)[] {
-  const { project, environment, status, url, commitSha, commitMessage } =
-    params;
+  const {
+    project,
+    environment,
+    status,
+    url,
+    commitSha,
+    commitMessage,
+    startedAt,
+    duration,
+    triggeredBy,
+  } = params;
   const emoji = STATUS_EMOJI[status];
   const label = STATUS_LABEL[status];
 
@@ -68,25 +111,41 @@ export function buildDeploymentStatusBlocks(
     },
   ];
 
-  if (commitSha || commitMessage) {
+  const contextLines: string[] = [];
+  if (commitSha) {
+    contextLines.push(`\`${commitSha.slice(0, 7)}\``);
+  }
+  if (commitMessage) {
+    contextLines.push(commitMessage);
+  }
+  if (triggeredBy) {
+    contextLines.push(`Triggered by <@${triggeredBy}>`);
+  }
+  if (startedAt) {
+    const date = new Date(startedAt);
+    const timestamp = Math.floor(date.getTime() / 1000);
+    contextLines.push(
+      `Started <!date^${timestamp}^{date_num} {time_secs}|${date.toLocaleString()}>`,
+    );
+  }
+  if (duration) {
+    contextLines.push(`Duration: ${duration}`);
+  }
+
+  if (contextLines.length > 0) {
     blocks.push({
       type: 'context',
       elements: [
         {
           type: 'mrkdwn',
-          text: [
-            commitSha ? `\`${commitSha.slice(0, 7)}\`` : '',
-            commitMessage ?? '',
-          ]
-            .filter(Boolean)
-            .join(' — '),
+          text: contextLines.join(' • '),
         },
       ],
     });
   }
 
   if (url) {
-    blocks.push({
+    const actions: KnownBlock = {
       type: 'actions',
       elements: [
         {
@@ -99,7 +158,8 @@ export function buildDeploymentStatusBlocks(
           url,
         },
       ],
-    });
+    };
+    blocks.push(actions);
   }
 
   return blocks;

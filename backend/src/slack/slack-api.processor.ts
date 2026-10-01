@@ -1,6 +1,10 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Worker } from 'bullmq';
-import { SlackError, ErrorCode } from '@slack/web-api';
+import {
+  SlackError,
+  WebAPIPlatformError,
+  WebAPIRateLimitedError,
+} from '@slack/web-api';
 import { Logger } from '@src/common/logger';
 import type { SlackApiJob } from '@src/common/types';
 import { SlackApiService } from './slack-api.service';
@@ -20,9 +24,18 @@ export class SlackApiProcessor extends WorkerHost {
       await this.slackApi.call(teamId, method, args);
     } catch (error) {
       if (error instanceof SlackError) {
-        if (error.code === ErrorCode.RateLimitedError) {
+        if (error instanceof WebAPIRateLimitedError) {
           this.logger.warn(`Rate limited for team ${teamId}, retrying...`);
           throw Worker.RateLimitError();
+        }
+
+        if (
+          error instanceof WebAPIPlatformError &&
+          ['invalid_auth', 'account_inactive', 'token_revoked'].includes(
+            error.data.error,
+          )
+        ) {
+          this.slackApi.invalidateClient(teamId);
         }
 
         this.logger.error(
