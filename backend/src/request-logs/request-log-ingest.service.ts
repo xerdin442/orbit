@@ -29,15 +29,7 @@ export class RequestLogIngestService implements OnModuleInit, OnModuleDestroy {
     private readonly requestLogs: RequestLogsService,
   ) {}
 
-  async onModuleInit(): Promise<void> {
-    try {
-      await this.caddy.enableAccessLogging();
-    } catch (error) {
-      this.logger.error(
-        `Failed to enable Caddy access logging: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
+  onModuleInit(): void {
     void this.tailLoop();
   }
 
@@ -84,6 +76,14 @@ export class RequestLogIngestService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async tailOnce(): Promise<void> {
+    try {
+      await this.caddy.enableAccessLogging();
+    } catch (error) {
+      this.logger.error(
+        `Failed to enable Caddy access logging: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
     const stream = await this.docker.followContainerLogs(
       Secrets.CADDY_CONTAINER_NAME,
     );

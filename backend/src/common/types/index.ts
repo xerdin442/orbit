@@ -87,6 +87,7 @@ export interface ParsedAccessLogLine {
   hostname: string;
   statusCode: number;
   durationMs: number;
+  timestamp?: Date;
 }
 
 export const STATUS_CLASSES = ['2xx', '3xx', '4xx', '5xx'] as const;
