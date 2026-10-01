@@ -80,6 +80,7 @@ export function UserSection({
         <div className="absolute bottom-full mb-1 left-0 right-0 rounded-md bg-popover border border-border shadow-sm p-1">
           <Link
             href="/settings"
+            onClick={onAccountSettings}
             className="flex items-center gap-2 w-full px-3 py-2 rounded-sm text-sm text-popover-foreground hover:bg-accent transition-colors"
           >
             <UserRoundCog className="size-4" />
