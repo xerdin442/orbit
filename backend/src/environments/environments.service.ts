@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Queue } from 'bull';
 import type { DeploymentJob } from '@src/common/types';
 import { DbService } from '@src/db/db.service';
@@ -23,21 +24,10 @@ export class EnvironmentsService {
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
     private readonly activity: ActivityService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     @InjectQueue('deployments')
     private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
-
-  private async verifyProjectOwnership(projectId: string, userId: string) {
-    const project = await this.db.project.findFirst({
-      where: { id: projectId, ownerId: userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
-
-    return project;
-  }
 
   async create(projectId: string, userId: string, dto: CreateEnvironmentDto) {
     await this.verifyProjectOwnership(projectId, userId);
@@ -55,6 +45,8 @@ export class EnvironmentsService {
       projectId,
       environmentId: env.id,
     });
+
+    await this.invalidateEnvCache(projectId, env.id);
 
     return env;
   }
@@ -86,6 +78,8 @@ export class EnvironmentsService {
       environmentId: envId,
     });
 
+    await this.invalidateEnvCache(updated.projectId, envId);
+
     return updated;
   }
 
@@ -98,6 +92,8 @@ export class EnvironmentsService {
       projectId: env.projectId,
       environmentId: envId,
     });
+
+    await this.invalidateEnvCache(env.projectId, envId);
   }
 
   async getVariables(envId: string, userId: string) {
@@ -128,6 +124,8 @@ export class EnvironmentsService {
 
     await this.triggerRedeploy(envId);
 
+    await this.invalidateEnvCache(env.projectId, envId, true);
+
     await this.activity.log(ActivityType.variable_created, userId, {
       projectId: env.projectId,
       environmentId: envId,
@@ -146,20 +144,24 @@ export class EnvironmentsService {
       throw new NotFoundException('Variable not found');
     }
 
-    const env = await this.findById(existing.environmentId, userId);
-
     const encrypted = this.encryption.encrypt(dto.value);
 
     const updated = await this.db.environmentVariable.update({
       where: { id: varId },
       data: { value: encrypted },
+      include: { environment: true },
     });
 
-    await this.triggerRedeploy(existing.environmentId);
+    const projectId = updated.environment.projectId;
+    const envId = updated.environment.id;
+
+    await this.triggerRedeploy(envId);
+
+    await this.invalidateEnvCache(projectId, envId, true);
 
     await this.activity.log(ActivityType.variable_updated, userId, {
-      projectId: env.projectId,
-      environmentId: existing.environmentId,
+      projectId: projectId,
+      environmentId: envId,
       key: existing.key,
     });
 
@@ -169,23 +171,53 @@ export class EnvironmentsService {
   async deleteVariable(varId: string, userId: string) {
     const existing = await this.db.environmentVariable.findUnique({
       where: { id: varId },
+      include: { environment: true },
     });
 
     if (!existing) {
       throw new NotFoundException('Variable not found');
     }
 
-    const env = await this.findById(existing.environmentId, userId);
+    const projectId = existing.environment.projectId;
+    const envId = existing.environment.id;
 
     await this.db.environmentVariable.delete({ where: { id: varId } });
 
-    await this.triggerRedeploy(existing.environmentId);
+    await this.triggerRedeploy(envId);
+
+    await this.invalidateEnvCache(projectId, envId, true);
 
     await this.activity.log(ActivityType.variable_deleted, userId, {
-      projectId: env.projectId,
-      environmentId: existing.environmentId,
+      projectId: projectId,
+      environmentId: envId,
       key: existing.key,
     });
+  }
+
+  private async invalidateEnvCache(
+    projectId: string,
+    envId: string,
+    variableChange = false,
+  ) {
+    await this.cache.del(`/api/projects/${projectId}/environments/${envId}`);
+
+    if (variableChange) {
+      await this.cache.del(
+        `/api/projects/${projectId}/environments/${envId}/variables`,
+      );
+    }
+  }
+
+  private async verifyProjectOwnership(projectId: string, userId: string) {
+    const project = await this.db.project.findFirst({
+      where: { id: projectId, ownerId: userId },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return project;
   }
 
   private async triggerRedeploy(environmentId: string) {
