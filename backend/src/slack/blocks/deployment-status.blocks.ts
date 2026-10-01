@@ -111,36 +111,45 @@ export function buildDeploymentStatusBlocks(
     },
   ];
 
-  const contextLines: string[] = [];
-  if (commitSha) {
-    contextLines.push(`\`${commitSha.slice(0, 7)}\``);
-  }
-  if (commitMessage) {
-    contextLines.push(commitMessage);
+  const contextElements: { type: 'mrkdwn'; text: string }[] = [];
+  if (commitSha || commitMessage) {
+    const parts: string[] = [];
+    if (commitSha) {
+      parts.push(`\`${commitSha.slice(0, 7)}\``);
+    }
+    if (commitMessage) {
+      parts.push(commitMessage);
+    }
+    contextElements.push({
+      type: 'mrkdwn',
+      text: `:twisted_rightwards_arrows: ${parts.join(' ')}`,
+    });
   }
   if (triggeredBy) {
-    contextLines.push(`Triggered by <@${triggeredBy}>`);
+    contextElements.push({
+      type: 'mrkdwn',
+      text: `:bust_in_silhouette: Triggered by <@${triggeredBy}>`,
+    });
   }
   if (startedAt) {
     const date = new Date(startedAt);
     const timestamp = Math.floor(date.getTime() / 1000);
-    contextLines.push(
-      `Started <!date^${timestamp}^{date_num} {time_secs}|${date.toLocaleString()}>`,
-    );
+    contextElements.push({
+      type: 'mrkdwn',
+      text: `:calendar: *Started:* <!date^${timestamp}^{date_num} {time_secs}|${date.toLocaleString()}>`,
+    });
   }
   if (duration) {
-    contextLines.push(`Duration: ${duration}`);
+    contextElements.push({
+      type: 'mrkdwn',
+      text: `:stopwatch: *Duration:* ${duration}`,
+    });
   }
 
-  if (contextLines.length > 0) {
+  if (contextElements.length > 0) {
     blocks.push({
       type: 'context',
-      elements: [
-        {
-          type: 'mrkdwn',
-          text: contextLines.join(' • '),
-        },
-      ],
+      elements: contextElements,
     });
   }
 
@@ -155,6 +164,7 @@ export function buildDeploymentStatusBlocks(
             text: 'Open Deployment',
             emoji: true,
           },
+          style: 'primary',
           url,
         },
       ],
