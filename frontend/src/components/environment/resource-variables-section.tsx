@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { CopyToClipboardButton } from "@/components/shared/copy-to-clipboard-button";
 import { Skeleton } from "@/components/shared/skeleton";
 import { api } from "@/lib/api";
-import { cn, maskValue } from "@/lib/utils";
+import { cn, maskValue, RESOURCE_TYPE_LABELS } from "@/lib/utils";
 
 interface ResourceVariablesSectionProps {
   environmentId: string;
@@ -85,8 +85,8 @@ export function ResourceVariablesSection({
             >
               <p className="mb-2.5 text-xs font-medium text-foreground">
                 {resource.name}{" "}
-                <span className="text-muted-foreground capitalize">
-                  ({resource.type})
+                <span className="text-muted-foreground text-[11px]">
+                  ({RESOURCE_TYPE_LABELS[resource.type]})
                 </span>
               </p>
               <div className="space-y-1.25">
