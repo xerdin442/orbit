@@ -87,7 +87,7 @@ export class CommandService {
     const args = [
       'build',
       sourcePath,
-      '--tag',
+      '--name',
       imageTag,
       '--error-missing-start',
     ];
