@@ -23,9 +23,11 @@ describe('WorkbenchService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    (PostgresDriver as jest.Mock).mockImplementation(() => mockDriver);
-    (MysqlDriver as jest.Mock).mockImplementation(() => mockDriver);
-    (MongoDriver as jest.Mock).mockImplementation(() => mockDriver);
+    (PostgresDriver as unknown as jest.Mock).mockImplementation(
+      () => mockDriver,
+    );
+    (MysqlDriver as unknown as jest.Mock).mockImplementation(() => mockDriver);
+    (MongoDriver as unknown as jest.Mock).mockImplementation(() => mockDriver);
 
     db = {
       resource: {

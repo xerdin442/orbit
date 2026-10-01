@@ -12,7 +12,14 @@ import type { CleanupJob } from '@src/common/types';
 
 describe('CleanupService', () => {
   let service: CleanupService;
-  let db: jest.Mocked<Pick<DbService, 'project' | 'environment'>>;
+  let db: {
+    project: { findFirst: jest.Mock; delete: jest.Mock };
+    environment: {
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      delete: jest.Mock;
+    };
+  };
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
   let cache: jest.Mocked<{ del: jest.Mock }>;
   let queue: jest.Mocked<Pick<Queue, 'add'>>;
@@ -25,7 +32,7 @@ describe('CleanupService', () => {
         findUnique: jest.fn(),
         delete: jest.fn(),
       },
-    } as unknown as jest.Mocked<Pick<DbService, 'project' | 'environment'>>;
+    };
     activity = { log: jest.fn() };
     cache = { del: jest.fn() };
     queue = { add: jest.fn() };

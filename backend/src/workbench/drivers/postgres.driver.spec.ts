@@ -10,7 +10,7 @@ const mockEnd = jest.fn();
 describe('PostgresDriver', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (Client as jest.Mock).mockImplementation(() => ({
+    (Client as unknown as jest.Mock).mockImplementation(() => ({
       connect: mockConnect,
       query: mockQuery,
       end: mockEnd,

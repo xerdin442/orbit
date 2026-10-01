@@ -5,7 +5,7 @@ import { DbService } from '@src/db/db.service';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let db: jest.Mocked<Pick<DbService, 'user'>>;
+  let db: { user: { findUnique: jest.Mock; create: jest.Mock } };
 
   beforeEach(async () => {
     db = {
@@ -13,7 +13,7 @@ describe('UsersService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
       },
-    } as unknown as jest.Mocked<Pick<DbService, 'user'>>;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [UsersService, { provide: DbService, useValue: db }],

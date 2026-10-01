@@ -8,15 +8,32 @@ import { DeploymentsService } from '@src/deployments/deployments.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import type { Queue } from 'bullmq';
 import { getQueueToken } from '@nestjs/bullmq';
+import type { Deployment } from '@generated/client';
 
 describe('EnvironmentsService', () => {
   let service: EnvironmentsService;
-  let db: jest.Mocked<
-    Pick<
-      DbService,
-      'project' | 'environment' | 'environmentVariable' | 'deployment'
-    >
-  >;
+  let db: {
+    project: { findFirst: jest.Mock };
+    environment: {
+      create: jest.Mock;
+      findFirst: jest.Mock;
+      findUnique: jest.Mock;
+      findUniqueOrThrow: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
+      findMany: jest.Mock;
+    };
+    environmentVariable: {
+      findMany: jest.Mock;
+      create: jest.Mock;
+      createMany: jest.Mock;
+      findUnique: jest.Mock;
+      findFirst: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
+    };
+    deployment: { create: jest.Mock };
+  };
   let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
   let deployments: jest.Mocked<
@@ -46,12 +63,7 @@ describe('EnvironmentsService', () => {
         delete: jest.fn(),
       },
       deployment: { create: jest.fn() },
-    } as unknown as jest.Mocked<
-      Pick<
-        DbService,
-        'project' | 'environment' | 'environmentVariable' | 'deployment'
-      >
-    >;
+    };
 
     encryption = {
       encrypt: jest.fn((v) => `enc_${v}`),
@@ -87,7 +99,9 @@ describe('EnvironmentsService', () => {
       });
       db.environment.findFirst.mockResolvedValue(null);
       db.environment.create.mockResolvedValue({ id: 'env-1', name: 'staging' });
-      deployments.createDeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.createDeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.create('proj-1', 'user-1', {
         name: 'staging',
@@ -158,6 +172,31 @@ describe('EnvironmentsService', () => {
     });
   });
 
+  describe('findByProjectAndBranch', () => {
+    it('returns the environment matching the project and branch', async () => {
+      db.environment.findFirst.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+        branch: 'main',
+      });
+
+      const result = await service.findByProjectAndBranch('proj-1', 'main');
+
+      expect(result.id).toBe('env-1');
+      expect(db.environment.findFirst).toHaveBeenCalledWith({
+        where: { projectId: 'proj-1', branch: 'main' },
+      });
+    });
+
+    it('throws when no environment is linked to the branch', async () => {
+      db.environment.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.findByProjectAndBranch('proj-1', 'feature/x'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('findAllByProject', () => {
     it('verifies ownership and returns environments', async () => {
       db.project.findFirst.mockResolvedValue({
@@ -217,7 +256,9 @@ describe('EnvironmentsService', () => {
         ownerId: 'user-1',
       });
       db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
-      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.createVariable('env-1', 'user-1', {
         key: 'KEY',
@@ -295,7 +336,9 @@ describe('EnvironmentsService', () => {
       });
       db.environmentVariable.findMany.mockResolvedValue([]);
       db.environmentVariable.createMany.mockResolvedValue({ count: 2 });
-      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       const result = await service.bulkCreateVariables('env-1', 'user-1', {
         variables: [
@@ -383,7 +426,9 @@ describe('EnvironmentsService', () => {
         id: 'v1',
         environment: { id: 'env-1', projectId: 'proj-1' },
       });
-      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.updateVariable('v1', 'user-1', { value: 'new_secret' });
 
@@ -405,7 +450,9 @@ describe('EnvironmentsService', () => {
         id: 'v1',
         environment: { id: 'env-1', projectId: 'proj-1' },
       });
-      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.updateVariable('v1', 'user-1', { key: 'NEW_KEY' });
 
@@ -427,7 +474,9 @@ describe('EnvironmentsService', () => {
         id: 'v1',
         environment: { id: 'env-1', projectId: 'proj-1' },
       });
-      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.updateVariable('v1', 'user-1', {
         key: 'NEW_KEY',
@@ -479,7 +528,9 @@ describe('EnvironmentsService', () => {
         id: 'v1',
         environment: { id: 'env-1', projectId: 'proj-1' },
       });
-      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.triggerRedeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.updateVariable('v1', 'user-1', {
         key: 'KEY',
@@ -522,7 +573,9 @@ describe('EnvironmentsService', () => {
         projectId: 'proj-1',
         branch: 'main',
       });
-      deployments.createDeployment.mockResolvedValue({ id: 'dep-1' });
+      deployments.createDeployment.mockResolvedValue({
+        id: 'dep-1',
+      } as unknown as Deployment);
 
       await service.update('env-1', 'user-1', { branch: 'main' });
 

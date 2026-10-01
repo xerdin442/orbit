@@ -259,6 +259,74 @@ describe('GitHubService', () => {
     });
   });
 
+  describe('listRepositories', () => {
+    it('requests up to 100 repositories and returns them most-recently-added first', async () => {
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue({
+        id: 'inst-1',
+        installationId: 12345,
+        userId: 'user-1',
+      });
+      fetchSpy
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ token: 'installation-token' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              repositories: [
+                { full_name: 'owner/repo-a' },
+                { full_name: 'owner/repo-b' },
+              ],
+            }),
+        });
+
+      const result = await service.listRepositories(12345, 'user-1');
+
+      expect(fetchSpy).toHaveBeenNthCalledWith(
+        2,
+        'https://api.github.com/installation/repositories?per_page=100',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer installation-token',
+          }),
+        }),
+      );
+      expect(result).toEqual([
+        { full_name: 'owner/repo-b' },
+        { full_name: 'owner/repo-a' },
+      ]);
+    });
+
+    it('throws if the installation is not owned by the caller', async () => {
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue(null);
+
+      await expect(service.listRepositories(12345, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('throws when the repositories request fails', async () => {
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue({
+        id: 'inst-1',
+        installationId: 12345,
+        userId: 'user-1',
+      });
+      fetchSpy
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ token: 'installation-token' }),
+        })
+        .mockResolvedValueOnce({ ok: false, statusText: 'Forbidden' });
+
+      await expect(service.listRepositories(12345, 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
   describe('verifySignature', () => {
     it('returns false when no signature is provided', () => {
       expect(service.verifySignature(Buffer.from('payload'), '')).toBe(false);

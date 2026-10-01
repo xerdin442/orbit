@@ -37,8 +37,8 @@ describe('CloneRepositoryStep', () => {
     command = { gitClone: jest.fn() };
     log = { append: jest.fn() };
     step = new CloneRepositoryStep(
-      command as CommandService,
-      log as LogService,
+      command as unknown as CommandService,
+      log as unknown as LogService,
     );
   });
 

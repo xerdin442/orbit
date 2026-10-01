@@ -20,7 +20,10 @@ describe('ResolveCommitStep', () => {
   beforeEach(() => {
     command = { gitRevParse: jest.fn(), gitLog: jest.fn() };
     log = { append: jest.fn() };
-    step = new ResolveCommitStep(command as CommandService, log as LogService);
+    step = new ResolveCommitStep(
+      command as unknown as CommandService,
+      log as unknown as LogService,
+    );
   });
 
   it('sets commitSha and commitMessage', async () => {
