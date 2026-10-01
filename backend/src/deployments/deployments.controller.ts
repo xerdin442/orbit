@@ -1,12 +1,21 @@
-import { Controller, Get, Post, Param, UseGuards, Sse } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Sse,
+  Req,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { Observable, map } from 'rxjs';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
-import type { LogEntry } from '@src/common/types';
+import { ActivityService } from '@src/activity/activity.service';
+import type { LogEntry, AuthenticatedRequest } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
-import { DeploymentTrigger } from '@generated/client';
+import { ActivityType, DeploymentTrigger } from '@generated/client';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -14,11 +23,15 @@ export class DeploymentsController {
   constructor(
     private readonly deployments: DeploymentsService,
     private readonly logService: LogService,
+    private readonly activity: ActivityService,
     @InjectQueue('deployments') private readonly deployQueue: Queue,
   ) {}
 
   @Post('environments/:environmentId/deploy')
-  async deploy(@Param('environmentId') environmentId: string) {
+  async deploy(
+    @Req() req: AuthenticatedRequest,
+    @Param('environmentId') environmentId: string,
+  ) {
     const deployment = await this.deployments.createDeployment(
       environmentId,
       DeploymentTrigger.manual,
@@ -26,11 +39,17 @@ export class DeploymentsController {
 
     await this.deployQueue.add({ deploymentId: deployment.id });
 
+    await this.activity.log(ActivityType.deployment_started, req.user.id, {
+      deploymentId: deployment.id,
+      environmentId,
+      trigger: DeploymentTrigger.manual,
+    });
+
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
 
   @Post('deployments/:id/redeploy')
-  async redeploy(@Param('id') id: string) {
+  async redeploy(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const existing = await this.deployments.findById(id);
 
     const deployment = await this.deployments.createDeployment(
@@ -40,21 +59,39 @@ export class DeploymentsController {
 
     await this.deployQueue.add({ deploymentId: deployment.id });
 
+    await this.activity.log(ActivityType.deployment_started, req.user.id, {
+      deploymentId: deployment.id,
+      environmentId: existing.environmentId,
+      trigger: DeploymentTrigger.redeploy,
+    });
+
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
 
   @Post('deployments/:id/rollback')
-  async rollback(@Param('id') id: string) {
+  async rollback(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const deployment = await this.deployments.findForRollback(id);
 
     await this.deployQueue.add({ deploymentId: deployment.id });
+
+    await this.activity.log(ActivityType.deployment_rolled_back, req.user.id, {
+      deploymentId: deployment.id,
+      environmentId: deployment.environmentId,
+    });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
 
   @Post('deployments/:id/abort')
-  abort(@Param('id') id: string) {
-    return this.deployments.abortDeployment(id);
+  async abort(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    const deployment = await this.deployments.abortDeployment(id);
+
+    await this.activity.log(ActivityType.deployment_aborted, req.user.id, {
+      deploymentId: id,
+      environmentId: deployment.environmentId,
+    });
+
+    return deployment;
   }
 
   @Get('deployments/:id')

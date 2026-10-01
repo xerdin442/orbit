@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import jwt from 'jsonwebtoken';
 import { Secrets } from '@src/common/secrets';
 import { DbService } from '@src/db/db.service';
+import { ActivityService } from '@src/activity/activity.service';
+import { ActivityType } from '@generated/client';
 import { Logger } from '@src/common/logger';
 import { GitHubAccountResponse, GitHubRepositoryList } from '@src/common/types';
 
@@ -9,7 +11,10 @@ import { GitHubAccountResponse, GitHubRepositoryList } from '@src/common/types';
 export class GitHubService {
   private readonly logger = Logger(GitHubService.name);
 
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly activity: ActivityService,
+  ) {}
 
   getInstallUrl(): string {
     return `https://github.com/apps/${Secrets.GITHUB_APP_ID}/installations/new`;
@@ -53,9 +58,10 @@ export class GitHubService {
       },
     });
 
-    this.logger.info(
-      `GitHub installation created: ${installationId} (${data.account.login}) for user ${userId}`,
-    );
+    await this.activity.log(ActivityType.github_installation_added, userId, {
+      installationId,
+      accountLogin: data.account.login,
+    });
 
     return install;
   }

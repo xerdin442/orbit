@@ -3,13 +3,14 @@ import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
+import { ActivityService } from '@src/activity/activity.service';
 import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
 } from './dto/environment.dto';
 import { CreateVariableDto, UpdateVariableDto } from './dto/variable.dto';
-import { Logger } from '@src/common/logger';
 import {
+  ActivityType,
   BuildStatus,
   DeploymentTrigger,
   LifecycleStatus,
@@ -17,11 +18,10 @@ import {
 
 @Injectable()
 export class EnvironmentsService {
-  private readonly logger = Logger(EnvironmentsService.name);
-
   constructor(
     private readonly db: DbService,
     private readonly encryption: EncryptionService,
+    private readonly activity: ActivityService,
     @InjectQueue('deployments') private readonly deployQueue: Queue,
   ) {}
 
@@ -49,9 +49,10 @@ export class EnvironmentsService {
       },
     });
 
-    this.logger.info(
-      `Environment created: ${env.id} (${env.name}) in project ${projectId}`,
-    );
+    await this.activity.log(ActivityType.environment_created, userId, {
+      projectId,
+      environmentId: env.id,
+    });
 
     return env;
   }
@@ -78,17 +79,23 @@ export class EnvironmentsService {
       data: dto,
     });
 
-    this.logger.info(`Environment updated: ${envId}`);
+    await this.activity.log(ActivityType.environment_updated, userId, {
+      projectId: updated.projectId,
+      environmentId: envId,
+    });
 
     return updated;
   }
 
   async delete(envId: string, userId: string) {
-    await this.findById(envId, userId);
+    const env = await this.findById(envId, userId);
 
     await this.db.environment.delete({ where: { id: envId } });
 
-    this.logger.info(`Environment deleted: ${envId}`);
+    await this.activity.log(ActivityType.environment_deleted, userId, {
+      projectId: env.projectId,
+      environmentId: envId,
+    });
   }
 
   async getVariables(envId: string, userId: string) {
@@ -105,7 +112,7 @@ export class EnvironmentsService {
   }
 
   async createVariable(envId: string, userId: string, dto: CreateVariableDto) {
-    await this.findById(envId, userId);
+    const env = await this.findById(envId, userId);
 
     const encrypted = this.encryption.encrypt(dto.value);
 
@@ -119,6 +126,12 @@ export class EnvironmentsService {
 
     await this.triggerRedeploy(envId);
 
+    await this.activity.log(ActivityType.variable_created, userId, {
+      projectId: env.projectId,
+      environmentId: envId,
+      key: dto.key,
+    });
+
     return created;
   }
 
@@ -131,7 +144,7 @@ export class EnvironmentsService {
       throw new NotFoundException('Variable not found');
     }
 
-    await this.findById(existing.environmentId, userId);
+    const env = await this.findById(existing.environmentId, userId);
 
     const encrypted = this.encryption.encrypt(dto.value);
 
@@ -141,6 +154,12 @@ export class EnvironmentsService {
     });
 
     await this.triggerRedeploy(existing.environmentId);
+
+    await this.activity.log(ActivityType.variable_updated, userId, {
+      projectId: env.projectId,
+      environmentId: existing.environmentId,
+      key: existing.key,
+    });
 
     return updated;
   }
@@ -154,11 +173,17 @@ export class EnvironmentsService {
       throw new NotFoundException('Variable not found');
     }
 
-    await this.findById(existing.environmentId, userId);
+    const env = await this.findById(existing.environmentId, userId);
 
     await this.db.environmentVariable.delete({ where: { id: varId } });
 
     await this.triggerRedeploy(existing.environmentId);
+
+    await this.activity.log(ActivityType.variable_deleted, userId, {
+      projectId: env.projectId,
+      environmentId: existing.environmentId,
+      key: existing.key,
+    });
   }
 
   private async triggerRedeploy(environmentId: string) {
@@ -174,9 +199,5 @@ export class EnvironmentsService {
     });
 
     await this.deployQueue.add({ deploymentId: deployment.id });
-
-    this.logger.info(
-      `Redeploy triggered for environment ${environmentId} due to variable change`,
-    );
   }
 }

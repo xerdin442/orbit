@@ -102,6 +102,7 @@ export const ActivityType = {
   domain_removed: 'domain_removed',
   github_installation_added: 'github_installation_added',
   github_installation_removed: 'github_installation_removed',
+  github_webhook_event: 'github_webhook_event',
   resource_provisioned: 'resource_provisioned',
   resource_deleted: 'resource_deleted'
 } as const
