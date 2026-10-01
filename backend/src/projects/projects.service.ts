@@ -15,7 +15,7 @@ export class ProjectsService {
     const project = await this.db.$transaction(async (tx) => {
       const created = await tx.project.create({
         data: {
-          name: dto.name,
+          name: dto.name.toLowerCase(),
           healthCheck: dto.healthCheck ?? false,
           ownerId: userId,
           source: {
@@ -76,7 +76,10 @@ export class ProjectsService {
 
     const updated = await this.db.project.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        name: dto.name?.toLowerCase(),
+      },
       include: { source: true },
     });
 

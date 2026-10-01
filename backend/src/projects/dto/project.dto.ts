@@ -12,6 +12,10 @@ const repoUrlPattern =
 export class CreateProjectDto {
   @IsString()
   @IsNotEmpty()
+  @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, {
+    message:
+      'Name must be lowercase alphanumeric with optional hyphens, no spaces',
+  })
   name: string;
 
   @IsString()
@@ -32,6 +36,10 @@ export class UpdateProjectDto {
   @IsString()
   @IsNotEmpty()
   @IsOptional()
+  @Matches(/^[a-z0-9]+(-[a-z0-9]+)*$/, {
+    message:
+      'Name must be lowercase alphanumeric with optional hyphens, no spaces',
+  })
   name?: string;
 
   @IsBoolean()
