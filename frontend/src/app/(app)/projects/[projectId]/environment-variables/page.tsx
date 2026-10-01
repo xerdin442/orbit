@@ -27,7 +27,7 @@ import { ImportVariablesDialog } from "@/components/environment/import-variables
 import { ResourceVariablesSection } from "@/components/environment/resource-variables-section";
 import { useSelectedEnvironment } from "@/hooks/use-selected-environment";
 import { ENV_FILENAME_PATTERN, maskValue, parseEnvFile } from "@/lib/utils";
-import type { EnvironmentVariable } from "@/lib/types";
+import type { EnvironmentVariable, VariableEntry } from "@/lib/types";
 
 const PAGE_SIZE = 10;
 
@@ -42,9 +42,7 @@ export default function EnvironmentVariablesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<EnvironmentVariable | null>(null);
   const [deleting, setDeleting] = useState<EnvironmentVariable | null>(null);
-  const [importedVars, setImportedVars] = useState<
-    { key: string; value: string }[]
-  >([]);
+  const [importedVars, setImportedVars] = useState<VariableEntry[]>([]);
   const [importOpen, setImportOpen] = useState(false);
 
   const { data: variables, isLoading } = useQuery({
@@ -80,7 +78,18 @@ export default function EnvironmentVariablesPage() {
       return;
     }
 
-    const parsed = parseEnvFile(await file.text());
+    let parsed: VariableEntry[];
+    try {
+      parsed = parseEnvFile(await file.text());
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to parse "${file.name}"`,
+      );
+      return;
+    }
+
     if (parsed.length === 0) {
       toast.error(`No variables found in "${file.name}"`);
       return;
