@@ -83,6 +83,7 @@ export interface Deployment {
   containerId: string | null;
   trigger: DeploymentTrigger;
   buildStatus: BuildStatus;
+  failedStage: BuildStatus | null;
   lifecycleStatus: LifecycleStatus;
   environmentId: string;
   createdAt: string;

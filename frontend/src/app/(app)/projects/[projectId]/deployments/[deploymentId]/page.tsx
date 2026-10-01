@@ -203,7 +203,10 @@ export default function DeploymentDetailPage() {
         </SectionCard>
 
         <SectionCard title="Timeline">
-          <DeploymentTimeline buildStatus={deployment.buildStatus} />
+          <DeploymentTimeline
+            buildStatus={deployment.buildStatus}
+            failedStage={deployment.failedStage}
+          />
         </SectionCard>
 
         <SectionCard

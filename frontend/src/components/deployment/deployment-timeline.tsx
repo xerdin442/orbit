@@ -12,20 +12,29 @@ const STAGES: { status: BuildStatus; label: string }[] = [
 
 interface DeploymentTimelineProps {
   buildStatus: BuildStatus;
+  failedStage?: BuildStatus | null;
 }
 
-export function DeploymentTimeline({ buildStatus }: DeploymentTimelineProps) {
+export function DeploymentTimeline({
+  buildStatus,
+  failedStage,
+}: DeploymentTimelineProps) {
   const isTerminalFailure =
     buildStatus === "failed" || buildStatus === "aborted";
+  const failedStageIndex = failedStage
+    ? STAGES.findIndex((s) => s.status === failedStage)
+    : -1;
   const currentIndex = isTerminalFailure
-    ? STAGES.length - 1
+    ? failedStageIndex !== -1
+      ? failedStageIndex
+      : STAGES.length - 1
     : STAGES.findIndex((s) => s.status === buildStatus);
 
   return (
     <ol className="flex items-center">
       {STAGES.map((stage, index) => {
         const isLast = index === STAGES.length - 1;
-        const isFailedNode = isTerminalFailure && isLast;
+        const isFailedNode = isTerminalFailure && index === currentIndex;
         const isComplete =
           index < currentIndex ||
           (!isTerminalFailure &&
