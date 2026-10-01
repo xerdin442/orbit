@@ -7,6 +7,7 @@ This is the API and deployment engine. The [dashboard](../frontend) and the [CLI
 ## Features
 
 - **Git-to-URL Deployments**: Point Orbit at a repository and branch, and it clones, builds and starts the app, then serves it on a generated `https://` address. No Dockerfile needed: builds are detected automatically.
+  > If the repo contains a Dockerfile, Orbit builds from there instead.
 - **Auto-Deploy on Push**: Every push to a connected branch triggers a new deployment through the Orbit GitHub App.
 - **Branch Environments**: Each project can have several environments (e.g. `production` on `main`, `staging` on `develop`), each with its own URL, variables, databases and domains.
 - **Live Build Logs**: Follow every step of a deployment as it happens, from `git clone` to when your app is live.
@@ -72,7 +73,7 @@ Clone this repository and follow the instructions to set up the backend locally:
 ### 5. Start the Server
 
 - Run `npm run dev` (watch mode).
-- The API is available at `http://localhost:3000/api`. `GET /` returns a quick liveness check.
+- The API is available at `http://localhost:<PORT>/api`, and `GET /` returns a quick liveness check.
   > The backend runs on the host, not in Docker: it drives the Docker daemon, spawns `git` and `railpack`, and tails Caddy's logs.
 
 ### 6. Tests
@@ -387,5 +388,3 @@ curl -X PUT http://localhost:2019/config/apps/http/servers/srv0/routes/0 \
   4. build and restart the service
 - [`.github/workflows/deploy-backend.yml`](../.github/workflows/deploy-backend.yml) runs `deploy.sh` over SSH on every push to `main` that touches `backend/`. It needs the `DEPLOY_HOST`, `DEPLOY_USER` and `DEPLOY_SSH_KEY` secrets, and passwordless `sudo` for `systemctl restart orbit-backend` only.
 - **Disk usage**: build images and BuildKit's cache are the main consumers. Images are pruned automatically after 14 days. Check usage with `docker system df`, and reclaim build cache with `docker builder prune`.
-
-Happy shipping! :rocket:
