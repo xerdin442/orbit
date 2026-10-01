@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { WebClient } from '@slack/web-api';
 import type { Queue } from 'bullmq';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
+import { Secrets } from '@src/common/secrets';
 import type { SlackApiJob } from '@src/common/types';
 
 @Injectable()
@@ -27,6 +28,33 @@ export class SlackApiService {
 
   invalidateClient(teamId: string): void {
     this.clients.delete(teamId);
+  }
+
+  async disconnect(userId: string): Promise<void> {
+    const installation = await this.db.slackInstallation.findFirst({
+      where: { userId, isActive: true },
+    });
+
+    if (!installation) {
+      throw new NotFoundException('No active Slack installation found');
+    }
+
+    const result = await this.call(installation.teamId, 'apps.uninstall', {
+      client_id: Secrets.SLACK_CLIENT_ID,
+      client_secret: Secrets.SLACK_CLIENT_SECRET,
+    });
+
+    if (!result.ok) {
+      const error = (result as { error?: string }).error;
+      throw new Error(`Failed to uninstall Slack app: ${error}`);
+    }
+
+    await this.db.slackInstallation.update({
+      where: { id: installation.id },
+      data: { isActive: false },
+    });
+
+    this.invalidateClient(installation.teamId);
   }
 
   async enqueue(

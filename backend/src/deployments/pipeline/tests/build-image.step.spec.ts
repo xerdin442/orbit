@@ -53,7 +53,9 @@ describe('BuildImageStep', () => {
       stderr: '',
     });
 
-    await step.execute(mockCtx({ project: { buildDirectory: '../../apps/web' } }));
+    await step.execute(
+      mockCtx({ project: { buildDirectory: '../../apps/web' } }),
+    );
 
     expect(command.railpackBuild).toHaveBeenCalledWith(
       join('/tmp/build', 'apps', 'web'),
@@ -71,7 +73,9 @@ describe('BuildImageStep', () => {
       stderr: '',
     });
 
-    await step.execute(mockCtx({ project: { startCommand: 'npm run start:prod' } }));
+    await step.execute(
+      mockCtx({ project: { startCommand: 'npm run start:prod' } }),
+    );
 
     expect(command.railpackBuild).toHaveBeenCalledWith(
       '/tmp/build',
