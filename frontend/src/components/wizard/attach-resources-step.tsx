@@ -171,7 +171,7 @@ export function AttachResourcesStep({
       )}
 
       {selected.size > 0 && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-500/30 bg-blue-500/12 p-3 text-sm text-blue-700/85">
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-blue-500/20 bg-blue-500/8 p-3 text-sm text-blue-400">
           <Info className="mt-0.5 size-5 shrink-0" />
           <p>
             The connection variables for the selected resources will be injected

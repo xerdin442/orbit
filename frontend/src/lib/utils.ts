@@ -6,6 +6,10 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function maskValue(value: string): string {
+  return "•".repeat(Math.min(value.length, 24)) || "•".repeat(8);
+}
+
 export function buildStatusBadgeVariant(
   status: BuildStatus,
 ): "ready" | "failed" | "building" | "inactive" {
@@ -35,6 +39,8 @@ export function formatDuration(start: string, end: string | null): string {
   const remainingMinutes = minutes % 60;
   return `${hours}h ${remainingMinutes}m`;
 }
+
+export const ENV_FILENAME_PATTERN = /^\.env(\..+)?$/i;
 
 export function parseEnvFile(
   content: string,
