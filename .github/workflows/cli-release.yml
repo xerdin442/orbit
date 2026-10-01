@@ -64,7 +64,12 @@ jobs:
       - run: npm test
 
       - name: Publish to npm
-        run: npm publish --tag "${{ steps.version.outputs.dist_tag }}"
+        # Temporary: shows the OIDC token exchange while debugging the 403.
+        env:
+          NPM_CONFIG_LOGLEVEL: verbose
+        run: |
+          npm --version
+          npm publish --tag "${{ steps.version.outputs.dist_tag }}"
 
       - name: Create GitHub Release
         env:
