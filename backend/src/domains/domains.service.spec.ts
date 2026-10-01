@@ -22,6 +22,7 @@ describe('DomainsService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
         update: jest.fn(),
         delete: jest.fn(),
       },
@@ -113,6 +114,34 @@ describe('DomainsService', () => {
         value: '192.168.1.55',
       });
     });
+
+    it('throws if the environment has reached the custom domain cap', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
+      db.domain.count = jest.fn().mockResolvedValue(5);
+
+      await expect(
+        service.addCustomDomain('env-1', 'api.example.com', 'user-1'),
+      ).rejects.toThrow(ConflictException);
+      expect(db.domain.create).not.toHaveBeenCalled();
+    });
+
+    it('counts only custom domains in the target environment', async () => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
+      db.domain.create = jest.fn().mockResolvedValue({
+        id: 'd1',
+        hostname: 'api.example.com',
+        type: DomainType.custom,
+        status: DomainStatus.pending,
+      });
+
+      await service.addCustomDomain('env-1', 'api.example.com', 'user-1');
+
+      expect(db.domain.count).toHaveBeenCalledWith({
+        where: { environmentId: 'env-1', type: DomainType.custom },
+      });
+    });
   });
 
   describe('deleteDomain', () => {
@@ -151,9 +180,9 @@ describe('DomainsService', () => {
   describe('retryVerification', () => {
     it('throws if not found', async () => {
       db.domain.findFirst = jest.fn().mockResolvedValue(null);
-      await expect(
-        service.retryVerification('d1', 'user-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.retryVerification('d1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws if managed hostname', async () => {
@@ -162,9 +191,9 @@ describe('DomainsService', () => {
         type: DomainType.managed,
         status: DomainStatus.failed,
       });
-      await expect(
-        service.retryVerification('d1', 'user-1'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.retryVerification('d1', 'user-1')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws if domain has not failed', async () => {
@@ -173,9 +202,9 @@ describe('DomainsService', () => {
         type: DomainType.custom,
         status: DomainStatus.verifying,
       });
-      await expect(
-        service.retryVerification('d1', 'user-1'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.retryVerification('d1', 'user-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('resets a failed custom domain to pending', async () => {
