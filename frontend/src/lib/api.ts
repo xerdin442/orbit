@@ -321,11 +321,8 @@ export const api = {
         `/deployments/${id}/rollback`,
         { method: "POST" },
       ),
-    abort: (id: string, markedResources?: string[]) =>
-      request<void>(`/deployments/${id}/abort`, {
-        method: "POST",
-        body: JSON.stringify({ marked_resources: markedResources ?? [] }),
-      }),
+    abort: (id: string) =>
+      request<void>(`/deployments/${id}/abort`, { method: "POST" }),
     logs: (id: string) => request<DeploymentLog[]>(`/deployments/${id}/logs`),
     logsStreamUrl: (id: string) =>
       withAuthToken(`${API_URL}/deployments/${id}/logs/stream`),
