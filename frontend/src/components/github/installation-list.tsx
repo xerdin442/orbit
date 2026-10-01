@@ -9,8 +9,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import type { GitHubInstallation } from "@/lib/types";
 
-function GitHubIcon({ className }: { className?: string }) {
-  return <FontAwesomeIcon icon={faGithub} className={className} />;
+function GitHubIcon() {
+  return <FontAwesomeIcon icon={faGithub} size="2xl" />;
 }
 
 interface InstallationListProps {
@@ -40,7 +40,7 @@ export function InstallationList({
           className="h-7 text-xs"
           onClick={onConnect}
         >
-          <FontAwesomeIcon icon={faGithub} size="sm" />
+          <FontAwesomeIcon icon={faGithub} />
           Connect GitHub
         </Button>
       }
@@ -68,7 +68,7 @@ export function InstallationList({
           <EmptyState
             icon={GitHubIcon}
             title="No GitHub installations"
-            description="Connect your GitHub account to deploy repositories."
+            description="Connect your GitHub account and install the Orbit app."
             className="py-10"
           />
         )}

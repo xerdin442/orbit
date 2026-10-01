@@ -63,6 +63,7 @@ export function AbortButton({
         description="This stops the in-progress build and marks the deployment as aborted. This can't be undone."
         confirmLabel={submitting ? "Aborting..." : "Abort"}
         variant="destructive"
+        loading={submitting}
         onConfirm={handleConfirm}
         onCancel={() => !submitting && setOpen(false)}
       />
