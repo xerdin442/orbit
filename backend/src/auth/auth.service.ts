@@ -1,11 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '@src//users/users.service';
-import { Secrets } from '@src//common/secrets';
-import { GitHubTokenResponse, GitHubUser } from '@src/common/types';
+import { UsersService } from '@src/users/users.service';
+import { Secrets } from '@src/common/secrets';
+import { Logger } from '@src/common/logger';
+import type { GitHubTokenResponse, GitHubUser } from '@src/common/types';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = Logger(AuthService.name);
   constructor(
     private readonly users: UsersService,
     private readonly jwt: JwtService,

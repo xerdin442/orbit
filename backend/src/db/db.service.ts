@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Secrets } from '../common/secrets';
+import { Secrets } from '@src/common/secrets';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@generated/client';
 
