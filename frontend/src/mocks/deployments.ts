@@ -39,7 +39,7 @@ export const deployments: Deployment[] = [
     imageTag:
       "orbit-api-7f3c9a1e-2b4d-4e8a-9c1f-6a5b3d2e1f0c:b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
     containerId: "container-002",
-    trigger: "webhook",
+    trigger: "github",
     buildStatus: "ready",
     failedStage: null,
     lifecycleStatus: "inactive",

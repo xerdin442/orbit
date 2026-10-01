@@ -25,6 +25,9 @@ import {
   OctagonX,
   Hourglass,
   CircleX,
+  RefreshCw,
+  Plug,
+  Unplug,
 } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub, faSlack } from "@fortawesome/free-brands-svg-icons";
@@ -57,6 +60,7 @@ const iconMap: Record<ActivityType, React.ReactNode> = {
   domain_added: <GlobeCheck className="size-4" />,
   domain_removed: <GlobeX className="size-4" />,
   domain_verified: <GlobeLock className="size-4" />,
+  domain_verification_retried: <RefreshCw className="size-3.75" />,
   github_installation_added: (
     <FontAwesomeIcon icon={faGithub} className="size-3.5" />
   ),
@@ -76,6 +80,8 @@ const iconMap: Record<ActivityType, React.ReactNode> = {
     <FontAwesomeIcon icon={faSlack} className="size-3.5" />
   ),
   slack_token_revoked: <FontAwesomeIcon icon={faSlack} className="size-3.5" />,
+  external_connection_added: <Plug className="size-4" />,
+  external_connection_removed: <Unplug className="size-4" />,
 };
 
 function formatType(type: ActivityType): string {
