@@ -72,16 +72,14 @@ export default function ProjectOverviewPage() {
   }, [project, setSelectedProject]);
 
   const latestDeployment = deployments?.data?.[0];
-  const previousDeployment = deployments?.data?.[1];
+  const previousDeployment = deployments?.data?.find(
+    (d) => d.lifecycleStatus === "inactive" && d.buildStatus === "ready",
+  );
   const currentDeployment = deployments?.data?.find(
     (d) => d.lifecycleStatus === "active" && d.buildStatus === "ready",
   );
   const canRedeploy =
     !!currentDeployment && currentDeployment.id === latestDeployment?.id;
-  const canRollbackToPrevious =
-    !!previousDeployment &&
-    (previousDeployment.lifecycleStatus === "inactive" ||
-      previousDeployment.buildStatus === "ready");
 
   const repoName = project?.source?.repositoryUrl.replace(
     "https://github.com/",
@@ -192,7 +190,6 @@ export default function ProjectOverviewPage() {
                     deploymentId={previousDeployment.id}
                     commitSha={previousDeployment.commitSha}
                     onRolledBack={handleDeploymentChanged}
-                    disabled={!canRollbackToPrevious}
                     className="text-xs"
                   />
                 )}
