@@ -141,9 +141,9 @@ export class DeploymentProcessor {
       new CreateContainerStep(this.docker),
       new StartContainerStep(this.docker),
       new HealthCheckStep(this.docker),
-      new ConfigureProxyStep(this.caddy),
+      new ConfigureProxyStep(this.caddy, this.db),
       new ActivateDeploymentStep(this.db),
-      new CleanupStep(this.docker, this.db),
+      new CleanupStep(this.docker, this.caddy, this.db),
     ];
   }
 
