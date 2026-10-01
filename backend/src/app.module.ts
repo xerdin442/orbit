@@ -7,7 +7,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Secrets } from './common/secrets';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { applyThrottlerConfig } from './common/util';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
@@ -23,7 +23,7 @@ import { CleanupModule } from '@src/cleanup/cleanup.module';
 import { SlackModule } from '@src/slack/slack.module';
 import { RequestLogsModule } from '@src/request-logs/request-logs.module';
 import { MigrationsModule } from '@src/migrations/migrations.module';
-import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import KeyvRedis from '@keyv/redis';
 
@@ -71,10 +71,6 @@ import KeyvRedis from '@keyv/redis';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
     },
   ],
 })
