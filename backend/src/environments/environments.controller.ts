@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -14,7 +15,11 @@ import {
   CreateEnvironmentDto,
   UpdateEnvironmentDto,
 } from './dto/environment.dto';
-import { CreateVariableDto, UpdateVariableDto } from './dto/variable.dto';
+import {
+  CreateVariableDto,
+  UpdateVariableDto,
+  BulkCreateVariablesDto,
+} from './dto/variable.dto';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 
@@ -69,8 +74,29 @@ export class EnvironmentsController {
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: CreateVariableDto,
+    @Query('skip_redeploy') skipRedeploy?: string,
   ) {
-    return this.environments.createVariable(id, req.user.id, dto);
+    return this.environments.createVariable(
+      id,
+      req.user.id,
+      dto,
+      skipRedeploy === 'true',
+    );
+  }
+
+  @Post(':id/variables/bulk')
+  bulkCreateVariables(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: BulkCreateVariablesDto,
+    @Query('skip_redeploy') skipRedeploy?: string,
+  ) {
+    return this.environments.bulkCreateVariables(
+      id,
+      req.user.id,
+      dto,
+      skipRedeploy === 'true',
+    );
   }
 
   @Patch('variables/:id')
@@ -78,12 +104,26 @@ export class EnvironmentsController {
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: UpdateVariableDto,
+    @Query('skip_redeploy') skipRedeploy?: string,
   ) {
-    return this.environments.updateVariable(id, req.user.id, dto);
+    return this.environments.updateVariable(
+      id,
+      req.user.id,
+      dto,
+      skipRedeploy === 'true',
+    );
   }
 
   @Delete('variables/:id')
-  deleteVariable(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.environments.deleteVariable(id, req.user.id);
+  deleteVariable(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Query('skip_redeploy') skipRedeploy?: string,
+  ) {
+    return this.environments.deleteVariable(
+      id,
+      req.user.id,
+      skipRedeploy === 'true',
+    );
   }
 }

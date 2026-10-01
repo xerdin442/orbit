@@ -5,7 +5,6 @@ import { JwtService } from '@nestjs/jwt';
 import { ActivityService } from '@src/activity/activity.service';
 import { REDIS_CLIENT } from '@src/common/cache';
 import { UnauthorizedException } from '@nestjs/common';
-import { Secrets } from '@src/common/secrets';
 
 jest.mock('@src/common/secrets', () => ({
   Secrets: {
@@ -204,9 +203,9 @@ describe('AuthService', () => {
         json: () => Promise.resolve({}),
       });
 
-      await expect(
-        service.handleGitHubCallback('bad-code'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.handleGitHubCallback('bad-code')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -237,9 +236,9 @@ describe('AuthService', () => {
         new UnauthorizedException('User not found'),
       );
 
-      await expect(
-        service.getAuthenticatedUser('nonexistent'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.getAuthenticatedUser('nonexistent')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

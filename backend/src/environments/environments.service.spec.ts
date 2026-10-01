@@ -37,6 +37,7 @@ describe('EnvironmentsService', () => {
       environmentVariable: {
         findMany: jest.fn(),
         create: jest.fn(),
+        createMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
@@ -186,7 +187,13 @@ describe('EnvironmentsService', () => {
       db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
       db.environment.findUniqueOrThrow.mockResolvedValue({
         id: 'env-1',
-        deployments: [{ imageTag: 'project-proj-1:abc', commitSha: 'abc', commitMessage: 'init' }],
+        deployments: [
+          {
+            imageTag: 'project-proj-1:abc',
+            commitSha: 'abc',
+            commitMessage: 'init',
+          },
+        ],
       });
       db.deployment.create.mockResolvedValue({ id: 'dep-1' });
 
@@ -198,6 +205,54 @@ describe('EnvironmentsService', () => {
       expect(encryption.encrypt).toHaveBeenCalledWith('secret');
       expect(queue.add).toHaveBeenCalled();
       expect(activity.log).toHaveBeenCalled();
+    });
+  });
+
+  describe('bulkCreateVariables', () => {
+    it('encrypts all values and calls createMany', async () => {
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        projectId: 'proj-1',
+      });
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environmentVariable.createMany.mockResolvedValue({ count: 2 });
+      db.environment.findUniqueOrThrow.mockResolvedValue({
+        id: 'env-1',
+        deployments: [
+          {
+            imageTag: 'project-proj-1:abc',
+            commitSha: 'abc',
+            commitMessage: 'init',
+          },
+        ],
+      });
+      db.deployment.create.mockResolvedValue({ id: 'dep-1' });
+
+      const result = await service.bulkCreateVariables('env-1', 'user-1', {
+        variables: [
+          { key: 'KEY_A', value: 'val_a' },
+          { key: 'KEY_B', value: 'val_b' },
+        ],
+      });
+
+      expect(encryption.encrypt).toHaveBeenCalledWith('val_a');
+      expect(encryption.encrypt).toHaveBeenCalledWith('val_b');
+      expect(db.environmentVariable.createMany).toHaveBeenCalledWith({
+        data: [
+          { key: 'KEY_A', value: 'enc_val_a', environmentId: 'env-1' },
+          { key: 'KEY_B', value: 'enc_val_b', environmentId: 'env-1' },
+        ],
+      });
+      expect(queue.add).toHaveBeenCalled();
+      expect(activity.log).toHaveBeenCalledWith(
+        expect.stringContaining('variable_created'),
+        'user-1',
+        expect.objectContaining({ count: 2 }),
+      );
+      expect(result).toEqual({ count: 2 });
     });
   });
 
