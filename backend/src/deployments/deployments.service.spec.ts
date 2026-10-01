@@ -262,6 +262,26 @@ describe('DeploymentsService', () => {
     });
   });
 
+  describe('updateCommit', () => {
+    it('updates commit sha and message', async () => {
+      await service.updateCommit('dep-1', 'abc123', 'initial commit');
+      expect(db.deployment.update).toHaveBeenCalledWith({
+        where: { id: 'dep-1' },
+        data: { commitSha: 'abc123', commitMessage: 'initial commit' },
+      });
+    });
+  });
+
+  describe('updateBuildImage', () => {
+    it('updates the image tag', async () => {
+      await service.updateBuildImage('dep-1', 'app:latest');
+      expect(db.deployment.update).toHaveBeenCalledWith({
+        where: { id: 'dep-1' },
+        data: { imageTag: 'app:latest' },
+      });
+    });
+  });
+
   describe('markCompleted', () => {
     it('sets completedAt', async () => {
       await service.markCompleted('dep-1');
@@ -279,6 +299,18 @@ describe('DeploymentsService', () => {
         where: { id: 'dep-1' },
         data: {
           buildStatus: BuildStatus.failed,
+          lifecycleStatus: LifecycleStatus.aborted,
+        },
+      });
+    });
+
+    it('records the stage the deployment failed at', async () => {
+      await service.markFailed('dep-1', BuildStatus.building);
+      expect(db.deployment.update).toHaveBeenCalledWith({
+        where: { id: 'dep-1' },
+        data: {
+          buildStatus: BuildStatus.failed,
+          failedStage: BuildStatus.building,
           lifecycleStatus: LifecycleStatus.aborted,
         },
       });
