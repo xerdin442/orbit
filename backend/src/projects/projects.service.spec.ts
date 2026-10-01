@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ProjectsService } from './projects.service';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
@@ -57,6 +58,7 @@ describe('ProjectsService', () => {
         { provide: EncryptionService, useValue: encryption },
         { provide: GitHubService, useValue: github },
         { provide: ActivityService, useValue: activity },
+        { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
       ],
     }).compile();
 

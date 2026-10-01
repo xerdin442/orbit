@@ -1,9 +1,14 @@
-import { randomBytes } from 'crypto';
 import { DbService } from '@src/db/db.service';
 import { CaddyService } from '@src/infrastructure/caddy.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { ActivityType, LogLevel, DomainStatus } from '@generated/client';
+import { Secrets } from '@src/common/secrets';
+import {
+  ActivityType,
+  DomainStatus,
+  DomainType,
+  LogLevel,
+} from '@generated/client';
 import {
   DeploymentStep,
   DeploymentContext,
@@ -28,18 +33,24 @@ export class ConfigureProxyStep implements DeploymentStep {
     );
 
     const existing = await this.db.domain.findFirst({
-      where: { environmentId: ctx.environment.id },
+      where: { environmentId: ctx.environment.id, type: DomainType.managed },
     });
 
     if (existing) {
       ctx.domain = existing.hostname;
     } else {
-      const suffix = randomBytes(4).toString('hex');
-      ctx.domain = `${ctx.project.name}-${suffix}.orbit.app`;
+      const isDefaultBranch =
+        ctx.environment.branch ===
+        (ctx.project.source?.defaultBranch ?? 'main');
+
+      ctx.domain = isDefaultBranch
+        ? `${ctx.project.name}.${Secrets.INGRESS_HOST}`
+        : `${ctx.project.name}-${ctx.environment.name}.${Secrets.INGRESS_HOST}`;
 
       const domain = await this.db.domain.create({
         data: {
           hostname: ctx.domain,
+          type: DomainType.managed,
           status: DomainStatus.active,
           environmentId: ctx.environment.id,
         },
@@ -49,7 +60,6 @@ export class ConfigureProxyStep implements DeploymentStep {
         domainId: domain.id,
         hostname: domain.hostname,
         environmentId: ctx.environment.id,
-        projectId: ctx.environment.projectId,
       });
     }
 

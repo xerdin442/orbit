@@ -24,6 +24,8 @@ jest.mock('@src/common/secrets', () => ({
     FRONTEND_URL: 'http://localhost:5173',
     DOCKER_SOCKET: '/var/run/docker.sock',
     CADDY_ADMIN_URL: 'http://localhost:2019',
+    INGRESS_HOST: '192.168.1.55.sslip.io',
+    INGRESS_IP: '192.168.1.55',
     POSTGRES_IMAGE_TAG: 'postgres:16-alpine',
     MYSQL_IMAGE_TAG: 'mysql:8.4',
     REDIS_IMAGE_TAG: 'redis:7-alpine',
