@@ -115,17 +115,15 @@ describe('CaddyService', () => {
       );
 
       expect(fetchMock).toHaveBeenCalledWith(
-        'http://localhost:2019/id/orbit-route-app-example-com',
+        'http://localhost:2019/config/apps/http/servers/srv0/routes/0',
         expect.objectContaining({
-          method: 'PATCH',
-          body: expect.stringContaining(
-            '"project-proj-1-deployment-dep-1:8080"',
-          ),
+          method: 'PUT',
+          body: expect.stringContaining('"container-1:8080"'),
         }),
       );
     });
 
-    it('dials the container by name rather than its full ID, since Docker DNS cannot resolve a 64-char ID', async () => {
+    it('dials the container by its 12-char short ID, which Docker DNS can resolve', async () => {
       db.environment.findUniqueOrThrow.mockResolvedValue({
         id: 'env-1',
         currentDeploymentId: 'dep-1',
@@ -137,21 +135,14 @@ describe('CaddyService', () => {
           'cff6948fe1d450dbc2061e3ef59c126ef16814c6d8d1d4d57428269bd4429557',
       });
       db.domain.findMany.mockResolvedValue([{ hostname: 'app.example.com' }]);
-      docker.inspectContainer.mockResolvedValue({
-        Name: '/project-proj-1-deployment-dep-1',
-      });
 
       await service.syncEnvironment('env-1');
 
-      expect(docker.inspectContainer).toHaveBeenCalledWith(
-        'cff6948fe1d450dbc2061e3ef59c126ef16814c6d8d1d4d57428269bd4429557',
-      );
+      expect(docker.inspectContainer).not.toHaveBeenCalled();
       expect(fetchMock).toHaveBeenCalledWith(
-        'http://localhost:2019/id/orbit-route-app-example-com',
+        'http://localhost:2019/config/apps/http/servers/srv0/routes/0',
         expect.objectContaining({
-          body: expect.stringContaining(
-            '"project-proj-1-deployment-dep-1:8080"',
-          ),
+          body: expect.stringContaining('"cff6948fe1d4:8080"'),
         }),
       );
     });
@@ -174,12 +165,42 @@ describe('CaddyService', () => {
       await expect(service.syncEnvironment('env-1')).resolves.not.toThrow();
 
       expect(fetchMock).toHaveBeenCalledWith(
-        'http://localhost:2019/id/orbit-route-app-example-com',
-        expect.objectContaining({ method: 'PATCH' }),
+        'http://localhost:2019/config/apps/http/servers/srv0/routes/0',
+        expect.objectContaining({ method: 'PUT' }),
       );
     });
 
-    it('creates the route via the routes array when it does not exist yet', async () => {
+    it('removes any stale route before inserting, ahead of the catch-all', async () => {
+      db.environment.findUniqueOrThrow.mockResolvedValue({
+        id: 'env-1',
+        currentDeploymentId: 'dep-1',
+        project: { id: 'proj-1', healthCheckPort: 8080 },
+      });
+      db.deployment.findUniqueOrThrow.mockResolvedValue({
+        id: 'dep-1',
+        containerId: 'container-1',
+      });
+      db.domain.findMany.mockResolvedValue([{ hostname: 'app.example.com' }]);
+
+      await service.syncEnvironment('env-1');
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:2019/id/orbit-route-app-example-com',
+        expect.objectContaining({ method: 'DELETE' }),
+      );
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:2019/config/apps/http/servers/srv0/routes/0',
+        expect.objectContaining({
+          method: 'PUT',
+          body: expect.stringContaining('"container-1:8080"'),
+        }),
+      );
+    });
+
+    it('swallows a missing-route 404 when deleting a route that does not exist yet', async () => {
       db.environment.findUniqueOrThrow.mockResolvedValue({
         id: 'env-1',
         currentDeploymentId: 'dep-1',
@@ -203,27 +224,16 @@ describe('CaddyService', () => {
       });
       fetchMock.mockResolvedValueOnce({ ok: true });
 
-      await service.syncEnvironment('env-1');
-
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        1,
-        'http://localhost:2019/id/orbit-route-app-example-com',
-        expect.objectContaining({ method: 'PATCH' }),
-      );
+      await expect(service.syncEnvironment('env-1')).resolves.not.toThrow();
 
       expect(fetchMock).toHaveBeenNthCalledWith(
         2,
-        'http://localhost:2019/config/apps/http/servers/srv0/routes',
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining(
-            '"project-proj-1-deployment-dep-1:8080"',
-          ),
-        }),
+        'http://localhost:2019/config/apps/http/servers/srv0/routes/0',
+        expect.objectContaining({ method: 'PUT' }),
       );
     });
 
-    it('propagates errors unrelated to a missing object ID', async () => {
+    it('propagates delete errors unrelated to a missing object ID', async () => {
       db.environment.findUniqueOrThrow.mockResolvedValue({
         id: 'env-1',
         currentDeploymentId: 'dep-1',
