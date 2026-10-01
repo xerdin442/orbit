@@ -9,6 +9,16 @@ import {
   DeploymentStepExecutionError,
 } from '@src/common/types';
 
+function resolveContainerCommand(startCommand: string | null) {
+  const trimmed = startCommand?.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  return ['sh', '-c', trimmed];
+}
+
 export class CreateContainerStep implements DeploymentStep {
   readonly name = DeploymentStepName.CreateContainer;
 
@@ -36,6 +46,7 @@ export class CreateContainerStep implements DeploymentStep {
       name: `project-${ctx.project.id}-deployment-${ctx.deployment.id}`,
       Image: ctx.imageTag,
       Env: ctx.variables,
+      Cmd: resolveContainerCommand(ctx.project.startCommand),
       HostConfig: {
         NetworkMode: network.id,
         RestartPolicy: { Name: 'unless-stopped' },
