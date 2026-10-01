@@ -76,6 +76,6 @@ import KeyvRedis from '@keyv/redis';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestLoggerMiddleware).forRoutes('*');
+    consumer.apply(RequestLoggerMiddleware).forRoutes('{*path}');
   }
 }
