@@ -17,6 +17,8 @@ services:
     command: ["caddy", "run", "--config", "/etc/caddy/caddy.json"]
     environment:
       - CADDY_ON_DEMAND_ASK=${CADDY_ON_DEMAND_ASK}
+      - ACME_EMAIL=${ACME_EMAIL}
+      - ZEROSSL_API_KEY=${ZEROSSL_API_KEY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
