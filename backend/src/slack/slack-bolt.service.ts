@@ -1,8 +1,12 @@
-import { Injectable, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import {
   App,
-  ExpressReceiver,
   type AnyMiddlewareArgs,
   type AllMiddlewareArgs,
   type Middleware,
@@ -44,9 +48,8 @@ const RATE_LIMIT_MAX_COMMANDS = 10;
 const RATE_LIMIT_MAX_DEPLOYMENTS = 2;
 
 @Injectable()
-export class SlackBoltService {
+export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = Logger(SlackBoltService.name);
-  public readonly receiver: ExpressReceiver;
   public readonly app: App<SlackCommandContext>;
 
   constructor(
@@ -59,14 +62,9 @@ export class SlackBoltService {
     @InjectQueue('deployments')
     private readonly deployQueue: Queue<DeploymentJob>,
   ) {
-    this.receiver = new ExpressReceiver({
-      signingSecret: Secrets.SLACK_SIGNING_SECRET,
-      installationStore: this.installationStore,
-      processBeforeResponse: true,
-    });
-
     this.app = new App<SlackCommandContext>({
-      receiver: this.receiver,
+      appToken: Secrets.SLACK_APP_TOKEN,
+      socketMode: true,
       authorize: async ({ teamId, enterpriseId, isEnterpriseInstall }) => {
         const installation = await this.installationStore.fetchInstallation({
           teamId,
@@ -88,6 +86,15 @@ export class SlackBoltService {
     this.registerLifecycleEvents();
     this.registerCommands();
     this.registerViewSubmissions();
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.app.start();
+    this.logger.info('Slack app connected via Socket Mode');
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.app.stop();
   }
 
   private registerMiddleware(): void {
