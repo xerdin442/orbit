@@ -184,6 +184,8 @@ export const api = {
   slack: {
     installUrl: () =>
       request<{ url: string }>("/slack/install").then((r) => r.url),
+    disconnect: () =>
+      request<void>("/slack/installation", { method: "DELETE" }),
   },
 
   environments: {
