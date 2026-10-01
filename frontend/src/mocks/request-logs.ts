@@ -1,14 +1,14 @@
 import type { RequestLog } from "@/lib/types";
 
-const PATHS = [
-  "/",
-  "/api/users",
-  "/api/users/42",
-  "/api/orders?page=2",
-  "/api/health",
-  "/api/webhooks/stripe",
-  "/static/app.js",
-  "/api/auth/session",
+const PATHS: [string, string | null][] = [
+  ["/", null],
+  ["/api/users", null],
+  ["/api/users/42", null],
+  ["/api/orders", "page=2&status=open"],
+  ["/api/health", null],
+  ["/api/webhooks/stripe", null],
+  ["/static/app.js", null],
+  ["/api/auth/session", null],
 ];
 
 const METHOD_WEIGHTS: [string, number][] = [
@@ -44,16 +44,20 @@ function generateEntries(
   count: number,
   idPrefix: string,
 ): RequestLog[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `${idPrefix}-${i}`,
-    environmentId,
-    hostname,
-    method: weightedPick(METHOD_WEIGHTS, i),
-    uri: PATHS[i % PATHS.length],
-    statusCode: weightedPick(STATUS_WEIGHTS, i * 3 + 1),
-    durationMs: 8 + ((i * 37) % 420),
-    timestamp: new Date(Date.now() - i * 45 * 1000).toISOString(),
-  }));
+  return Array.from({ length: count }, (_, i) => {
+    const [path, query] = PATHS[i % PATHS.length];
+    return {
+      id: `${idPrefix}-${i}`,
+      environmentId,
+      hostname,
+      method: weightedPick(METHOD_WEIGHTS, i),
+      path,
+      query,
+      statusCode: weightedPick(STATUS_WEIGHTS, i * 3 + 1),
+      durationMs: 8 + ((i * 37) % 420),
+      timestamp: new Date(Date.now() - i * 45 * 1000).toISOString(),
+    };
+  });
 }
 
 export const requestLogsByEnv: Record<string, RequestLog[]> = {

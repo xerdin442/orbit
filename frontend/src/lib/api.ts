@@ -413,6 +413,7 @@ export const api = {
         page?: number;
         limit?: number;
         method?: string;
+        path?: string;
         statusClass?: StatusClass;
       },
     ) => {
@@ -420,6 +421,7 @@ export const api = {
       if (params?.page) searchParams.set("page", String(params.page));
       if (params?.limit) searchParams.set("limit", String(params.limit));
       if (params?.method) searchParams.set("method", params.method);
+      if (params?.path) searchParams.set("path", params.path);
       if (params?.statusClass)
         searchParams.set("statusClass", params.statusClass);
       const qs = searchParams.toString();

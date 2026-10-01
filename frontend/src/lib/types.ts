@@ -158,7 +158,8 @@ export interface RequestLog {
   environmentId: string;
   timestamp: string;
   method: string;
-  uri: string;
+  path: string;
+  query: string | null;
   statusCode: number;
   durationMs: number;
   hostname: string;
