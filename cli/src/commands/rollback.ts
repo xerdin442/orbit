@@ -6,6 +6,7 @@ import { streamLogs } from "./logs.js";
 
 interface Deployment {
   id: string;
+  lifecycleStatus: string;
 }
 
 interface PaginatedDeployments {
@@ -27,21 +28,21 @@ export function registerRollbackCommand(program: Command) {
 
       try {
         if (!deploymentId) {
+          // Only a successful deployment that isn't currently live can be rolled back to.
           const deps = await api.get<PaginatedDeployments>(
-            `/environments/${ctx.environmentId}/deployments?limit=10`,
+            `/environments/${ctx.environmentId}/deployments?status=ready&limit=20`,
           );
 
-          if (!deps.data[0] || deps.data.length < 2) {
-            error("No previous deployment to rollback to.");
+          const target = deps.data.find(
+            (d) => d.lifecycleStatus === "inactive",
+          );
+
+          if (!target) {
+            error("No previous successful deployment to rollback to.");
             process.exit(1);
           }
 
-          deploymentId = deps.data[1]!.id;
-        }
-
-        if (!deploymentId) {
-          error("No deployment specified for rollback.");
-          process.exit(1);
+          deploymentId = target.id;
         }
 
         const result = await api.post<DeployResult>(
