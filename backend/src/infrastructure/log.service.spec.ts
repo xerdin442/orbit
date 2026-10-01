@@ -1,8 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LogService } from './log.service';
 import { DbService } from '@src/db/db.service';
-import { LogLevel } from '@generated/client';
-import { LogEntry } from '@src/common/types';
+import { LogLevel, type DeploymentLog } from '@generated/client';
 
 describe('LogService', () => {
   let service: LogService;
@@ -25,7 +24,8 @@ describe('LogService', () => {
 
   describe('append', () => {
     it('persists to DB and emits to subscribers', async () => {
-      const entry: LogEntry = {
+      const entry: DeploymentLog = {
+        id: 'log-1',
         deploymentId: 'dep-1',
         timestamp: new Date(),
         level: LogLevel.INFO,
@@ -33,7 +33,7 @@ describe('LogService', () => {
       };
       db.deploymentLog.create.mockResolvedValue(entry);
 
-      const received: LogEntry[] = [];
+      const received: DeploymentLog[] = [];
       service.subscribe('dep-1').subscribe((e) => received.push(e));
 
       await service.append('dep-1', LogLevel.INFO, 'test');

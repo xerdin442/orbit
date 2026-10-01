@@ -15,9 +15,8 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Get('github')
-  @Redirect()
   async githubLogin(@Query('redirect_uri') redirectUri?: string) {
-    const { url } = await this.auth.getGitHubOAuthUrl(redirectUri);
+    const url = await this.auth.getGitHubOAuthUrl(redirectUri);
     return { url };
   }
 

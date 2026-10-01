@@ -6,7 +6,6 @@ import type {
   Environment,
   Prisma,
 } from '@generated/client';
-import type { LogLevel } from '@generated/client';
 
 export interface AuthenticatedRequest extends Request {
   user: { id: string };
@@ -76,24 +75,12 @@ export interface ErrorResponse {
   };
 }
 
-export interface LogEntry {
-  deploymentId: string;
-  timestamp: Date;
-  level: LogLevel;
-  message: string;
-}
-
 export interface ParsedAccessLogLine {
   method: string;
   uri: string;
   hostname: string;
   statusCode: number;
   durationMs: number;
-}
-
-export interface RequestLogEntry extends ParsedAccessLogLine {
-  environmentId: string;
-  timestamp: Date;
 }
 
 export const STATUS_CLASSES = ['2xx', '3xx', '4xx', '5xx'] as const;

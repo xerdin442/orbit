@@ -7,6 +7,7 @@ import { GitHubService } from './github.service';
 import { DbService } from '@src/db/db.service';
 import { ActivityService } from '@src/activity/activity.service';
 import { CleanupService } from '@src/cleanup/cleanup.service';
+import { REDIS_CLIENT } from '@src/common/cache';
 
 jest.mock('jsonwebtoken', () => ({
   sign: jest.fn(() => 'fake-jwt'),
@@ -21,6 +22,7 @@ describe('GitHubService', () => {
   let cleanup: jest.Mocked<Pick<CleanupService, 'enqueueProjectCleanup'>>;
   let cache: jest.Mocked<{ del: jest.Mock }>;
   let queue: jest.Mocked<Pick<Queue, 'add'>>;
+  let redis: jest.Mocked<{ set: jest.Mock; get: jest.Mock; del: jest.Mock }>;
   let fetchSpy: jest.SpyInstance;
 
   beforeEach(async () => {
@@ -45,6 +47,7 @@ describe('GitHubService', () => {
     cleanup = { enqueueProjectCleanup: jest.fn() };
     cache = { del: jest.fn() };
     queue = { add: jest.fn() };
+    redis = { set: jest.fn(), get: jest.fn(), del: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,6 +57,7 @@ describe('GitHubService', () => {
         { provide: CleanupService, useValue: cleanup },
         { provide: CACHE_MANAGER, useValue: cache },
         { provide: getQueueToken('deployments'), useValue: queue },
+        { provide: REDIS_CLIENT, useValue: redis },
       ],
     }).compile();
 
@@ -64,6 +68,93 @@ describe('GitHubService', () => {
 
   afterEach(() => {
     fetchSpy.mockRestore();
+  });
+
+  describe('getInstallUrl', () => {
+    it('stores the user behind a state token and returns the install URL', async () => {
+      const url = await service.getInstallUrl('user-1');
+
+      expect(url).toContain('https://github.com/apps/');
+      expect(url).toMatch(/\/installations\/new\?state=.+/);
+      expect(redis.set).toHaveBeenCalledWith(
+        expect.stringMatching(/^github:install:state:/),
+        'user-1',
+        { expiration: { type: 'EX', value: 600 } },
+      );
+    });
+  });
+
+  describe('handleInstallCallback', () => {
+    it('returns the error URL when no state is provided', async () => {
+      const url = await service.handleInstallCallback(12345, undefined);
+
+      expect(url).toContain('github_install=error');
+      expect(redis.get).not.toHaveBeenCalled();
+    });
+
+    it('returns the error URL when the state is not found or expired', async () => {
+      redis.get.mockResolvedValue(null);
+
+      const url = await service.handleInstallCallback(12345, 'bad-state');
+
+      expect(url).toContain('github_install=error');
+      expect(db.gitHubInstallation.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('consumes the state and returns the connected URL for an existing installation', async () => {
+      redis.get.mockResolvedValue('user-1');
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue({
+        id: 'inst-1',
+        installationId: 12345,
+      });
+
+      const url = await service.handleInstallCallback(12345, 'good-state');
+
+      expect(url).toContain('github_install=connected');
+      expect(redis.del).toHaveBeenCalledWith(
+        expect.stringMatching(/^github:install:state:/),
+      );
+      expect(db.gitHubInstallation.create).not.toHaveBeenCalled();
+    });
+
+    it('fetches installation details and creates a new installation', async () => {
+      redis.get.mockResolvedValue('user-1');
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue(null);
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            account: { login: 'octocat', type: 'User' },
+          }),
+      });
+
+      const url = await service.handleInstallCallback(12345, 'good-state');
+
+      expect(url).toContain('github_install=connected');
+      expect(db.gitHubInstallation.create).toHaveBeenCalledWith({
+        data: {
+          installationId: 12345,
+          accountLogin: 'octocat',
+          accountType: 'User',
+          userId: 'user-1',
+        },
+      });
+      expect(activity.log).toHaveBeenCalledWith(
+        'github_installation_added',
+        'user-1',
+        { installationId: 12345, accountLogin: 'octocat' },
+      );
+    });
+
+    it('throws if fetching installation details from GitHub fails', async () => {
+      redis.get.mockResolvedValue('user-1');
+      db.gitHubInstallation.findFirst = jest.fn().mockResolvedValue(null);
+      fetchSpy.mockResolvedValue({ ok: false, statusText: 'Not Found' });
+
+      await expect(
+        service.handleInstallCallback(12345, 'good-state'),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('getUpdateAccessUrl', () => {

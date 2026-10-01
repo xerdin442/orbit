@@ -65,11 +65,7 @@ export class RequestLogIngestService implements OnModuleInit, OnModuleDestroy {
     const environmentId = await this.resolveEnvironmentId(parsed.hostname);
     if (!environmentId) return;
 
-    await this.requestLogs.append({
-      ...parsed,
-      environmentId,
-      timestamp: new Date(),
-    });
+    await this.requestLogs.append(environmentId, parsed);
   }
 
   private async tailLoop(): Promise<void> {

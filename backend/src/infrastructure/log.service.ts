@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { DbService } from '@src/db/db.service';
-import { LogLevel } from '@generated/client';
-import type { LogEntry } from '@src/common/types';
+import { LogLevel, type DeploymentLog } from '@generated/client';
 
 @Injectable()
 export class LogService {
-  private readonly streams = new Map<string, Subject<LogEntry>>();
+  private readonly streams = new Map<string, Subject<DeploymentLog>>();
 
   constructor(private readonly db: DbService) {}
 
@@ -14,7 +13,7 @@ export class LogService {
     deploymentId: string,
     level: LogLevel,
     message: string,
-  ): Promise<LogEntry> {
+  ): Promise<DeploymentLog> {
     const entry = await this.db.deploymentLog.create({
       data: { deploymentId, level, message },
     });
@@ -25,11 +24,11 @@ export class LogService {
     return entry;
   }
 
-  subscribe(deploymentId: string): Subject<LogEntry> {
+  subscribe(deploymentId: string): Subject<DeploymentLog> {
     const existing = this.streams.get(deploymentId);
     if (existing) return existing;
 
-    const stream = new Subject<LogEntry>();
+    const stream = new Subject<DeploymentLog>();
     this.streams.set(deploymentId, stream);
     return stream;
   }
@@ -42,7 +41,7 @@ export class LogService {
     }
   }
 
-  async getLogs(deploymentId: string): Promise<LogEntry[]> {
+  async getLogs(deploymentId: string): Promise<DeploymentLog[]> {
     return this.db.deploymentLog.findMany({
       where: { deploymentId },
       orderBy: { timestamp: 'asc' },
