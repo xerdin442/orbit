@@ -268,6 +268,7 @@ describe('parseAccessLogLine', () => {
       'zgrab/0.x',
       'masscan/1.3',
       'Mozilla/5.0 CensysInspect/1.1',
+      'Mozilla/5.0 (l9scan/2.0.230323e24373e28323e223; +https://leakix.net)',
     ];
 
     for (const agent of agents) {
@@ -380,6 +381,37 @@ describe('isNoiseRequest', () => {
     expect(isNoiseRequest('/.well-known/pki-validation/ABC123.txt')).toBe(true);
   });
 
+  it('flags cloud credential-harvesting probes', () => {
+    expect(isNoiseRequest('/.aws/credentials')).toBe(true);
+    expect(isNoiseRequest('/.aws/config')).toBe(true);
+    expect(isNoiseRequest('/.docker/config.json')).toBe(true);
+    expect(isNoiseRequest('/.gcp/credentials.json')).toBe(true);
+    expect(isNoiseRequest('/.gcp/service-account.json')).toBe(true);
+    expect(isNoiseRequest('/gcp-credentials.json')).toBe(true);
+    expect(isNoiseRequest('/gcp-service-account.json')).toBe(true);
+    expect(isNoiseRequest('/google-credentials.json')).toBe(true);
+    expect(isNoiseRequest('/google-cloud-key.json')).toBe(true);
+    expect(isNoiseRequest('/firebase-adminsdk.json')).toBe(true);
+    expect(isNoiseRequest('/firebase-credentials.json')).toBe(true);
+    expect(isNoiseRequest('/service-account.json')).toBe(true);
+    expect(isNoiseRequest('/app/service-account.json')).toBe(true);
+    expect(
+      isNoiseRequest('/root/.config/gcloud/application_default_credentials.json'),
+    ).toBe(true);
+    expect(isNoiseRequest('/root/.config/gcloud/credentials.db')).toBe(true);
+    expect(
+      isNoiseRequest('/home/node/.config/gcloud/application_default_credentials.json'),
+    ).toBe(true);
+  });
+
+  it('flags the wlwmanifest.xml WordPress-enumeration probe, not real XML', () => {
+    expect(isNoiseRequest('/wp-includes/wlwmanifest.xml')).toBe(true);
+    expect(isNoiseRequest('/web/wp-includes/wlwmanifest.xml')).toBe(true);
+    expect(isNoiseRequest('/2019/wp-includes/wlwmanifest.xml')).toBe(true);
+    expect(isNoiseRequest('/sitemap.xml')).toBe(false);
+    expect(isNoiseRequest('/feed.xml')).toBe(false);
+  });
+
   it('does not flag application routes', () => {
     expect(isNoiseRequest('/')).toBe(false);
     expect(isNoiseRequest('/environment')).toBe(false);
@@ -392,5 +424,8 @@ describe('isNoiseRequest', () => {
     expect(isNoiseRequest('/sitemap.xml')).toBe(false);
     expect(isNoiseRequest('/robots.txt')).toBe(false);
     expect(isNoiseRequest('/reports/2024.q1')).toBe(false);
+    expect(isNoiseRequest('/config.json')).toBe(false);
+    expect(isNoiseRequest('/api/config')).toBe(false);
+    expect(isNoiseRequest('/config/gcp.json')).toBe(false);
   });
 });

@@ -39,6 +39,13 @@ const SCANNER_PROBE_PATTERNS = [
   /(^|\/)\.git(\/|$)/i,
   /(^|\/)\.vscode\//i,
   /(^|\/)\.DS_Store$/i,
+  /(^|\/)\.aws\//i, // .aws/credentials, .aws/config
+  /(^|\/)\.gcp\//i, // .gcp/credentials.json, .gcp/service-account.json
+  /(^|\/)\.docker\/config\.json$/i,
+  /(^|\/)\.config\/gcloud\//i, // root/.config/gcloud/*, home/*/.config/gcloud/*
+  /(^|\/)(gcp|google|firebase)[-_](credentials|service-account|cloud-key|adminsdk)\.json$/i,
+  /(^|\/)(service-account|application_default_credentials)\.json$/i,
+  /(^|\/)wlwmanifest\.xml$/i, // WordPress-enumeration scanner artifact
 ];
 
 const BOT_USER_AGENT_PATTERNS = [
@@ -57,6 +64,8 @@ const BOT_USER_AGENT_PATTERNS = [
   /censysinspect/i,
   /internet[- ]?measurement/i,
   /l9explore/i,
+  /l9scan/i, // LeakIX
+  /leakix/i,
   /expanse/i,
   /postmanruntime/i,
   /insomnia/i,
