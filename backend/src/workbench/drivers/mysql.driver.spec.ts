@@ -134,7 +134,7 @@ describe('MysqlDriver', () => {
       return [[{ id: 1, email: 'a@example.com' }], []];
     });
 
-    const result = await driver.paginateData('users', { page: 1, limit: 100 });
+    const result = await driver.paginateData('users', { page: 1, limit: 50 });
 
     expect(result.meta.total).toBe(250);
     expect(result.rows).toEqual([{ id: 1, email: 'a@example.com' }]);
