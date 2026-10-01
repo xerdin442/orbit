@@ -225,11 +225,14 @@ export class EnvironmentsService {
       throw new NotFoundException('Variable not found');
     }
 
-    const encrypted = this.encryption.encrypt(dto.value);
-
     const updated = await this.db.environmentVariable.update({
       where: { id: varId },
-      data: { value: encrypted },
+      data: {
+        ...(dto.key && { key: dto.key }),
+        ...(dto.value && {
+          value: this.encryption.encrypt(dto.value),
+        }),
+      },
       include: { environment: true },
     });
 
@@ -245,7 +248,7 @@ export class EnvironmentsService {
     await this.activity.log(ActivityType.variable_updated, userId, {
       projectId,
       environmentId: envId,
-      key: existing.key,
+      key: updated.key,
     });
 
     return updated;

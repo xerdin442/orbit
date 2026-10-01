@@ -26,16 +26,39 @@ describe('CreateVariableDto', () => {
 });
 
 describe('UpdateVariableDto', () => {
-  it('passes with valid value', async () => {
+  it('passes with only value', async () => {
     const dto = new UpdateVariableDto();
     dto.value = 'new-secret';
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
   });
 
-  it('rejects missing value', async () => {
+  it('passes with only key', async () => {
     const dto = new UpdateVariableDto();
+    dto.key = 'NEW_KEY';
     const errors = await validate(dto);
-    expect(errors.some((e) => e.property === 'value')).toBe(true);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('passes with both key and value', async () => {
+    const dto = new UpdateVariableDto();
+    dto.key = 'NEW_KEY';
+    dto.value = 'new-secret';
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('passes with an empty string value', async () => {
+    const dto = new UpdateVariableDto();
+    dto.value = '';
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
+  });
+
+  it('passes with an empty string key', async () => {
+    const dto = new UpdateVariableDto();
+    dto.key = '';
+    const errors = await validate(dto);
+    expect(errors).toHaveLength(0);
   });
 });

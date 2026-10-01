@@ -305,6 +305,86 @@ describe('EnvironmentsService', () => {
     });
   });
 
+  describe('updateVariable', () => {
+    it('updates only the value when key is omitted', async () => {
+      db.environmentVariable.findUnique.mockResolvedValue({
+        id: 'v1',
+        key: 'KEY',
+        environmentId: 'env-1',
+      });
+      db.environmentVariable.update.mockResolvedValue({
+        id: 'v1',
+        environment: { id: 'env-1', projectId: 'proj-1' },
+      });
+      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+
+      await service.updateVariable('v1', 'user-1', { value: 'new_secret' });
+
+      expect(encryption.encrypt).toHaveBeenCalledWith('new_secret');
+      expect(db.environmentVariable.update).toHaveBeenCalledWith({
+        where: { id: 'v1' },
+        data: { value: 'enc_new_secret' },
+        include: { environment: true },
+      });
+    });
+
+    it('updates only the key when value is omitted', async () => {
+      db.environmentVariable.findUnique.mockResolvedValue({
+        id: 'v1',
+        key: 'OLD_KEY',
+        environmentId: 'env-1',
+      });
+      db.environmentVariable.update.mockResolvedValue({
+        id: 'v1',
+        environment: { id: 'env-1', projectId: 'proj-1' },
+      });
+      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+
+      await service.updateVariable('v1', 'user-1', { key: 'NEW_KEY' });
+
+      expect(encryption.encrypt).not.toHaveBeenCalled();
+      expect(db.environmentVariable.update).toHaveBeenCalledWith({
+        where: { id: 'v1' },
+        data: { key: 'NEW_KEY' },
+        include: { environment: true },
+      });
+    });
+
+    it('updates both key and value when both are provided', async () => {
+      db.environmentVariable.findUnique.mockResolvedValue({
+        id: 'v1',
+        key: 'OLD_KEY',
+        environmentId: 'env-1',
+      });
+      db.environmentVariable.update.mockResolvedValue({
+        id: 'v1',
+        environment: { id: 'env-1', projectId: 'proj-1' },
+      });
+      deployments.triggerRedeployment.mockResolvedValue({ id: 'dep-1' });
+
+      await service.updateVariable('v1', 'user-1', {
+        key: 'NEW_KEY',
+        value: 'new_secret',
+      });
+
+      expect(db.environmentVariable.update).toHaveBeenCalledWith({
+        where: { id: 'v1' },
+        data: { key: 'NEW_KEY', value: 'enc_new_secret' },
+        include: { environment: true },
+      });
+    });
+
+    it('throws if variable does not exist', async () => {
+      db.environmentVariable.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateVariable('missing', 'user-1', { value: 'x' }),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(db.environmentVariable.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('update', () => {
     it('updates after verification', async () => {
       db.environment.findUnique.mockResolvedValue({

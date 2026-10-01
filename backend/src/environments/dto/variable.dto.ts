@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateVariableDto {
@@ -13,23 +19,17 @@ export class CreateVariableDto {
 
 export class UpdateVariableDto {
   @IsString()
-  @IsNotEmpty()
-  value: string;
-}
-
-class VariableEntry {
-  @IsString()
-  @IsNotEmpty()
-  key: string;
+  @IsOptional()
+  key?: string;
 
   @IsString()
-  @IsNotEmpty()
-  value: string;
+  @IsOptional()
+  value?: string;
 }
 
 export class BulkCreateVariablesDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => VariableEntry)
-  variables: VariableEntry[];
+  @Type(() => CreateVariableDto)
+  variables: CreateVariableDto[];
 }
