@@ -118,7 +118,13 @@ describe('CommandService', () => {
 
       expect(spawn).toHaveBeenCalledWith(
         'railpack',
-        ['build', '/tmp/build', '--tag', 'project-1:abc123'],
+        [
+          'build',
+          '/tmp/build',
+          '--tag',
+          'project-1:abc123',
+          '--error-missing-start',
+        ],
         { shell: false },
       );
     });
@@ -139,6 +145,7 @@ describe('CommandService', () => {
           '/tmp/build',
           '--tag',
           'project-1:abc123',
+          '--error-missing-start',
           '--start-cmd',
           'npm run start:prod',
         ],
