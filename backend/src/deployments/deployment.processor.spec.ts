@@ -17,6 +17,7 @@ import type { LogService } from '@src/infrastructure/log.service';
 import type { DeploymentsService } from './deployments.service';
 import type { ActivityService } from '@src/activity/activity.service';
 import type { GitHubService } from '@src/github/github.service';
+import type { EncryptionService } from '@src/infrastructure/encryption.service';
 
 jest.mock('fs/promises', () => ({
   rm: jest.fn().mockResolvedValue(undefined),
@@ -139,6 +140,9 @@ describe('DeploymentProcessor', () => {
     emit: jest.Mock;
   };
   let github: Record<string, jest.Mock>;
+  let encryption: {
+    decrypt: jest.Mock;
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -181,6 +185,9 @@ describe('DeploymentProcessor', () => {
       emit: jest.fn(),
     };
     github = {};
+    encryption = {
+      decrypt: jest.fn().mockImplementation((value: string) => value),
+    };
 
     processor = new DeploymentProcessor(
       docker as unknown as DockerService,
@@ -189,6 +196,7 @@ describe('DeploymentProcessor', () => {
       db as unknown as DbService,
       logService as unknown as LogService,
       deployments as unknown as DeploymentsService,
+      encryption as unknown as EncryptionService,
       activity as unknown as ActivityService,
       eventEmitter as unknown as EventEmitter2,
       github as unknown as GitHubService,
@@ -449,20 +457,34 @@ describe('DeploymentProcessor', () => {
   });
 
   describe('process — variable loading', () => {
-    it('loads and flattens environment variables as KEY=VALUE strings', async () => {
+    it('decrypts and flattens environment variables as KEY=VALUE strings', async () => {
       db.environmentVariable.findMany.mockResolvedValue([
-        { key: 'NODE_ENV', value: 'production' },
-        { key: 'PORT', value: '3000' },
+        { key: 'NODE_ENV', value: 'enc:production' },
+        { key: 'PORT', value: 'enc:3000' },
       ]);
+      encryption.decrypt.mockImplementation((value: string) =>
+        value.replace('enc:', ''),
+      );
+
+      let capturedVariables: string[] = [];
+      mockExecuteCreateContainer.mockImplementation(async (ctx: any) => {
+        capturedVariables = ctx.variables;
+      });
 
       const job = buildJob({ skipImageBuild: true });
 
       await processor.process(job);
 
+      expect(encryption.decrypt).toHaveBeenCalledWith('enc:production');
+      expect(encryption.decrypt).toHaveBeenCalledWith('enc:3000');
+      expect(capturedVariables).toEqual([
+        'NODE_ENV=production',
+        'PORT=3000',
+      ]);
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
         LogLevel.INFO,
-        '2 environment variables loaded',
+        '2 environment variables loaded.',
       );
     });
   });

@@ -92,6 +92,32 @@ describe('RequestLogsService', () => {
     });
   });
 
+  describe('getRecent', () => {
+    it('returns the most recent entries in chronological (oldest-first) order', async () => {
+      const newer: RequestLog = { ...created, id: 'req-2', uri: '/newer' };
+      db.requestLog.findMany = jest.fn().mockResolvedValue([newer, created]);
+
+      const result = await service.getRecent('env-1');
+
+      expect(db.requestLog.findMany).toHaveBeenCalledWith({
+        where: { environmentId: 'env-1' },
+        orderBy: { timestamp: 'desc' },
+        take: 20,
+      });
+      expect(result).toEqual([created, newer]);
+    });
+
+    it('respects a custom limit', async () => {
+      db.requestLog.findMany = jest.fn().mockResolvedValue([]);
+
+      await service.getRecent('env-1', 5);
+
+      expect(db.requestLog.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 5 }),
+      );
+    });
+  });
+
   describe('findByEnvironment', () => {
     it('throws if the environment is not owned by the user', async () => {
       db.environment.findFirst = jest.fn().mockResolvedValue(null);

@@ -15,6 +15,7 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 import type { Response } from 'express';
+import type { DeploymentLog } from '@generated/client';
 import { DeploymentsService } from './deployments.service';
 import { LogService } from '@src/infrastructure/log.service';
 import type { DeploymentJob, AuthenticatedRequest } from '@src/common/types';
@@ -124,6 +125,8 @@ export class DeploymentsController {
   ): Promise<void> {
     await this.deployments.findById(id, req.user.id);
 
+    const stream = this.logService.subscribe(id);
+
     res.writeHead(HttpStatus.OK, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
@@ -138,13 +141,29 @@ export class DeploymentsController {
       res.write(': heartbeat\n\n');
     }, 15_000);
 
-    const subscription = this.logService.subscribe(id).subscribe({
-      next: (entry) => res.write(`data: ${JSON.stringify(entry)}\n\n`),
+    const sent = new Set<string>();
+    const send = (entry: DeploymentLog) => {
+      if (sent.has(entry.id)) return;
+      sent.add(entry.id);
+      res.write(`data: ${JSON.stringify(entry)}\n\n`);
+    };
+
+    let replaying = true;
+    const pending: DeploymentLog[] = [];
+
+    const subscription = stream.subscribe({
+      next: (entry) => (replaying ? pending.push(entry) : send(entry)),
       complete: () => {
         clearInterval(heartbeat);
         res.end();
       },
     });
+
+    const backlog = await this.logService.getLogs(id);
+    for (const entry of backlog) send(entry);
+
+    replaying = false;
+    for (const entry of pending) send(entry);
 
     req.on('close', () => {
       clearInterval(heartbeat);
