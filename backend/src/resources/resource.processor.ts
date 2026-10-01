@@ -5,39 +5,16 @@ import { Logger } from '@src/common/logger';
 import { DbService } from '@src/db/db.service';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { Secrets } from '@src/common/secrets';
 import { ActivityType, ResourceType, ResourceStatus } from '@generated/client';
 import { ResourceJob } from '@src/common/types';
-
-const IMAGE_MAP: Record<ResourceType, string> = {
-  postgres: Secrets.POSTGRES_IMAGE_TAG,
-  mysql: Secrets.MYSQL_IMAGE_TAG,
-  redis: Secrets.REDIS_IMAGE_TAG,
-  mongo: Secrets.MONGO_IMAGE_TAG,
-};
-
-const INTERNAL_PORT: Record<ResourceType, number> = {
-  postgres: 5432,
-  mysql: 3306,
-  redis: 6379,
-  mongo: 27017,
-};
-
-const MOUNT_PATH: Record<ResourceType, string> = {
-  postgres: '/var/lib/postgresql/data',
-  mysql: '/var/lib/mysql',
-  redis: '/data',
-  mongo: '/data/db',
-};
+import {
+  IMAGE_MAP,
+  INTERNAL_PORT,
+  MOUNT_PATH,
+  HEALTHCHECK_TEST,
+} from '@src/common/types/resource';
 
 const SECOND_NS = 1_000_000_000;
-
-const HEALTHCHECK_TEST: Record<ResourceType, string[]> = {
-  postgres: ['CMD', 'pg_isready', '-U', 'orbit', '-d', 'orbit', '-q'],
-  mysql: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1'],
-  redis: ['CMD', 'redis-cli', 'ping'],
-  mongo: ['CMD', 'mongosh', '--quiet', '--eval', 'db.adminCommand("ping").ok'],
-};
 
 @Processor('resources')
 export class ResourceProcessor extends WorkerHost {
@@ -84,6 +61,7 @@ export class ResourceProcessor extends WorkerHost {
         Image: image,
         Env: envVars,
         Cmd: this.buildCommand(resource.type, password),
+        ExposedPorts: { [`${port}/tcp`]: {} },
         Healthcheck: {
           Test: HEALTHCHECK_TEST[resource.type],
           Interval: 15 * SECOND_NS,
@@ -94,6 +72,9 @@ export class ResourceProcessor extends WorkerHost {
         HostConfig: {
           Binds: [`${volumeName}:${MOUNT_PATH[resource.type]}`],
           RestartPolicy: { Name: 'unless-stopped' },
+          PortBindings: {
+            [`${port}/tcp`]: [{ HostIp: '127.0.0.1', HostPort: '' }],
+          },
         },
         Labels: {
           resource: resourceId,
@@ -249,7 +230,7 @@ export class ResourceProcessor extends WorkerHost {
       case ResourceType.redis:
         return `redis://:${password}@${host}:${port}`;
       case ResourceType.mongo:
-        return `mongodb://orbit:${password}@${host}:${port}/orbit`;
+        return `mongodb://orbit:${password}@${host}:${port}/orbit?authSource=admin`;
     }
   }
 
