@@ -6,6 +6,7 @@ const NOISE_PATH_PREFIXES = [
   '/_astro/', // Astro — hashed bundles
   '/_app/', // SvelteKit — reserved dir: /_app/immutable/*, /_app/version.json
   '/_vercel/', // @vercel/analytics + @vercel/speed-insights beacons
+  '/@vite/', // Vite — hashed bundles, /@vite/client, /@vite/env
   '/.well-known/', // Chrome DevTools probe on every page load, SSL certification challenges
 ];
 
@@ -40,6 +41,31 @@ const SCANNER_PROBE_PATTERNS = [
   /(^|\/)\.DS_Store$/i,
 ];
 
+const BOT_USER_AGENT_PATTERNS = [
+  /^curl\//i,
+  /^wget\//i,
+  /python-(requests|httpx|urllib)/i,
+  /go-http-client/i,
+  /okhttp/i,
+  /^java\//i,
+  /libwww-perl/i,
+  /^scrapy/i,
+  /nuclei/i,
+  /zgrab/i,
+  /masscan/i,
+  /^nmap/i,
+  /censysinspect/i,
+  /internet[- ]?measurement/i,
+  /l9explore/i,
+  /expanse/i,
+  /postmanruntime/i,
+  /insomnia/i,
+  /apache-httpclient/i,
+  /node-fetch/i,
+  /^axios\//i,
+  /guzzlehttp/i,
+];
+
 function decodePath(path: string): string {
   try {
     return decodeURIComponent(path);
@@ -61,6 +87,18 @@ function getHeader(headers: unknown, name: string): string | undefined {
   }
 
   return undefined;
+}
+
+function isBotUserAgent(headers: unknown): boolean {
+  const ua = getHeader(headers, 'user-agent');
+  if (!ua) return false;
+
+  return BOT_USER_AGENT_PATTERNS.some((pattern) => pattern.test(ua));
+}
+
+function isServerActionProbe(method: string, headers: unknown): boolean {
+  if (method !== 'GET' && method !== 'HEAD') return false;
+  return getHeader(headers, 'next-action') !== undefined;
 }
 
 function isPrefetch(headers: unknown): boolean {
@@ -153,6 +191,10 @@ export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
 
   // Drop speculative prefetches
   if (isPrefetch(req.headers)) return null;
+
+  // Drop scripted HTTP clients and known vulnerability probes
+  if (isBotUserAgent(req.headers)) return null;
+  if (isServerActionProbe(method, req.headers)) return null;
 
   const q = uri.indexOf('?');
   const path = q === -1 ? uri : uri.slice(0, q);
