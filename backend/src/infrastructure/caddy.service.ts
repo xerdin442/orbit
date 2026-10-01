@@ -1,49 +1,64 @@
 import { Injectable } from '@nestjs/common';
 import { Secrets } from '@src/common/secrets';
+import { DbService } from '@src/db/db.service';
 import { Logger } from '@src/common/logger';
+import { DomainStatus } from '@generated/client';
 
 @Injectable()
 export class CaddyService {
   private readonly logger = Logger(CaddyService.name);
   private readonly adminUrl: string;
 
-  constructor() {
+  constructor(private readonly db: DbService) {
     this.adminUrl = Secrets.CADDY_ADMIN_URL;
   }
 
-  async addRoute(hostname: string, containerId: string, port: number) {
-    const routeId = this.routeId(hostname);
-
-    await this.fetchCaddy(`/config/apps/http/servers/srv0/routes`, 'POST', {
-      '@id': routeId,
-      match: [{ host: [hostname] }],
-      handle: [
-        {
-          handler: 'reverse_proxy',
-          upstreams: [{ dial: `${containerId}:${port}` }],
-        },
-      ],
+  async syncEnvironment(environmentId: string) {
+    const env = await this.db.environment.findUniqueOrThrow({
+      where: { id: environmentId },
     });
 
-    this.logger.info(
-      `Caddy route added: ${hostname} -> ${containerId}:${port}`,
-    );
-  }
+    if (!env.currentDeploymentId) {
+      this.logger.info(`No active deployment for environment ${environmentId}`);
+      return;
+    }
 
-  async removeRoute(hostname: string) {
-    const routeId = this.routeId(hostname);
+    const deployment = await this.db.deployment.findUniqueOrThrow({
+      where: { id: env.currentDeploymentId },
+    });
 
-    await this.fetchCaddy(`/id/${routeId}`, 'DELETE');
+    if (!deployment.containerId) {
+      this.logger.info(
+        `No container for deployment ${env.currentDeploymentId}`,
+      );
+      return;
+    }
 
-    this.logger.info(`Caddy route removed: ${hostname}`);
-  }
+    const domains = await this.db.domain.findMany({
+      where: {
+        environmentId,
+        status: DomainStatus.active,
+      },
+    });
 
-  async updateRoute(hostname: string, containerId: string, port: number) {
-    await this.addRoute(hostname, containerId, port);
-  }
+    for (const domain of domains) {
+      const route = {
+        '@id': this.routeId(domain.hostname),
+        match: [{ host: [domain.hostname] }],
+        handle: [
+          {
+            handler: 'reverse_proxy',
+            upstreams: [{ dial: `${deployment.containerId}:3000` }],
+          },
+        ],
+      };
 
-  async reload() {
-    await this.fetchCaddy('/load', 'POST');
+      await this.fetchCaddy(
+        `/id/${this.routeId(domain.hostname)}`,
+        'POST',
+        route,
+      );
+    }
   }
 
   private async fetchCaddy(path: string, method: string, body?: unknown) {

@@ -1,6 +1,5 @@
 import { rm } from 'fs/promises';
 import { DockerService } from '@src/infrastructure/docker.service';
-import { CaddyService } from '@src/infrastructure/caddy.service';
 import { DbService } from '@src/db/db.service';
 import {
   DeploymentStep,
@@ -13,7 +12,6 @@ export class CleanupStep implements DeploymentStep {
 
   constructor(
     private readonly docker: DockerService,
-    private readonly caddy: CaddyService,
     private readonly db: DbService,
   ) {}
 

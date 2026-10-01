@@ -1,0 +1,110 @@
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Inject,
+} from '@nestjs/common';
+import { DbService } from '@src/db/db.service';
+import { ActivityService } from '@src/activity/activity.service';
+import { Secrets } from '@src/common/secrets';
+import { ActivityType, DomainType, DomainStatus } from '@generated/client';
+import type { DnsInstructions } from '@src/common/types';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
+
+@Injectable()
+export class DomainsService {
+  constructor(
+    private readonly db: DbService,
+    private readonly activity: ActivityService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+  ) {}
+
+  async addCustomDomain(
+    environmentId: string,
+    hostname: string,
+    userId: string,
+  ) {
+    const env = await this.db.environment.findUnique({
+      where: { id: environmentId },
+    });
+
+    if (!env) {
+      throw new NotFoundException('Environment not found');
+    }
+
+    const existing = await this.db.domain.findFirst({
+      where: { hostname },
+    });
+
+    if (existing) {
+      throw new ConflictException('This domain is already registered');
+    }
+
+    const domain = await this.db.domain.create({
+      data: {
+        hostname,
+        type: DomainType.custom,
+        status: DomainStatus.pending,
+        environmentId,
+      },
+    });
+
+    await this.activity.log(ActivityType.domain_added, userId, {
+      domainId: domain.id,
+      hostname,
+      environmentId,
+    });
+
+    return this.getDnsInstructions(hostname);
+  }
+
+  async findByEnvironment(environmentId: string) {
+    return this.db.domain.findMany({
+      where: { environmentId },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async deleteDomain(id: string, userId: string) {
+    const domain = await this.db.domain.findUnique({
+      where: { id },
+    });
+
+    if (!domain) {
+      throw new NotFoundException('Domain not found');
+    }
+
+    if (domain.type === DomainType.managed) {
+      throw new ConflictException('Managed hostnames cannot be deleted');
+    }
+
+    await this.db.domain.delete({ where: { id } });
+
+    await this.cache.del(`/api/environments/${domain.environmentId}/domains`);
+
+    await this.activity.log(ActivityType.domain_removed, userId, {
+      domainId: id,
+      hostname: domain.hostname,
+      environmentId: domain.environmentId,
+    });
+  }
+
+  private getDnsInstructions(hostname: string): DnsInstructions {
+    const parts = hostname.split('.');
+    const isApex = parts.length <= 2;
+
+    if (isApex) {
+      return {
+        recordType: 'A',
+        host: '@',
+        value: Secrets.INGRESS_IP,
+      };
+    }
+
+    return {
+      recordType: 'CNAME',
+      host: parts[0],
+      value: Secrets.INGRESS_HOST,
+    };
+  }
+}

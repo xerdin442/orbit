@@ -17,17 +17,17 @@ const mockCtx = (): DeploymentContext =>
     environment: { id: 'env-1', name: 'production', branch: 'main' },
     containerId: 'container-1',
     domain: '',
-  } as DeploymentContext);
+  }) as DeploymentContext;
 
 describe('ConfigureProxyStep', () => {
   let step: ConfigureProxyStep;
-  let caddy: jest.Mocked<Pick<CaddyService, 'addRoute'>>;
+  let caddy: jest.Mocked<Pick<CaddyService, 'syncEnvironment'>>;
   let db: jest.Mocked<Pick<DbService, 'domain'>>;
   let log: jest.Mocked<Pick<LogService, 'append'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
 
   beforeEach(() => {
-    caddy = { addRoute: jest.fn() };
+    caddy = { syncEnvironment: jest.fn() };
     db = {
       domain: {
         findFirst: jest.fn(),
@@ -55,18 +55,15 @@ describe('ConfigureProxyStep', () => {
 
     expect(ctx.domain).toBe('my-app.192.168.1.55.sslip.io');
     expect(db.domain.create).not.toHaveBeenCalled();
-    expect(caddy.addRoute).toHaveBeenCalledWith(
-      'my-app.192.168.1.55.sslip.io',
-      'container-1',
-      3000,
-    );
+    expect(caddy.syncEnvironment).toHaveBeenCalledWith('env-1');
   });
 
   it('creates new managed hostname when none exists', async () => {
     db.domain.findFirst = jest.fn().mockResolvedValue(null);
-    db.domain.create = jest
-      .fn()
-      .mockResolvedValue({ id: 'd1', hostname: 'my-app.192.168.1.55.sslip.io' } as any);
+    db.domain.create = jest.fn().mockResolvedValue({
+      id: 'd1',
+      hostname: 'my-app.192.168.1.55.sslip.io',
+    } as any);
 
     const ctx = mockCtx();
     await step.execute(ctx);
@@ -80,6 +77,6 @@ describe('ConfigureProxyStep', () => {
       }),
     });
     expect(activity.log).toHaveBeenCalled();
-    expect(caddy.addRoute).toHaveBeenCalled();
+    expect(caddy.syncEnvironment).toHaveBeenCalledWith('env-1');
   });
 });
