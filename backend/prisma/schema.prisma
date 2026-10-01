@@ -90,6 +90,7 @@ enum ActivityType {
   domain_added
   domain_removed
   domain_verified
+  domain_verification_retried
   github_installation_added
   github_installation_removed
   github_webhook_event
@@ -262,11 +263,12 @@ model EnvironmentVariable {
 }
 
 model Domain {
-  id         String       @id @default(uuid())
-  hostname   String       @unique
-  type       DomainType   @default(managed)
-  status     DomainStatus @default(pending)
-  verifiedAt DateTime?
+  id                  String       @id @default(uuid())
+  hostname            String       @unique
+  type                DomainType   @default(managed)
+  status              DomainStatus @default(pending)
+  verifiedAt          DateTime?
+  verificationTimeout DateTime?
 
   environmentId String
   environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)

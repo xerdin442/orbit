@@ -30,6 +30,7 @@ export type DomainMinAggregateOutputType = {
   type: $Enums.DomainType | null
   status: $Enums.DomainStatus | null
   verifiedAt: Date | null
+  verificationTimeout: Date | null
   environmentId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -41,6 +42,7 @@ export type DomainMaxAggregateOutputType = {
   type: $Enums.DomainType | null
   status: $Enums.DomainStatus | null
   verifiedAt: Date | null
+  verificationTimeout: Date | null
   environmentId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -52,6 +54,7 @@ export type DomainCountAggregateOutputType = {
   type: number
   status: number
   verifiedAt: number
+  verificationTimeout: number
   environmentId: number
   createdAt: number
   updatedAt: number
@@ -65,6 +68,7 @@ export type DomainMinAggregateInputType = {
   type?: true
   status?: true
   verifiedAt?: true
+  verificationTimeout?: true
   environmentId?: true
   createdAt?: true
   updatedAt?: true
@@ -76,6 +80,7 @@ export type DomainMaxAggregateInputType = {
   type?: true
   status?: true
   verifiedAt?: true
+  verificationTimeout?: true
   environmentId?: true
   createdAt?: true
   updatedAt?: true
@@ -87,6 +92,7 @@ export type DomainCountAggregateInputType = {
   type?: true
   status?: true
   verifiedAt?: true
+  verificationTimeout?: true
   environmentId?: true
   createdAt?: true
   updatedAt?: true
@@ -171,6 +177,7 @@ export type DomainGroupByOutputType = {
   type: $Enums.DomainType
   status: $Enums.DomainStatus
   verifiedAt: Date | null
+  verificationTimeout: Date | null
   environmentId: string
   createdAt: Date
   updatedAt: Date
@@ -203,6 +210,7 @@ export type DomainWhereInput = {
   type?: Prisma.EnumDomainTypeFilter<"Domain"> | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFilter<"Domain"> | $Enums.DomainStatus
   verifiedAt?: Prisma.DateTimeNullableFilter<"Domain"> | Date | string | null
+  verificationTimeout?: Prisma.DateTimeNullableFilter<"Domain"> | Date | string | null
   environmentId?: Prisma.StringFilter<"Domain"> | string
   createdAt?: Prisma.DateTimeFilter<"Domain"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Domain"> | Date | string
@@ -215,6 +223,7 @@ export type DomainOrderByWithRelationInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   verifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationTimeout?: Prisma.SortOrderInput | Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -230,6 +239,7 @@ export type DomainWhereUniqueInput = Prisma.AtLeast<{
   type?: Prisma.EnumDomainTypeFilter<"Domain"> | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFilter<"Domain"> | $Enums.DomainStatus
   verifiedAt?: Prisma.DateTimeNullableFilter<"Domain"> | Date | string | null
+  verificationTimeout?: Prisma.DateTimeNullableFilter<"Domain"> | Date | string | null
   environmentId?: Prisma.StringFilter<"Domain"> | string
   createdAt?: Prisma.DateTimeFilter<"Domain"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Domain"> | Date | string
@@ -242,6 +252,7 @@ export type DomainOrderByWithAggregationInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   verifiedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationTimeout?: Prisma.SortOrderInput | Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -259,6 +270,7 @@ export type DomainScalarWhereWithAggregatesInput = {
   type?: Prisma.EnumDomainTypeWithAggregatesFilter<"Domain"> | $Enums.DomainType
   status?: Prisma.EnumDomainStatusWithAggregatesFilter<"Domain"> | $Enums.DomainStatus
   verifiedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Domain"> | Date | string | null
+  verificationTimeout?: Prisma.DateTimeNullableWithAggregatesFilter<"Domain"> | Date | string | null
   environmentId?: Prisma.StringWithAggregatesFilter<"Domain"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Domain"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Domain"> | Date | string
@@ -270,6 +282,7 @@ export type DomainCreateInput = {
   type?: $Enums.DomainType
   status?: $Enums.DomainStatus
   verifiedAt?: Date | string | null
+  verificationTimeout?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   environment: Prisma.EnvironmentCreateNestedOneWithoutDomainsInput
@@ -281,6 +294,7 @@ export type DomainUncheckedCreateInput = {
   type?: $Enums.DomainType
   status?: $Enums.DomainStatus
   verifiedAt?: Date | string | null
+  verificationTimeout?: Date | string | null
   environmentId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -292,6 +306,7 @@ export type DomainUpdateInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   environment?: Prisma.EnvironmentUpdateOneRequiredWithoutDomainsNestedInput
@@ -303,6 +318,7 @@ export type DomainUncheckedUpdateInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -314,6 +330,7 @@ export type DomainCreateManyInput = {
   type?: $Enums.DomainType
   status?: $Enums.DomainStatus
   verifiedAt?: Date | string | null
+  verificationTimeout?: Date | string | null
   environmentId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -325,6 +342,7 @@ export type DomainUpdateManyMutationInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -335,6 +353,7 @@ export type DomainUncheckedUpdateManyInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   environmentId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -356,6 +375,7 @@ export type DomainCountOrderByAggregateInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   verifiedAt?: Prisma.SortOrder
+  verificationTimeout?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -367,6 +387,7 @@ export type DomainMaxOrderByAggregateInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   verifiedAt?: Prisma.SortOrder
+  verificationTimeout?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -378,6 +399,7 @@ export type DomainMinOrderByAggregateInput = {
   type?: Prisma.SortOrder
   status?: Prisma.SortOrder
   verifiedAt?: Prisma.SortOrder
+  verificationTimeout?: Prisma.SortOrder
   environmentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -439,6 +461,7 @@ export type DomainCreateWithoutEnvironmentInput = {
   type?: $Enums.DomainType
   status?: $Enums.DomainStatus
   verifiedAt?: Date | string | null
+  verificationTimeout?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -449,6 +472,7 @@ export type DomainUncheckedCreateWithoutEnvironmentInput = {
   type?: $Enums.DomainType
   status?: $Enums.DomainStatus
   verifiedAt?: Date | string | null
+  verificationTimeout?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -488,6 +512,7 @@ export type DomainScalarWhereInput = {
   type?: Prisma.EnumDomainTypeFilter<"Domain"> | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFilter<"Domain"> | $Enums.DomainStatus
   verifiedAt?: Prisma.DateTimeNullableFilter<"Domain"> | Date | string | null
+  verificationTimeout?: Prisma.DateTimeNullableFilter<"Domain"> | Date | string | null
   environmentId?: Prisma.StringFilter<"Domain"> | string
   createdAt?: Prisma.DateTimeFilter<"Domain"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Domain"> | Date | string
@@ -499,6 +524,7 @@ export type DomainCreateManyEnvironmentInput = {
   type?: $Enums.DomainType
   status?: $Enums.DomainStatus
   verifiedAt?: Date | string | null
+  verificationTimeout?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -509,6 +535,7 @@ export type DomainUpdateWithoutEnvironmentInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -519,6 +546,7 @@ export type DomainUncheckedUpdateWithoutEnvironmentInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -529,6 +557,7 @@ export type DomainUncheckedUpdateManyWithoutEnvironmentInput = {
   type?: Prisma.EnumDomainTypeFieldUpdateOperationsInput | $Enums.DomainType
   status?: Prisma.EnumDomainStatusFieldUpdateOperationsInput | $Enums.DomainStatus
   verifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  verificationTimeout?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -541,6 +570,7 @@ export type DomainSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   type?: boolean
   status?: boolean
   verifiedAt?: boolean
+  verificationTimeout?: boolean
   environmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -553,6 +583,7 @@ export type DomainSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   type?: boolean
   status?: boolean
   verifiedAt?: boolean
+  verificationTimeout?: boolean
   environmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -565,6 +596,7 @@ export type DomainSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   type?: boolean
   status?: boolean
   verifiedAt?: boolean
+  verificationTimeout?: boolean
   environmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -577,12 +609,13 @@ export type DomainSelectScalar = {
   type?: boolean
   status?: boolean
   verifiedAt?: boolean
+  verificationTimeout?: boolean
   environmentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type DomainOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hostname" | "type" | "status" | "verifiedAt" | "environmentId" | "createdAt" | "updatedAt", ExtArgs["result"]["domain"]>
+export type DomainOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hostname" | "type" | "status" | "verifiedAt" | "verificationTimeout" | "environmentId" | "createdAt" | "updatedAt", ExtArgs["result"]["domain"]>
 export type DomainInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   environment?: boolean | Prisma.EnvironmentDefaultArgs<ExtArgs>
 }
@@ -604,6 +637,7 @@ export type $DomainPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     type: $Enums.DomainType
     status: $Enums.DomainStatus
     verifiedAt: Date | null
+    verificationTimeout: Date | null
     environmentId: string
     createdAt: Date
     updatedAt: Date
@@ -1036,6 +1070,7 @@ export interface DomainFieldRefs {
   readonly type: Prisma.FieldRef<"Domain", 'DomainType'>
   readonly status: Prisma.FieldRef<"Domain", 'DomainStatus'>
   readonly verifiedAt: Prisma.FieldRef<"Domain", 'DateTime'>
+  readonly verificationTimeout: Prisma.FieldRef<"Domain", 'DateTime'>
   readonly environmentId: Prisma.FieldRef<"Domain", 'String'>
   readonly createdAt: Prisma.FieldRef<"Domain", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Domain", 'DateTime'>

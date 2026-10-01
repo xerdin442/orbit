@@ -543,7 +543,7 @@ export class SlackBoltService {
         });
 
         if (!previousDeployment) {
-          await this.slackApi.call(metadata.teamId, 'chat.postMessage', {
+          await this.slackApi.enqueue(metadata.teamId, 'chat.postMessage', {
             channel: metadata.channelId,
             text: `No previous successful deployment to rollback to in ${metadata.projectName} (${metadata.environmentName}).`,
           });

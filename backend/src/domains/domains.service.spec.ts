@@ -22,6 +22,7 @@ describe('DomainsService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         findMany: jest.fn(),
+        update: jest.fn(),
         delete: jest.fn(),
       },
     } as unknown as jest.Mocked<Pick<DbService, 'environment' | 'domain'>>;
@@ -144,6 +145,64 @@ describe('DomainsService', () => {
 
       expect(db.domain.delete).toHaveBeenCalledWith({ where: { id: 'd1' } });
       expect(activity.log).toHaveBeenCalled();
+    });
+  });
+
+  describe('retryVerification', () => {
+    it('throws if not found', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue(null);
+      await expect(
+        service.retryVerification('d1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws if managed hostname', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        type: DomainType.managed,
+        status: DomainStatus.failed,
+      });
+      await expect(
+        service.retryVerification('d1', 'user-1'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws if domain has not failed', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        type: DomainType.custom,
+        status: DomainStatus.verifying,
+      });
+      await expect(
+        service.retryVerification('d1', 'user-1'),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('resets a failed custom domain to pending', async () => {
+      db.domain.findFirst = jest.fn().mockResolvedValue({
+        id: 'd1',
+        type: DomainType.custom,
+        status: DomainStatus.failed,
+        hostname: 'api.example.com',
+        environmentId: 'env-1',
+      });
+      db.domain.update = jest.fn().mockResolvedValue({
+        id: 'd1',
+        type: DomainType.custom,
+        status: DomainStatus.pending,
+        hostname: 'api.example.com',
+        environmentId: 'env-1',
+        verificationTimeout: null,
+      });
+
+      const result = await service.retryVerification('d1', 'user-1');
+
+      expect(db.domain.update).toHaveBeenCalledWith({
+        where: { id: 'd1' },
+        data: { status: DomainStatus.pending, verificationTimeout: null },
+      });
+      expect(activity.log).toHaveBeenCalled();
+      expect(result.status).toBe(DomainStatus.pending);
     });
   });
 
