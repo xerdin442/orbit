@@ -47,6 +47,12 @@ export class CloneRepositoryStep implements DeploymentStep {
         `Git clone failed: ${result.stderr}`,
       );
     }
+
+    await this.log.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Git clone successful.',
+    );
   }
 
   private async resolveAuthenticatedUrl(source: Source): Promise<string> {

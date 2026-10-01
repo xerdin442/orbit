@@ -260,7 +260,7 @@ export class DeploymentProcessor extends WorkerHost {
     await this.logService.append(
       deploymentId,
       LogLevel.INFO,
-      `${ctx.variables.length} environment variables loaded`,
+      `${ctx.variables.length} environment variables loaded.`,
     );
   }
 
