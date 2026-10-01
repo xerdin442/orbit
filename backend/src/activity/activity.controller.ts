@@ -1,8 +1,8 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { ActivityService } from './activity.service';
-import { ActivityType } from '@generated/client';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
-import { ParseActivityTypePipe } from '@src/common/pipes/activity-type.pipe';
+import { FilterActivityLogsDto } from './dto/activity-log.dto';
+import type { AuthenticatedRequest } from '@src/common/types';
 
 @Controller('activity')
 @UseGuards(JwtAuthGuard)
@@ -10,7 +10,13 @@ export class ActivityController {
   constructor(private readonly activity: ActivityService) {}
 
   @Get()
-  findByType(@Query('type', ParseActivityTypePipe) type: ActivityType) {
-    return this.activity.findByType(type);
+  findLogs(
+    @Req() req: AuthenticatedRequest,
+    @Query() dto: FilterActivityLogsDto,
+  ) {
+    return this.activity.findLogs({
+      actorId: req.user.id,
+      ...dto,
+    });
   }
 }
