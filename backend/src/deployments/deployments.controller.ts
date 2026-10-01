@@ -23,7 +23,6 @@ import type {
   AuthenticatedRequest,
 } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
-import { DeploymentTrigger } from '@generated/client';
 import { FilterDeploymentsDto, AbortDeploymentDto } from './dto/deployment.dto';
 
 @Controller()
@@ -46,7 +45,6 @@ export class DeploymentsController {
     const deployment = await this.deployments.createDeployment(
       environmentId,
       req.user.id,
-      DeploymentTrigger.manual,
     );
 
     await this.deployQueue.add('deploy', { deployment, resourceCount });
@@ -54,17 +52,20 @@ export class DeploymentsController {
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
 
-  @Post('deployments/:id/redeploy')
-  async redeploy(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    const existing = await this.deployments.findById(id, req.user.id);
-
-    const deployment = await this.deployments.createDeployment(
-      existing.environmentId,
+  @Post('environments/:environmentId/redeploy')
+  async redeploy(
+    @Req() req: AuthenticatedRequest,
+    @Param('environmentId') environmentId: string,
+  ) {
+    const deployment = await this.deployments.triggerRedeployment(
+      environmentId,
       req.user.id,
-      DeploymentTrigger.redeploy,
     );
 
-    await this.deployQueue.add('redeploy', { deployment });
+    await this.deployQueue.add('redeploy', {
+      deployment,
+      skipImageBuild: true,
+    });
 
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
