@@ -1,16 +1,88 @@
 import { Document, MongoClient, ObjectId } from 'mongodb';
+import { parseFilter } from 'mongodb-query-parser';
 import type {
   DatabaseDriver,
   MongoCollectionInfo,
   MongoFieldSchema,
   MongoIndex,
-  MongoQueryCommand,
   PaginatedRows,
   PaginationOptions,
   QueryResult,
   TableColumn,
   TableObject,
 } from '@src/common/types/workbench';
+
+const SHELL_QUERY_PATTERN =
+  /^\s*db\.(\w+)\.(find|findOne|aggregate|count|countDocuments|estimatedDocumentCount|distinct|explain)\s*\(([\s\S]*)\)\s*;?\s*$/;
+
+const BANNED_OPERATORS = new Set([
+  '$merge',
+  '$out',
+  '$where',
+  '$function',
+  '$accumulator',
+]);
+
+function assertNoBannedOperators(value: unknown): void {
+  if (Array.isArray(value)) {
+    for (const item of value) assertNoBannedOperators(item);
+    return;
+  }
+
+  if (value && typeof value === 'object') {
+    for (const [key, nested] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      if (BANNED_OPERATORS.has(key)) {
+        throw new Error(
+          `Operator "${key}" is not allowed in the read-only Workbench.`,
+        );
+      }
+      assertNoBannedOperators(nested);
+    }
+  }
+}
+
+function splitTopLevelArgs(raw: string): string[] {
+  const args: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let current = '';
+
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw[i];
+
+    if (quote) {
+      current += char;
+      if (char === '\\') {
+        current += raw[++i] ?? '';
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      current += char;
+      continue;
+    }
+
+    if (char === '{' || char === '[' || char === '(') depth++;
+    if (char === '}' || char === ']' || char === ')') depth--;
+
+    if (char === ',' && depth === 0) {
+      args.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current.trim().length > 0) args.push(current.trim());
+  return args;
+}
 
 export class MongoDriver implements DatabaseDriver {
   private client: MongoClient;
@@ -39,38 +111,61 @@ export class MongoDriver implements DatabaseDriver {
   }
 
   async execute(query: string): Promise<QueryResult> {
-    const command = JSON.parse(query) as MongoQueryCommand;
+    const {
+      collection: collectionName,
+      operation,
+      args,
+    } = this.parseShellQuery(query);
+
     const db = this.client.db();
-    const collection = db.collection(command.collection);
+    const collection = db.collection(collectionName);
 
     let result: unknown;
 
-    switch (command.operation) {
-      case 'find':
-        result = await collection.find(command.filter ?? {}).toArray();
+    switch (operation) {
+      case 'find': {
+        const filter = (args[0] as Document) ?? {};
+        assertNoBannedOperators(filter);
+        result = await collection.find(filter).toArray();
         break;
-      case 'findOne':
-        result = await collection.findOne(command.filter ?? {});
+      }
+      case 'findOne': {
+        const filter = (args[0] as Document) ?? {};
+        assertNoBannedOperators(filter);
+        result = await collection.findOne(filter);
         break;
-      case 'aggregate':
-        result = await collection
-          .aggregate((command.pipeline as Document[]) ?? [])
-          .toArray();
+      }
+      case 'aggregate': {
+        const pipeline = (args[0] as Document[]) ?? [];
+        assertNoBannedOperators(pipeline);
+        result = await collection.aggregate(pipeline).toArray();
         break;
+      }
       case 'count':
-      case 'countDocuments':
-        result = await collection.countDocuments(command.filter ?? {});
+      case 'countDocuments': {
+        const filter = (args[0] as Document) ?? {};
+        assertNoBannedOperators(filter);
+        result = await collection.countDocuments(filter);
         break;
-      case 'distinct':
-        result = await collection.distinct(
-          command.field ?? '',
-          command.filter ?? {},
-        );
+      }
+      case 'estimatedDocumentCount':
+        result = await collection.estimatedDocumentCount();
         break;
+      case 'distinct': {
+        const field = (args[0] as string) ?? '';
+        const filter = (args[1] as Document) ?? {};
+        assertNoBannedOperators(filter);
+        result = await collection.distinct(field, filter);
+        break;
+      }
+      case 'explain': {
+        const filter = (args[0] as Document) ?? {};
+        assertNoBannedOperators(filter);
+        result = await collection.find(filter).explain();
+        break;
+      }
       default:
-        throw new Error(
-          `Unsupported MongoDB operation: ${command.operation as string}`,
-        );
+        throw new Error(`Unsupported MongoDB operation: ${operation}`);
     }
 
     const rows = Array.isArray(result) ? result : [result];
@@ -178,6 +273,26 @@ export class MongoDriver implements DatabaseDriver {
 
   async close(): Promise<void> {
     await this.client?.close();
+  }
+
+  private parseShellQuery(query: string): {
+    collection: string;
+    operation: string;
+    args: unknown[];
+  } {
+    const match = SHELL_QUERY_PATTERN.exec(query);
+    if (!match) {
+      throw new Error(
+        'Invalid query. Expected shell syntax like db.<collection>.find({ ... }).',
+      );
+    }
+
+    const [, collectionName, operation, rawArgs] = match;
+    const args: unknown[] = splitTopLevelArgs(rawArgs).map(
+      (arg): unknown => parseFilter(arg) as unknown,
+    );
+
+    return { collection: collectionName, operation, args };
   }
 
   private inferFieldSchema(value: unknown): MongoFieldSchema {
