@@ -8,5 +8,6 @@ import { GitHubWebhookController } from './github.webhook.controller';
   imports: [BullModule.registerQueue({ name: 'deployments' })],
   controllers: [GitHubController, GitHubWebhookController],
   providers: [GitHubService],
+  exports: [GitHubService],
 })
 export class GitHubModule {}
