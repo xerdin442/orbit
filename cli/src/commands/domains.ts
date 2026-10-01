@@ -1,8 +1,8 @@
-import type { Command } from 'commander';
-import inquirer from 'inquirer';
-import { api } from '../lib/api.js';
-import { getContext, getToken } from '../lib/config.js';
-import { success, error, info, printTable } from '../lib/format.js';
+import type { Command } from "commander";
+import inquirer from "inquirer";
+import { api } from "../lib/api.js";
+import { ensureContext } from "../lib/config.js";
+import { success, error, printTable } from "../lib/format.js";
 
 interface Domain {
   id: string;
@@ -11,14 +11,20 @@ interface Domain {
   status: string;
 }
 
+interface DnsInstructions {
+  recordType: "A" | "CNAME";
+  host: string;
+  value: string;
+}
+
 export function registerDomainCommands(program: Command) {
   const domains = program
-    .command('domains')
-    .description('Manage custom domains');
+    .command("domains")
+    .description("Manage custom domains");
 
   domains
-    .command('ls')
-    .description('List domains')
+    .command("ls")
+    .description("List domains")
     .action(async () => {
       const ctx = ensureContext();
 
@@ -28,47 +34,47 @@ export function registerDomainCommands(program: Command) {
         );
 
         if (result.length === 0) {
-          console.log('No domains configured.');
+          console.log("No domains configured.");
           return;
         }
 
-        const headers = ['Hostname', 'Type', 'Status'];
+        const headers = ["Hostname", "Type", "Status"];
         const rows = result.map((d) => [d.hostname, d.type, d.status]);
 
         printTable(headers, rows);
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Failed to list domains');
+        error(err instanceof Error ? err.message : "Failed to list domains");
         process.exit(1);
       }
     });
 
   domains
-    .command('add <hostname>')
-    .description('Add a custom domain')
+    .command("add <hostname>")
+    .description("Add a custom domain")
     .action(async (hostname: string) => {
       const ctx = ensureContext();
 
       try {
-        await api.post(`/environments/${ctx.environmentId}/domains`, {
-          hostname,
-        });
+        const dns = await api.post<DnsInstructions>(
+          `/environments/${ctx.environmentId}/domains`,
+          { hostname },
+        );
 
-        success(`Domain "${hostname}" added.`);
-        info('Configure these DNS records:');
-        if (hostname.includes('.') && hostname.split('.').length === 2) {
-          info(`  A record for @ → INGRESS_IP`);
-        } else {
-          info(`  CNAME record → INGRESS_HOST`);
-        }
+        success(
+          `Domain "${hostname}" added. Configure this DNS record in your provider:`,
+        );
+        console.log(`  Type:  ${dns.recordType}`);
+        console.log(`  Host:  ${dns.host}`);
+        console.log(`  Value: ${dns.value}`);
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Failed to add domain');
+        error(err instanceof Error ? err.message : "Failed to add domain");
         process.exit(1);
       }
     });
 
   domains
-    .command('rm <hostname>')
-    .description('Remove a custom domain')
+    .command("rm <hostname>")
+    .description("Remove a custom domain")
     .action(async (hostname: string) => {
       const ctx = ensureContext();
 
@@ -77,7 +83,7 @@ export function registerDomainCommands(program: Command) {
           `/environments/${ctx.environmentId}/domains`,
         );
         const domain = all.find(
-          (d) => d.hostname === hostname && d.type === 'custom',
+          (d) => d.hostname === hostname && d.type === "custom",
         );
 
         if (!domain) {
@@ -87,8 +93,8 @@ export function registerDomainCommands(program: Command) {
 
         const { confirm } = await inquirer.prompt<{ confirm: boolean }>([
           {
-            type: 'confirm',
-            name: 'confirm',
+            type: "confirm",
+            name: "confirm",
             message: `Remove domain "${hostname}"?`,
             default: false,
           },
@@ -99,24 +105,8 @@ export function registerDomainCommands(program: Command) {
         await api.del(`/domains/${domain.id}`);
         success(`Domain "${hostname}" removed.`);
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Failed to remove domain');
+        error(err instanceof Error ? err.message : "Failed to remove domain");
         process.exit(1);
       }
     });
-}
-
-function ensureContext() {
-  const token = getToken();
-  if (!token) {
-    error('Not authenticated. Run `orbit auth login` first.');
-    process.exit(1);
-  }
-
-  const ctx = getContext();
-  if (!ctx) {
-    error('No linked environment. Run `orbit link` first.');
-    process.exit(1);
-  }
-
-  return ctx;
 }
