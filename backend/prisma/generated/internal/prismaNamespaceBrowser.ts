@@ -61,6 +61,7 @@ export const ModelName = {
   EnvironmentVariable: 'EnvironmentVariable',
   Domain: 'Domain',
   GitHubInstallation: 'GitHubInstallation',
+  SlackInstallation: 'SlackInstallation',
   Activity: 'Activity'
 } as const
 
@@ -217,6 +218,27 @@ export const GitHubInstallationScalarFieldEnum = {
 export type GitHubInstallationScalarFieldEnum = (typeof GitHubInstallationScalarFieldEnum)[keyof typeof GitHubInstallationScalarFieldEnum]
 
 
+export const SlackInstallationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  teamId: 'teamId',
+  teamName: 'teamName',
+  enterpriseId: 'enterpriseId',
+  botUserId: 'botUserId',
+  botId: 'botId',
+  appId: 'appId',
+  scopes: 'scopes',
+  botToken: 'botToken',
+  installerSlackUserId: 'installerSlackUserId',
+  raw: 'raw',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SlackInstallationScalarFieldEnum = (typeof SlackInstallationScalarFieldEnum)[keyof typeof SlackInstallationScalarFieldEnum]
+
+
 export const ActivityScalarFieldEnum = {
   id: 'id',
   type: 'type',
@@ -242,6 +264,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {

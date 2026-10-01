@@ -101,6 +101,12 @@ export interface CleanupJob {
   networkName?: string;
 }
 
+export interface SlackApiJob {
+  teamId: string;
+  method: string;
+  args: Record<string, unknown>;
+}
+
 export interface DeploymentContext {
   deployment: Deployment;
   project: Project & { source: Source | null };

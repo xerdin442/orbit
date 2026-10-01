@@ -90,6 +90,8 @@ enum ActivityType {
   github_webhook_event
   resource_provisioned
   resource_deleted
+  slack_installation_added
+  slack_installation_removed
 }
 
 model User {
@@ -102,6 +104,7 @@ model User {
 
   projects            Project[]
   githubInstallations GitHubInstallation[]
+  slackInstallation   SlackInstallation?
 }
 
 model Project {
@@ -250,6 +253,29 @@ model GitHubInstallation {
   createdAt DateTime @default(now())
 
   @@index([installationId])
+  @@index([userId])
+}
+
+model SlackInstallation {
+  id                   String   @id @default(cuid())
+  teamId               String   @unique
+  teamName             String?
+  enterpriseId         String?
+  botUserId            String?
+  botId                String?
+  appId                String?
+  scopes               String[]
+  botToken             String
+  installerSlackUserId String?
+  raw                  Json
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
   @@index([userId])
 }
 

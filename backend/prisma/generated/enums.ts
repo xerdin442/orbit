@@ -113,7 +113,9 @@ export const ActivityType = {
   github_installation_removed: 'github_installation_removed',
   github_webhook_event: 'github_webhook_event',
   resource_provisioned: 'resource_provisioned',
-  resource_deleted: 'resource_deleted'
+  resource_deleted: 'resource_deleted',
+  slack_installation_added: 'slack_installation_added',
+  slack_installation_removed: 'slack_installation_removed'
 } as const
 
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType]
