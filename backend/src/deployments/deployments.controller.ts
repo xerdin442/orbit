@@ -165,6 +165,12 @@ export class DeploymentsController {
     replaying = false;
     for (const entry of pending) send(entry);
 
+    const { completedAt } = await this.deployments.findById(id, req.user.id);
+    if (completedAt) {
+      this.logService.complete(id);
+      return;
+    }
+
     req.on('close', () => {
       clearInterval(heartbeat);
       subscription.unsubscribe();

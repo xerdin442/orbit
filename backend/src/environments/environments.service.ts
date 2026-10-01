@@ -20,7 +20,7 @@ import {
   UpdateVariableDto,
   BulkCreateVariablesDto,
 } from './dto/variable.dto';
-import { ActivityType } from '@generated/client';
+import { ActivityType, type Environment } from '@generated/client';
 import { DeploymentsService } from '@src/deployments/deployments.service';
 
 @Injectable()
@@ -165,7 +165,7 @@ export class EnvironmentsService {
     });
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId, userId);
+      await this.triggerRedeploy(env, userId);
     }
 
     await this.invalidateEnvCache(env.projectId, envId, true);
@@ -220,7 +220,7 @@ export class EnvironmentsService {
     const result = await this.db.environmentVariable.createMany({ data });
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId, userId);
+      await this.triggerRedeploy(env, userId);
     }
 
     await this.invalidateEnvCache(env.projectId, envId, true);
@@ -240,13 +240,7 @@ export class EnvironmentsService {
     dto: UpdateVariableDto,
     skipRedeploy = false,
   ) {
-    const existing = await this.db.environmentVariable.findUnique({
-      where: { id: varId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Variable not found');
-    }
+    const existing = await this.findOwnedVariable(varId, userId);
 
     if (dto.key && dto.key !== existing.key) {
       await this.verifyUniqueKey(existing.environmentId, dto.key);
@@ -267,7 +261,7 @@ export class EnvironmentsService {
     const envId = updated.environment.id;
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId, userId);
+      await this.triggerRedeploy(updated.environment, userId);
     }
 
     await this.invalidateEnvCache(projectId, envId, true);
@@ -282,14 +276,7 @@ export class EnvironmentsService {
   }
 
   async deleteVariable(varId: string, userId: string, skipRedeploy = false) {
-    const existing = await this.db.environmentVariable.findUnique({
-      where: { id: varId },
-      include: { environment: true },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Variable not found');
-    }
+    const existing = await this.findOwnedVariable(varId, userId);
 
     const projectId = existing.environment.projectId;
     const envId = existing.environment.id;
@@ -297,7 +284,7 @@ export class EnvironmentsService {
     await this.db.environmentVariable.delete({ where: { id: varId } });
 
     if (!skipRedeploy) {
-      await this.triggerRedeploy(envId, userId);
+      await this.triggerRedeploy(existing.environment, userId);
     }
 
     await this.invalidateEnvCache(projectId, envId, true);
@@ -322,6 +309,19 @@ export class EnvironmentsService {
         `/api/projects/${projectId}/environments/${envId}/variables`,
       );
     }
+  }
+
+  private async findOwnedVariable(varId: string, userId: string) {
+    const variable = await this.db.environmentVariable.findFirst({
+      where: { id: varId, environment: { project: { ownerId: userId } } },
+      include: { environment: true },
+    });
+
+    if (!variable) {
+      throw new NotFoundException('Variable not found');
+    }
+
+    return variable;
   }
 
   private async verifyProjectOwnership(projectId: string, userId: string) {
@@ -363,9 +363,15 @@ export class EnvironmentsService {
     }
   }
 
-  private async triggerRedeploy(envId: string, userId: string) {
+  private async triggerRedeploy(
+    env: Pick<Environment, 'id' | 'currentDeploymentId'>,
+    userId: string,
+  ) {
+    // Nothing is live yet, the changes will be picked up by the first deploy.
+    if (!env.currentDeploymentId) return;
+
     const deployment = await this.deployments.triggerRedeployment(
-      envId,
+      env.id,
       userId,
     );
 

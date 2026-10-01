@@ -197,11 +197,11 @@ export class DeploymentsService {
     const deployment = await this.findById(deploymentId, userId);
 
     if (
-      deployment.lifecycleStatus !== LifecycleStatus.inactive &&
+      deployment.lifecycleStatus !== LifecycleStatus.inactive ||
       deployment.buildStatus !== BuildStatus.ready
     ) {
       throw new BadRequestException(
-        'Failed or running deployments cannot be rolled back',
+        'Only successful, inactive deployments can be rolled back',
       );
     }
 
