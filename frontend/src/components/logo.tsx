@@ -1,5 +1,5 @@
 import localFont from "next/font/local";
-import { ScanBox } from "lucide-react";
+import { Ufo3Icon } from "@solar-icons/react/linear/ufo-3";
 import { cn } from "@/lib/utils";
 
 const arsenica = localFont({
@@ -20,7 +20,7 @@ export function Logo({ className }: LogoProps) {
         className,
       )}
     >
-      <ScanBox className="text-primary" size="0.85em" strokeWidth={2.5} />
+      <Ufo3Icon size={24} color="#ff5600" />
       Orbit
     </span>
   );
