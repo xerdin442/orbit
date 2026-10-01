@@ -20,7 +20,7 @@ import {
   UpdateVariableDto,
   BulkCreateVariablesDto,
 } from './dto/variable.dto';
-import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from '@src/common/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
 import { CleanupService } from '@src/cleanup/cleanup.service';
 
