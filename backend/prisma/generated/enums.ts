@@ -81,6 +81,14 @@ export const DomainStatus = {
 export type DomainStatus = (typeof DomainStatus)[keyof typeof DomainStatus]
 
 
+export const ExternalProvider = {
+  railway: 'railway',
+  vercel: 'vercel'
+} as const
+
+export type ExternalProvider = (typeof ExternalProvider)[keyof typeof ExternalProvider]
+
+
 export const DomainType = {
   managed: 'managed',
   custom: 'custom'
@@ -117,7 +125,11 @@ export const ActivityType = {
   resource_data_cleared: 'resource_data_cleared',
   slack_installation_added: 'slack_installation_added',
   slack_installation_removed: 'slack_installation_removed',
-  slack_token_revoked: 'slack_token_revoked'
+  slack_token_revoked: 'slack_token_revoked',
+  external_connection_added: 'external_connection_added',
+  external_connection_removed: 'external_connection_removed',
+  railway_project_imported: 'railway_project_imported',
+  vercel_project_imported: 'vercel_project_imported'
 } as const
 
 export type ActivityType = (typeof ActivityType)[keyof typeof ActivityType]

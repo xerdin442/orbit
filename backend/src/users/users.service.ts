@@ -22,6 +22,13 @@ export class UsersService {
             createdAt: true,
           },
         },
+        externalConnections: {
+          select: {
+            provider: true,
+            label: true,
+            createdAt: true,
+          },
+        },
       },
     });
     if (!user) {
