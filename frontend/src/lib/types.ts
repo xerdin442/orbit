@@ -32,6 +32,8 @@ export interface Project {
   healthCheckPort: number;
   healthCheckPath: string;
   healthCheckTimeout: number;
+  buildDirectory: string | null;
+  startCommand: string | null;
   source: Source | null;
   createdAt: string;
   updatedAt: string;
@@ -253,6 +255,8 @@ export interface CreateProjectPayload {
   healthCheckTimeout?: number;
   installationId?: number;
   envVars?: Record<string, string>;
+  buildDirectory?: string;
+  startCommand?: string;
 }
 
 export interface CreateEnvironmentPayload {
