@@ -23,15 +23,17 @@ import {
   DeploymentStepExecutionError,
   DeploymentStep,
 } from '@src/common/types';
-import { CloneRepositoryStep } from './pipeline/clone-repository.step';
-import { ResolveCommitStep } from './pipeline/resolve-commit.step';
-import { BuildImageStep } from './pipeline/build-image.step';
-import { CreateContainerStep } from './pipeline/create-container.step';
-import { StartContainerStep } from './pipeline/start-container.step';
-import { HealthCheckStep } from './pipeline/health-check.step';
-import { ConfigureProxyStep } from './pipeline/configure-proxy.step';
-import { ActivateDeploymentStep } from './pipeline/activate-deployment.step';
-import { CleanupStep } from './pipeline/cleanup.step';
+import {
+  CreateContainerStep,
+  StartContainerStep,
+  HealthCheckStep,
+  ActivateDeploymentStep,
+  ConfigureProxyStep,
+  CleanupStep,
+  CloneRepositoryStep,
+  ResolveCommitStep,
+  BuildImageStep,
+} from './pipeline';
 
 @Processor('deployments')
 export class DeploymentProcessor {
