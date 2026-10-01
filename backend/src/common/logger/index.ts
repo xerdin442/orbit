@@ -8,7 +8,7 @@ import {
 const { combine, timestamp, label, printf } = format;
 
 const myFormat = printf(({ level, message, timestamp, label }) => {
-  return `${String(timestamp)} ${String(label)} ${level} ${String(message)}`;
+  return `${String(timestamp)} [${String(label)}] ${level} ${String(message)}`;
 });
 
 export const Logger = (context: string): WinstonLogger => {
