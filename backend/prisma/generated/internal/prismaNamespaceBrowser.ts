@@ -51,7 +51,16 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
-
+  User: 'User',
+  Project: 'Project',
+  Source: 'Source',
+  Environment: 'Environment',
+  Deployment: 'Deployment',
+  DeploymentLog: 'DeploymentLog',
+  Resource: 'Resource',
+  EnvironmentVariable: 'EnvironmentVariable',
+  Domain: 'Domain',
+  GitHubInstallation: 'GitHubInstallation'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -68,4 +77,179 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  githubUserId: 'githubUserId',
+  githubUsername: 'githubUsername',
+  email: 'email',
+  avatarUrl: 'avatarUrl',
+  createdAt: 'createdAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const ProjectScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  ownerId: 'ownerId'
+} as const
+
+export type ProjectScalarFieldEnum = (typeof ProjectScalarFieldEnum)[keyof typeof ProjectScalarFieldEnum]
+
+
+export const SourceScalarFieldEnum = {
+  id: 'id',
+  repositoryUrl: 'repositoryUrl',
+  provider: 'provider',
+  defaultBranch: 'defaultBranch',
+  installationId: 'installationId',
+  projectId: 'projectId'
+} as const
+
+export type SourceScalarFieldEnum = (typeof SourceScalarFieldEnum)[keyof typeof SourceScalarFieldEnum]
+
+
+export const EnvironmentScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  branch: 'branch',
+  autoDeploy: 'autoDeploy',
+  currentDeploymentId: 'currentDeploymentId',
+  projectId: 'projectId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type EnvironmentScalarFieldEnum = (typeof EnvironmentScalarFieldEnum)[keyof typeof EnvironmentScalarFieldEnum]
+
+
+export const DeploymentScalarFieldEnum = {
+  id: 'id',
+  commitSha: 'commitSha',
+  commitMessage: 'commitMessage',
+  imageTag: 'imageTag',
+  containerId: 'containerId',
+  trigger: 'trigger',
+  buildStatus: 'buildStatus',
+  lifecycleStatus: 'lifecycleStatus',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  environmentId: 'environmentId'
+} as const
+
+export type DeploymentScalarFieldEnum = (typeof DeploymentScalarFieldEnum)[keyof typeof DeploymentScalarFieldEnum]
+
+
+export const DeploymentLogScalarFieldEnum = {
+  id: 'id',
+  timestamp: 'timestamp',
+  level: 'level',
+  message: 'message',
+  deploymentId: 'deploymentId'
+} as const
+
+export type DeploymentLogScalarFieldEnum = (typeof DeploymentLogScalarFieldEnum)[keyof typeof DeploymentLogScalarFieldEnum]
+
+
+export const ResourceScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  name: 'name',
+  status: 'status',
+  hostname: 'hostname',
+  ports: 'ports',
+  credentials: 'credentials',
+  containerId: 'containerId',
+  volumeId: 'volumeId',
+  networkId: 'networkId',
+  environmentId: 'environmentId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResourceScalarFieldEnum = (typeof ResourceScalarFieldEnum)[keyof typeof ResourceScalarFieldEnum]
+
+
+export const EnvironmentVariableScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  value: 'value',
+  generated: 'generated',
+  createdAt: 'createdAt',
+  environmentId: 'environmentId'
+} as const
+
+export type EnvironmentVariableScalarFieldEnum = (typeof EnvironmentVariableScalarFieldEnum)[keyof typeof EnvironmentVariableScalarFieldEnum]
+
+
+export const DomainScalarFieldEnum = {
+  id: 'id',
+  hostname: 'hostname',
+  sslEnabled: 'sslEnabled',
+  status: 'status',
+  environmentId: 'environmentId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type DomainScalarFieldEnum = (typeof DomainScalarFieldEnum)[keyof typeof DomainScalarFieldEnum]
+
+
+export const GitHubInstallationScalarFieldEnum = {
+  id: 'id',
+  installationId: 'installationId',
+  accountLogin: 'accountLogin',
+  accountType: 'accountType',
+  repositorySelection: 'repositorySelection',
+  userId: 'userId',
+  createdAt: 'createdAt'
+} as const
+
+export type GitHubInstallationScalarFieldEnum = (typeof GitHubInstallationScalarFieldEnum)[keyof typeof GitHubInstallationScalarFieldEnum]
+
+
+export const SortOrder = {
+  asc: 'asc',
+  desc: 'desc'
+} as const
+
+export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

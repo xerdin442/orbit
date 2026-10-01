@@ -9,7 +9,71 @@
 * 🟢 You can import this file directly.
 */
 
+export const BuildStatus = {
+  pending: 'pending',
+  cloning: 'cloning',
+  building: 'building',
+  deploying: 'deploying',
+  ready: 'ready',
+  failed: 'failed'
+} as const
+
+export type BuildStatus = (typeof BuildStatus)[keyof typeof BuildStatus]
 
 
-// This file is empty because there are no enums in the schema.
-export {}
+export const LifecycleStatus = {
+  active: 'active',
+  inactive: 'inactive',
+  aborted: 'aborted'
+} as const
+
+export type LifecycleStatus = (typeof LifecycleStatus)[keyof typeof LifecycleStatus]
+
+
+export const DeploymentTrigger = {
+  manual: 'manual',
+  webhook: 'webhook',
+  redeploy: 'redeploy',
+  rollback: 'rollback'
+} as const
+
+export type DeploymentTrigger = (typeof DeploymentTrigger)[keyof typeof DeploymentTrigger]
+
+
+export const LogLevel = {
+  INFO: 'INFO',
+  WARN: 'WARN',
+  ERROR: 'ERROR'
+} as const
+
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
+
+
+export const ResourceType = {
+  postgres: 'postgres',
+  mysql: 'mysql',
+  redis: 'redis',
+  mongo: 'mongo',
+  clickhouse: 'clickhouse'
+} as const
+
+export type ResourceType = (typeof ResourceType)[keyof typeof ResourceType]
+
+
+export const ResourceStatus = {
+  provisioning: 'provisioning',
+  ready: 'ready',
+  unhealthy: 'unhealthy',
+  failed: 'failed'
+} as const
+
+export type ResourceStatus = (typeof ResourceStatus)[keyof typeof ResourceStatus]
+
+
+export const DomainStatus = {
+  pending: 'pending',
+  active: 'active',
+  error: 'error'
+} as const
+
+export type DomainStatus = (typeof DomainStatus)[keyof typeof DomainStatus]

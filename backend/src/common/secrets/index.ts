@@ -1,26 +1,48 @@
 import { ConfigService } from '@nestjs/config';
 import * as dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
-// Initialize Config Service
 const config = new ConfigService();
 
-export const Secrets = {
+interface SecretsConfig {
+  NODE_ENV: string;
+  PORT: number;
+  DATABASE_URL: string;
+  JWT_SECRET: string;
+  REDIS_PORT: number;
+  REDIS_HOST: string;
+  REDIS_PASSWORD: string;
+  REDIS_URL: string;
+  GITHUB_CLIENT_ID: string;
+  GITHUB_CLIENT_SECRET: string;
+  GITHUB_REDIRECT_URI: string;
+  RATE_LIMITING_PER_SECOND: number;
+  RATE_LIMITING_PER_MINUTE: number;
+  PAYSTACK_SECRET_KEY: string;
+}
+
+function getString(key: string): string {
+  return config.getOrThrow<string>(key);
+}
+
+function getNumber(key: string): number {
+  return config.getOrThrow<number>(key);
+}
+
+export const Secrets: SecretsConfig = {
   NODE_ENV: process.env.NODE_ENV as string,
-  PORT: config.getOrThrow<number>('PORT'),
-  DATABASE_URL: config.getOrThrow<string>('DATABASE_URL'),
-  JWT_SECRET: config.getOrThrow<string>('JWT_SECRET'),
-  REDIS_PORT: config.getOrThrow<number>('REDIS_PORT'),
-  REDIS_HOST: config.getOrThrow<string>('REDIS_HOST'),
-  REDIS_PASSWORD: config.getOrThrow<string>('REDIS_PASSWORD'),
-  REDIS_URL: config.getOrThrow<string>('REDIS_URL'),
-  RATE_LIMITING_PER_SECOND: config.getOrThrow<number>(
-    'RATE_LIMITING_PER_SECOND',
-  ),
-  RATE_LIMITING_PER_MINUTE: config.getOrThrow<number>(
-    'RATE_LIMITING_PER_MINUTE',
-  ),
-  PAYSTACK_SECRET_KEY: config.getOrThrow<string>('PAYSTACK_SECRET_KEY'),
+  PORT: getNumber('PORT'),
+  DATABASE_URL: getString('DATABASE_URL'),
+  JWT_SECRET: getString('JWT_SECRET'),
+  REDIS_PORT: getNumber('REDIS_PORT'),
+  REDIS_HOST: getString('REDIS_HOST'),
+  REDIS_PASSWORD: getString('REDIS_PASSWORD'),
+  REDIS_URL: getString('REDIS_URL'),
+  GITHUB_CLIENT_ID: getString('GITHUB_CLIENT_ID'),
+  GITHUB_CLIENT_SECRET: getString('GITHUB_CLIENT_SECRET'),
+  GITHUB_REDIRECT_URI: getString('GITHUB_REDIRECT_URI'),
+  RATE_LIMITING_PER_SECOND: getNumber('RATE_LIMITING_PER_SECOND'),
+  RATE_LIMITING_PER_MINUTE: getNumber('RATE_LIMITING_PER_MINUTE'),
+  PAYSTACK_SECRET_KEY: getString('PAYSTACK_SECRET_KEY'),
 };
