@@ -6,6 +6,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://github.com/owner/repo';
+    dto.defaultBranch = 'main';
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
   });
@@ -14,6 +15,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my app';
     dto.repositoryUrl = 'https://github.com/owner/repo';
+    dto.defaultBranch = 'main';
     const errors = await validate(dto);
     expect(errors).toHaveLength(1);
     expect(errors[0].property).toBe('name');
@@ -23,6 +25,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://gitlab.com/owner/repo';
+    dto.defaultBranch = 'main';
     const errors = await validate(dto);
     expect(errors).toHaveLength(1);
     expect(errors[0].property).toBe('repositoryUrl');
@@ -32,6 +35,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://www.github.com/owner/repo';
+    dto.defaultBranch = 'main';
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
   });
@@ -39,6 +43,7 @@ describe('CreateProjectDto', () => {
   it('rejects missing name', async () => {
     const dto = new CreateProjectDto();
     dto.repositoryUrl = 'https://github.com/owner/repo';
+    dto.defaultBranch = 'main';
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some((e) => e.property === 'name')).toBe(true);
@@ -47,6 +52,7 @@ describe('CreateProjectDto', () => {
   it('rejects missing repositoryUrl', async () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
+    dto.defaultBranch = 'main';
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some((e) => e.property === 'repositoryUrl')).toBe(true);
@@ -56,6 +62,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://github.com/owner/repo';
+    dto.defaultBranch = 'main';
     dto.healthCheck = true;
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
@@ -65,6 +72,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://github.com/owner/repo';
+    dto.defaultBranch = 'main';
     (dto as Record<string, unknown>).healthCheck = 'yes';
     const errors = await validate(dto);
     expect(errors.some((e) => e.property === 'healthCheck')).toBe(true);
@@ -74,6 +82,7 @@ describe('CreateProjectDto', () => {
     const dto = new CreateProjectDto();
     dto.name = 'my-app';
     dto.repositoryUrl = 'https://github.com/owner/repo';
+    dto.defaultBranch = 'main';
     dto.envVars = { NODE_ENV: 'production' };
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
