@@ -69,8 +69,6 @@ export class DeploymentProcessor extends WorkerHost {
 
     const ctx = await this.buildContext(deployment);
 
-    await this.loadVariables(ctx);
-
     if (resourceCount && resourceCount > 0) {
       try {
         await this.provisionResources(ctx, resourceCount);
@@ -84,6 +82,8 @@ export class DeploymentProcessor extends WorkerHost {
         return;
       }
     }
+
+    await this.loadVariables(ctx);
 
     const pipeline = this.buildPipeline(skipImageBuild);
 
@@ -169,12 +169,6 @@ export class DeploymentProcessor extends WorkerHost {
     );
     this.logService.complete(deploymentId);
 
-    await this.activity.log(
-      ActivityType.deployment_completed,
-      ctx.project.ownerId,
-      { deploymentId, environmentId: ctx.environment.id },
-    );
-
     this.eventEmitter.emit(
       'deployment.completed',
       new DeploymentCompletedEvent(
@@ -184,6 +178,12 @@ export class DeploymentProcessor extends WorkerHost {
         ctx.domain,
         slackMetadata,
       ),
+    );
+
+    await this.activity.log(
+      ActivityType.deployment_completed,
+      ctx.project.ownerId,
+      { deploymentId, environmentId: ctx.environment.id },
     );
   }
 
@@ -253,6 +253,7 @@ export class DeploymentProcessor extends WorkerHost {
       'Loading environment variables...',
     );
 
+    // Parse user-defined variables
     const vars = await this.db.environmentVariable.findMany({
       where: { environmentId: ctx.environment.id },
     });
@@ -266,6 +267,34 @@ export class DeploymentProcessor extends WorkerHost {
     }
 
     const total = ctx.variables.length;
+
+    // Inject resource credentials, overwriting any duplicate keys defined by the user
+    const resources = await this.db.resource.findMany({
+      where: { environmentId: ctx.environment.id },
+    });
+    const variablesByKey = new Map(
+      ctx.variables.map((variable) => {
+        const separator = variable.indexOf('=');
+        return [
+          separator === -1 ? variable : variable.slice(0, separator),
+          variable,
+        ];
+      }),
+    );
+
+    for (const resource of resources) {
+      if (resource.status !== ResourceStatus.ready) continue;
+
+      const credentials = resource.credentials as Record<string, string> | null;
+      if (!credentials) continue;
+
+      for (const [key, value] of Object.entries(credentials)) {
+        variablesByKey.set(key, `${key}=${value}`);
+      }
+    }
+
+    ctx.variables = Array.from(variablesByKey.values());
+
     await this.logService.append(
       deploymentId,
       LogLevel.INFO,
@@ -306,27 +335,6 @@ export class DeploymentProcessor extends WorkerHost {
       const ready = resources.filter((r) => r.status === ResourceStatus.ready);
 
       if (ready.length === resourceCount) {
-        const variablesByKey = new Map(
-          ctx.variables.map((variable) => {
-            const separator = variable.indexOf('=');
-            return [
-              separator === -1 ? variable : variable.slice(0, separator),
-              variable,
-            ];
-          }),
-        );
-
-        for (const r of ready) {
-          const creds = r.credentials as Record<string, string> | null;
-          if (creds) {
-            for (const [key, value] of Object.entries(creds)) {
-              variablesByKey.set(key, `${key}=${value}`);
-            }
-          }
-        }
-
-        ctx.variables = Array.from(variablesByKey.values());
-
         await this.logService.append(
           deploymentId,
           LogLevel.INFO,

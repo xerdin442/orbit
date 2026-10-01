@@ -13,8 +13,19 @@ function resolveContainerCommand(startCommand: string | null) {
   const trimmed = startCommand?.trim();
   if (!trimmed) return undefined;
 
-  const command = trimmed.replace(/^sh\s+-c\s+/, '');
-  return ['sh', '-c', command];
+  let command = trimmed.replace(/^sh\s+-c\s+/, '');
+
+  const first = command[0];
+  const last = command[command.length - 1];
+  if (
+    command.length >= 2 &&
+    (first === '"' || first === "'") &&
+    first === last
+  ) {
+    command = command.slice(1, -1);
+  }
+
+  return command;
 }
 
 export class CreateContainerStep implements DeploymentStep {
@@ -39,12 +50,13 @@ export class CreateContainerStep implements DeploymentStep {
     }
 
     const network = await this.docker.getOrCreateProjectNetwork(ctx.project.id);
+    const command = resolveContainerCommand(ctx.project.startCommand);
 
     const options: Docker.ContainerCreateOptions = {
       name: `project-${ctx.project.id}-deployment-${ctx.deployment.id}`,
       Image: ctx.imageTag,
       Env: ctx.variables,
-      Cmd: resolveContainerCommand(ctx.project.startCommand),
+      ...(command ? { Entrypoint: ['sh', '-c'], Cmd: [command] } : {}),
       HostConfig: {
         NetworkMode: network.id,
         RestartPolicy: { Name: 'unless-stopped' },
