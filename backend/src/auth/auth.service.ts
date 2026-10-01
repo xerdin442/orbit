@@ -88,6 +88,7 @@ export class AuthService {
       githubUsername: user.githubUsername,
       email: user.email,
       avatarUrl: user.avatarUrl,
+      slackInstallation: user.slackInstallation,
     };
   }
 
