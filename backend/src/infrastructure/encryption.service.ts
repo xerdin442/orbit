@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   createCipheriv,
   createDecipheriv,
+  createHash,
   randomBytes,
   scryptSync,
 } from 'crypto';
@@ -43,5 +44,9 @@ export class EncryptionService {
     decrypted += decipher.final('utf8');
 
     return decrypted;
+  }
+
+  hash(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
   }
 }
