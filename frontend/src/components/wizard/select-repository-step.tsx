@@ -36,6 +36,8 @@ export function SelectRepositoryStep({
     prefillRepoFullName ? prefillRepoFullName.split("/").pop()! : "",
   );
   const autoSelected = useRef(false);
+  const listRef = useRef<HTMLDivElement>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
 
   const {
     data: repositories,
@@ -61,6 +63,12 @@ export function SelectRepositoryStep({
     onSelect(prefillMatch);
   }, [prefillMatch, onSelect]);
 
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    setHasOverflow(el.scrollHeight > el.clientHeight);
+  }, [filtered]);
+
   const prefillMissing =
     !!prefillRepoFullName && !isLoading && !isError && !prefillMatch;
 
@@ -82,8 +90,10 @@ export function SelectRepositoryStep({
     >
       {isLoading && (
         <div className="space-y-2">
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-9 w-full bg-input" />
+          <Skeleton className="h-12 w-full bg-input" />
+          <Skeleton className="h-12 w-full bg-input" />
+          <Skeleton className="h-12 w-full bg-input" />
         </div>
       )}
 
@@ -133,7 +143,13 @@ export function SelectRepositoryStep({
           )}
 
           {filtered.length > 0 && (
-            <div className="max-h-80 space-y-2 overflow-y-auto">
+            <div
+              ref={listRef}
+              className={cn(
+                "max-h-80 space-y-2 overflow-y-auto custom-scrollbar",
+                hasOverflow && "pr-2",
+              )}
+            >
               {filtered.map((repo) => (
                 <button
                   key={repo.id}

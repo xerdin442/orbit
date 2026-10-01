@@ -240,7 +240,7 @@ export function ConfigureProjectStep({
             Default branch
           </label>
           {branchesLoading ? (
-            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full bg-input" />
           ) : (
             <Select
               value={selectedBranch}

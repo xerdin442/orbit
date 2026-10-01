@@ -1,15 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { Logo } from "@/components/logo";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/shared/loading-button";
 import { api } from "@/lib/api";
 
 export default function LoginPage() {
+  const [loading, setLoading] = useState(false);
+
   const handleLogin = async () => {
-    const url = await api.auth.githubLoginUrl();
-    window.location.href = url;
+    setLoading(true);
+    try {
+      const url = await api.auth.githubLoginUrl();
+      window.location.href = url;
+    } catch {
+      setLoading(false);
+    }
   };
 
   return (
@@ -27,14 +35,15 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <Button
+          <LoadingButton
             size="lg"
             className="w-full gap-2 tracking-[0.015em]"
             onClick={handleLogin}
+            loading={loading}
           >
             <FontAwesomeIcon icon={faGithub} size="lg" />
             Continue with GitHub
-          </Button>
+          </LoadingButton>
         </div>
       </div>
     </div>
