@@ -146,6 +146,7 @@ describe('ResourcesService', () => {
     it('cleans up Docker resources and deletes', async () => {
       db.resource.findFirst = jest.fn().mockResolvedValue({
         id: 'res-1',
+        status: ResourceStatus.ready,
         containerId: 'c1',
         volumeId: 'v1',
         environment: { project: { ownerId: 'user-1' } },
@@ -160,6 +161,23 @@ describe('ResourcesService', () => {
         where: { id: 'res-1' },
       });
       expect(activity.log).toHaveBeenCalled();
+    });
+
+    it('refuses to delete a resource that is still provisioning', async () => {
+      db.resource.findFirst = jest.fn().mockResolvedValue({
+        id: 'res-1',
+        status: ResourceStatus.provisioning,
+        containerId: null,
+        volumeId: 'v1',
+        environment: { project: { ownerId: 'user-1' } },
+      });
+
+      await expect(service.delete('res-1', 'user-1')).rejects.toThrow(
+        'Resource is still being provisioned',
+      );
+
+      expect(docker.removeVolume).not.toHaveBeenCalled();
+      expect(db.resource.delete).not.toHaveBeenCalled();
     });
   });
 
