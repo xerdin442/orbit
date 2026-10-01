@@ -120,7 +120,9 @@ export class DeploymentsService {
         take: limit,
         skip: (page - 1) * limit,
       }),
-      this.db.deployment.count(),
+      this.db.deployment.count({
+        where: { environmentId },
+      }),
     ]);
 
     return {
@@ -214,7 +216,7 @@ export class DeploymentsService {
     });
   }
 
-  async abortDeployment(id: string, resourceIds?: string) {
+  async abortDeployment(id: string, resourceIds?: string[]) {
     const deployment = await this.db.deployment.update({
       where: { id },
       data: { buildStatus: BuildStatus.aborted },
@@ -233,10 +235,9 @@ export class DeploymentsService {
     });
 
     if (resourceIds) {
-      const ids = resourceIds.trim().split(',');
-      for (const resourceId of ids) {
+      for (const id of resourceIds) {
         try {
-          await this.resources.delete(resourceId, userId);
+          await this.resources.delete(id, userId);
         } catch {
           // resource already gone or never created
         }
