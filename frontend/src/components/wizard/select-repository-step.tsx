@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
-import { ArrowLeft, Lock, Globe } from "lucide-react";
+import { ArrowLeft, Lock, Globe, TriangleAlert } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { SectionCard } from "@/components/shared/section-card";
@@ -23,14 +23,19 @@ interface SelectRepositoryStepProps {
   installation: GitHubInstallation;
   onSelect: (repository: GitHubRepository) => void;
   onBack: () => void;
+  prefillRepoFullName?: string | null;
 }
 
 export function SelectRepositoryStep({
   installation,
   onSelect,
   onBack,
+  prefillRepoFullName,
 }: SelectRepositoryStepProps) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(
+    prefillRepoFullName ? prefillRepoFullName.split("/").pop()! : "",
+  );
+  const autoSelected = useRef(false);
 
   const {
     data: repositories,
@@ -45,6 +50,19 @@ export function SelectRepositoryStep({
   const filtered = (repositories ?? []).filter((r) =>
     r.full_name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const prefillMatch = prefillRepoFullName
+    ? (repositories ?? []).find((r) => r.full_name === prefillRepoFullName)
+    : undefined;
+
+  useEffect(() => {
+    if (autoSelected.current || !prefillMatch) return;
+    autoSelected.current = true;
+    onSelect(prefillMatch);
+  }, [prefillMatch, onSelect]);
+
+  const prefillMissing =
+    !!prefillRepoFullName && !isLoading && !isError && !prefillMatch;
 
   const handleUpdateAccess = async () => {
     const url = await api.github.updateAccessUrl(installation.installationId);
@@ -80,10 +98,23 @@ export function SelectRepositoryStep({
 
       {!isLoading && !isError && repositories && (
         <div className="space-y-3">
+          {prefillMissing && (
+            <div className="flex items-start gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-3 text-yellow-500">
+              <TriangleAlert className="mt-0.5 size-4.5 shrink-0" />
+              <p className="text-xs leading-normal tracking-[0.01em]">
+                <span className="font-medium">{prefillRepoFullName}</span>{" "}
+                isn&apos;t accessible from this installation. Grant Orbit access
+                to this account by updating your GitHub App permissions with the
+                link below.
+              </p>
+            </div>
+          )}
+
           <SearchBar
             value={search}
             onChange={setSearch}
             placeholder="Search repositories..."
+            disabled={prefillMissing}
           />
 
           {filtered.length === 0 && (

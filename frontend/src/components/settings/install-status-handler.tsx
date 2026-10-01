@@ -41,9 +41,6 @@ export function InstallStatusHandler() {
       }
     }
 
-    // pathname can still be mid-transition when this effect first fires, so
-    // keep reconciling on every render until the param is actually gone —
-    // this re-runs once pathname settles to its final value and self-corrects.
     const params = new URLSearchParams(searchParams);
     params.delete("github_install");
     params.delete("slack_install");

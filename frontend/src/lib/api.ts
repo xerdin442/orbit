@@ -14,6 +14,9 @@ import type {
   GitHubRepository,
   GitHubBranch,
   ActivityLog,
+  ExternalProvider,
+  ExternalProjectSummary,
+  ExternalProjectDetail,
   DatabaseSchema,
   TableObject,
   TableData,
@@ -190,6 +193,22 @@ export const api = {
       request<{ url: string }>("/slack/install").then((r) => r.url),
     disconnect: () =>
       request<void>("/slack/installation", { method: "DELETE" }),
+  },
+
+  migrations: {
+    connect: (provider: ExternalProvider, accessToken: string) =>
+      request<void>(`/migrations/${provider}/connect`, {
+        method: "POST",
+        body: JSON.stringify({ accessToken }),
+      }),
+    disconnect: (provider: ExternalProvider) =>
+      request<void>(`/migrations/${provider}/connect`, { method: "DELETE" }),
+    listProjects: (provider: ExternalProvider) =>
+      request<ExternalProjectSummary[]>(`/migrations/${provider}/projects`),
+    getProject: (provider: ExternalProvider, externalId: string) =>
+      request<ExternalProjectDetail>(
+        `/migrations/${provider}/projects/${externalId}`,
+      ),
   },
 
   environments: {
