@@ -1,6 +1,4 @@
-import { mkdtemp, rm } from 'fs/promises';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { rm } from 'fs/promises';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { GitHubService } from '@src/github/github.service';
@@ -23,9 +21,6 @@ export class CloneRepositoryStep implements DeploymentStep {
   ) {}
 
   async execute(ctx: DeploymentContext): Promise<void> {
-    const prefix = join(tmpdir(), 'builds-');
-    ctx.workspace = await mkdtemp(prefix);
-
     const source = ctx.project.source!;
     const repoUrl = await this.resolveAuthenticatedUrl(source);
 

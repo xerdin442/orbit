@@ -23,6 +23,27 @@ export class ResolveCommitStep implements DeploymentStep {
       'Resolving commit...',
     );
 
+    if (ctx.commitSha) {
+      // Rebuild specific historical commit for a redeploy or rollback
+      const checkoutResult = await this.command.gitCheckout(
+        ctx.workspace,
+        ctx.commitSha,
+      );
+
+      if (checkoutResult.exitCode !== 0) {
+        throw new DeploymentStepExecutionError(
+          `Failed to checkout commit ${ctx.commitSha}: ${checkoutResult.stderr}`,
+        );
+      }
+
+      await this.log.append(
+        ctx.deployment.id,
+        LogLevel.INFO,
+        `Checked out commit: ${ctx.commitSha}.`,
+      );
+      return;
+    }
+
     const shaResult = await this.command.gitRevParse(ctx.workspace);
 
     if (shaResult.exitCode !== 0) {
