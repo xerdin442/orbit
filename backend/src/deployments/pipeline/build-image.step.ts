@@ -45,6 +45,7 @@ export class BuildImageStep implements DeploymentStep {
       sourcePath,
       ctx.imageTag,
       ctx.project.startCommand ?? undefined,
+      ctx.variables,
       (data) => {
         void this.log.append(ctx.deployment.id, LogLevel.INFO, data.trimEnd());
       },
