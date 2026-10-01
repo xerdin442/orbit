@@ -16,6 +16,10 @@ interface OrbitConfig {
 export const config = new Conf<OrbitConfig>({
   projectName: "orbit",
   configFileMode: 0o600, // secure mode, only readable by the owner
+  // Overrides the OS default location (tests, CI runners, multiple profiles)
+  ...(process.env.ORBIT_CONFIG_DIR
+    ? { cwd: process.env.ORBIT_CONFIG_DIR }
+    : {}),
 });
 
 const API_URL_NOTICE = `No Orbit API URL is configured.
