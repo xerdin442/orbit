@@ -357,6 +357,7 @@ export function ConfigureProjectStep({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
+                aria-label="Remove variable"
                 onClick={() => remove(index)}
               >
                 <Trash2 className="size-3.5 text-muted-foreground" />
