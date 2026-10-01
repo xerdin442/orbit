@@ -69,8 +69,7 @@ export default function ResourceDetailPage() {
   const { data: tables, isLoading: tablesLoading } = useQuery({
     queryKey: ["workbench", "tables", resourceId],
     queryFn: () => api.workbench.tables(resourceId),
-    enabled:
-      tab === "tables" && workbenchSupported && resource?.status === "ready",
+    enabled: workbenchSupported && resource?.status === "ready",
   });
 
   const { data: tableData, isLoading: tableDataLoading } = useQuery({
