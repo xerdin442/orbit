@@ -63,6 +63,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAuthToken();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
     const body = await res.json().catch(() => ({}));
     const message = body?.error ?? body?.message ?? res.statusText;
     throw new Error(message);
