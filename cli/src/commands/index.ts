@@ -9,3 +9,4 @@ export { registerDomainCommands } from "./domains.js";
 export { registerInfoCommand } from "./info.js";
 export { registerRedeployCommand } from "./redeploy.js";
 export { registerRollbackCommand } from "./rollback.js";
+export { registerAbortCommand } from "./abort.js";

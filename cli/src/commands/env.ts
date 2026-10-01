@@ -207,12 +207,16 @@ export function registerEnvCommands(program: Command) {
           process.stdout.write(`  ${key} ✔ (updated)\n`);
         }
 
+        // Only variables changed, so reuse the live image; build only if nothing is live yet.
+        const live = await hasLiveDeployment(ctx.projectId, ctx.environmentId);
         const result = await api.post<{ deploymentId: string }>(
-          `/environments/${ctx.environmentId}/deploy?resource_count=0`,
+          live
+            ? `/environments/${ctx.environmentId}/redeploy`
+            : `/environments/${ctx.environmentId}/deploy?resource_count=0`,
         );
 
         success(
-          `Import complete. Deployment triggered: ${result.deploymentId}`,
+          `Import complete. ${live ? "Redeploy" : "Deployment"} triggered: ${result.deploymentId}`,
         );
 
         console.log(`\nRun \`orbit logs ${result.deploymentId}\` to follow.`);
