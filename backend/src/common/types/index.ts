@@ -83,7 +83,8 @@ export interface ErrorResponse {
 
 export interface ParsedAccessLogLine {
   method: string;
-  uri: string;
+  path: string;
+  query?: string;
   hostname: string;
   statusCode: number;
   durationMs: number;

@@ -33,6 +33,37 @@ const NOISE_PATH_EXTENSIONS = [
   '.eot',
 ];
 
+function getHeader(headers: unknown, name: string): string | undefined {
+  if (typeof headers !== 'object' || headers === null) return undefined;
+
+  const target = name.toLowerCase();
+  for (const [key, value] of Object.entries(
+    headers as Record<string, unknown>,
+  )) {
+    if (key.toLowerCase() === target && Array.isArray(value)) {
+      return typeof value[0] === 'string' ? value[0] : undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function isPrefetch(headers: unknown): boolean {
+  const secPurpose = getHeader(headers, 'sec-purpose');
+  if (secPurpose && secPurpose.toLowerCase().includes('prefetch')) return true;
+
+  const purpose = getHeader(headers, 'purpose'); // older Chrome/Firefox
+  if (purpose && purpose.toLowerCase() === 'prefetch') return true;
+
+  const moz = getHeader(headers, 'x-moz'); // Firefox
+  if (moz && moz.toLowerCase() === 'prefetch') return true;
+
+  // Next.js App Router <Link> prefetch
+  if (getHeader(headers, 'next-router-prefetch')) return true;
+
+  return false;
+}
+
 export function isNoiseRequest(path: string): boolean {
   if (NOISE_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))) {
     return true;
@@ -82,12 +113,28 @@ export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
     return null;
   }
 
-  const path = uri.split('?')[0];
+  // Drop CORS preflight requests
+  if (
+    method === 'OPTIONS' &&
+    getHeader(req.headers, 'access-control-request-method')
+  ) {
+    return null;
+  }
+
+  // Drop speculative prefetches
+  if (isPrefetch(req.headers)) return null;
+
+  const q = uri.indexOf('?');
+  const path = q === -1 ? uri : uri.slice(0, q);
+  const query =
+    q === -1 ? undefined : uri.slice(q + 1, q + 1 + 1024) || undefined;
+
   if (isNoiseRequest(path)) return null;
 
   return {
     method,
-    uri: path,
+    path,
+    query,
     hostname: host.split(':')[0],
     statusCode,
     durationMs: Math.round(duration * 1000),
