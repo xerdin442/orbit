@@ -12,7 +12,7 @@ const mockCtx = (overrides?: {
 }) =>
   ({
     deployment: { id: 'dep-1' },
-    project: { id: 'proj-1', ...overrides?.project },
+    project: { id: 'proj-1', name: 'project', ...overrides?.project },
     workspace: '/tmp/build',
     commitSha: 'abc123',
     imageTag: null,

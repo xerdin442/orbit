@@ -3,7 +3,10 @@ import { CaddyService } from '@src/infrastructure/caddy.service';
 import { DbService } from '@src/db/db.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { ActivityService } from '@src/activity/activity.service';
-import { DeploymentContext } from '@src/common/types';
+import {
+  DeploymentContext,
+  DeploymentStepExecutionError,
+} from '@src/common/types';
 
 const mockCtx = (): DeploymentContext =>
   ({
@@ -78,5 +81,22 @@ describe('ConfigureProxyStep', () => {
     });
     expect(activity.log).toHaveBeenCalled();
     expect(caddy.syncEnvironment).toHaveBeenCalledWith('env-1');
+  });
+
+  it('surfaces the underlying Caddy error when syncing fails', async () => {
+    db.domain.findFirst = jest
+      .fn()
+      .mockResolvedValue({ hostname: 'my-app.192.168.1.55.sslip.io' } as any);
+    caddy.syncEnvironment.mockRejectedValue(
+      new Error('Caddy API error (502): upstream connect error'),
+    );
+
+    const ctx = mockCtx();
+
+    await expect(step.execute(ctx)).rejects.toThrow(
+      new DeploymentStepExecutionError(
+        'Failed to route traffic and configure proxy: Caddy API error (502): upstream connect error',
+      ),
+    );
   });
 });
