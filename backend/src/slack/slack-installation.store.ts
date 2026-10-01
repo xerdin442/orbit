@@ -103,4 +103,10 @@ export class SlackInstallationStore implements InstallationStore {
       `Soft-deleted installation for ${isEnterpriseInstall ? `enterprise ${enterpriseId}` : `team ${teamId}`}`,
     );
   }
+
+  async getRecord(teamId: string) {
+    return this.db.slackInstallation.findFirst({
+      where: { teamId, isActive: true },
+    });
+  }
 }

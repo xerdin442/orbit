@@ -7,7 +7,10 @@ import { SlackApiService } from './slack-api.service';
 import { SlackApiProcessor } from './slack-api.processor';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: 'slack-api' })],
+  imports: [
+    BullModule.registerQueue({ name: 'slack-api' }),
+    BullModule.registerQueue({ name: 'deployments' }),
+  ],
   controllers: [SlackInstallController],
   providers: [
     SlackInstallationStore,

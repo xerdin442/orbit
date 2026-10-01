@@ -26,7 +26,6 @@ export type AggregateSlackInstallation = {
 
 export type SlackInstallationMinAggregateOutputType = {
   id: string | null
-  userId: string | null
   teamId: string | null
   teamName: string | null
   enterpriseId: string | null
@@ -38,11 +37,11 @@ export type SlackInstallationMinAggregateOutputType = {
   isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
+  userId: string | null
 }
 
 export type SlackInstallationMaxAggregateOutputType = {
   id: string | null
-  userId: string | null
   teamId: string | null
   teamName: string | null
   enterpriseId: string | null
@@ -54,11 +53,11 @@ export type SlackInstallationMaxAggregateOutputType = {
   isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
+  userId: string | null
 }
 
 export type SlackInstallationCountAggregateOutputType = {
   id: number
-  userId: number
   teamId: number
   teamName: number
   enterpriseId: number
@@ -68,17 +67,18 @@ export type SlackInstallationCountAggregateOutputType = {
   scopes: number
   botToken: number
   installerSlackUserId: number
+  authorizedSlackUserIds: number
   raw: number
   isActive: number
   createdAt: number
   updatedAt: number
+  userId: number
   _all: number
 }
 
 
 export type SlackInstallationMinAggregateInputType = {
   id?: true
-  userId?: true
   teamId?: true
   teamName?: true
   enterpriseId?: true
@@ -90,11 +90,11 @@ export type SlackInstallationMinAggregateInputType = {
   isActive?: true
   createdAt?: true
   updatedAt?: true
+  userId?: true
 }
 
 export type SlackInstallationMaxAggregateInputType = {
   id?: true
-  userId?: true
   teamId?: true
   teamName?: true
   enterpriseId?: true
@@ -106,11 +106,11 @@ export type SlackInstallationMaxAggregateInputType = {
   isActive?: true
   createdAt?: true
   updatedAt?: true
+  userId?: true
 }
 
 export type SlackInstallationCountAggregateInputType = {
   id?: true
-  userId?: true
   teamId?: true
   teamName?: true
   enterpriseId?: true
@@ -120,10 +120,12 @@ export type SlackInstallationCountAggregateInputType = {
   scopes?: true
   botToken?: true
   installerSlackUserId?: true
+  authorizedSlackUserIds?: true
   raw?: true
   isActive?: true
   createdAt?: true
   updatedAt?: true
+  userId?: true
   _all?: true
 }
 
@@ -201,7 +203,6 @@ export type SlackInstallationGroupByArgs<ExtArgs extends runtime.Types.Extension
 
 export type SlackInstallationGroupByOutputType = {
   id: string
-  userId: string
   teamId: string
   teamName: string | null
   enterpriseId: string | null
@@ -210,11 +211,13 @@ export type SlackInstallationGroupByOutputType = {
   appId: string | null
   scopes: string[]
   botToken: string
-  installerSlackUserId: string | null
+  installerSlackUserId: string
+  authorizedSlackUserIds: string[]
   raw: runtime.JsonValue
   isActive: boolean
   createdAt: Date
   updatedAt: Date
+  userId: string
   _count: SlackInstallationCountAggregateOutputType | null
   _min: SlackInstallationMinAggregateOutputType | null
   _max: SlackInstallationMaxAggregateOutputType | null
@@ -240,7 +243,6 @@ export type SlackInstallationWhereInput = {
   OR?: Prisma.SlackInstallationWhereInput[]
   NOT?: Prisma.SlackInstallationWhereInput | Prisma.SlackInstallationWhereInput[]
   id?: Prisma.StringFilter<"SlackInstallation"> | string
-  userId?: Prisma.StringFilter<"SlackInstallation"> | string
   teamId?: Prisma.StringFilter<"SlackInstallation"> | string
   teamName?: Prisma.StringNullableFilter<"SlackInstallation"> | string | null
   enterpriseId?: Prisma.StringNullableFilter<"SlackInstallation"> | string | null
@@ -249,17 +251,18 @@ export type SlackInstallationWhereInput = {
   appId?: Prisma.StringNullableFilter<"SlackInstallation"> | string | null
   scopes?: Prisma.StringNullableListFilter<"SlackInstallation">
   botToken?: Prisma.StringFilter<"SlackInstallation"> | string
-  installerSlackUserId?: Prisma.StringNullableFilter<"SlackInstallation"> | string | null
+  installerSlackUserId?: Prisma.StringFilter<"SlackInstallation"> | string
+  authorizedSlackUserIds?: Prisma.StringNullableListFilter<"SlackInstallation">
   raw?: Prisma.JsonFilter<"SlackInstallation">
   isActive?: Prisma.BoolFilter<"SlackInstallation"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SlackInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SlackInstallation"> | Date | string
+  userId?: Prisma.StringFilter<"SlackInstallation"> | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type SlackInstallationOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
   teamName?: Prisma.SortOrderInput | Prisma.SortOrder
   enterpriseId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -268,18 +271,20 @@ export type SlackInstallationOrderByWithRelationInput = {
   appId?: Prisma.SortOrderInput | Prisma.SortOrder
   scopes?: Prisma.SortOrder
   botToken?: Prisma.SortOrder
-  installerSlackUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  installerSlackUserId?: Prisma.SortOrder
+  authorizedSlackUserIds?: Prisma.SortOrder
   raw?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
 }
 
 export type SlackInstallationWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  userId?: string
   teamId?: string
+  userId?: string
   AND?: Prisma.SlackInstallationWhereInput | Prisma.SlackInstallationWhereInput[]
   OR?: Prisma.SlackInstallationWhereInput[]
   NOT?: Prisma.SlackInstallationWhereInput | Prisma.SlackInstallationWhereInput[]
@@ -290,17 +295,17 @@ export type SlackInstallationWhereUniqueInput = Prisma.AtLeast<{
   appId?: Prisma.StringNullableFilter<"SlackInstallation"> | string | null
   scopes?: Prisma.StringNullableListFilter<"SlackInstallation">
   botToken?: Prisma.StringFilter<"SlackInstallation"> | string
-  installerSlackUserId?: Prisma.StringNullableFilter<"SlackInstallation"> | string | null
+  installerSlackUserId?: Prisma.StringFilter<"SlackInstallation"> | string
+  authorizedSlackUserIds?: Prisma.StringNullableListFilter<"SlackInstallation">
   raw?: Prisma.JsonFilter<"SlackInstallation">
   isActive?: Prisma.BoolFilter<"SlackInstallation"> | boolean
   createdAt?: Prisma.DateTimeFilter<"SlackInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SlackInstallation"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-}, "id" | "userId" | "teamId">
+}, "id" | "teamId" | "userId">
 
 export type SlackInstallationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
   teamName?: Prisma.SortOrderInput | Prisma.SortOrder
   enterpriseId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -309,11 +314,13 @@ export type SlackInstallationOrderByWithAggregationInput = {
   appId?: Prisma.SortOrderInput | Prisma.SortOrder
   scopes?: Prisma.SortOrder
   botToken?: Prisma.SortOrder
-  installerSlackUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  installerSlackUserId?: Prisma.SortOrder
+  authorizedSlackUserIds?: Prisma.SortOrder
   raw?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
   _count?: Prisma.SlackInstallationCountOrderByAggregateInput
   _max?: Prisma.SlackInstallationMaxOrderByAggregateInput
   _min?: Prisma.SlackInstallationMinOrderByAggregateInput
@@ -324,7 +331,6 @@ export type SlackInstallationScalarWhereWithAggregatesInput = {
   OR?: Prisma.SlackInstallationScalarWhereWithAggregatesInput[]
   NOT?: Prisma.SlackInstallationScalarWhereWithAggregatesInput | Prisma.SlackInstallationScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SlackInstallation"> | string
-  userId?: Prisma.StringWithAggregatesFilter<"SlackInstallation"> | string
   teamId?: Prisma.StringWithAggregatesFilter<"SlackInstallation"> | string
   teamName?: Prisma.StringNullableWithAggregatesFilter<"SlackInstallation"> | string | null
   enterpriseId?: Prisma.StringNullableWithAggregatesFilter<"SlackInstallation"> | string | null
@@ -333,11 +339,13 @@ export type SlackInstallationScalarWhereWithAggregatesInput = {
   appId?: Prisma.StringNullableWithAggregatesFilter<"SlackInstallation"> | string | null
   scopes?: Prisma.StringNullableListFilter<"SlackInstallation">
   botToken?: Prisma.StringWithAggregatesFilter<"SlackInstallation"> | string
-  installerSlackUserId?: Prisma.StringNullableWithAggregatesFilter<"SlackInstallation"> | string | null
+  installerSlackUserId?: Prisma.StringWithAggregatesFilter<"SlackInstallation"> | string
+  authorizedSlackUserIds?: Prisma.StringNullableListFilter<"SlackInstallation">
   raw?: Prisma.JsonWithAggregatesFilter<"SlackInstallation">
   isActive?: Prisma.BoolWithAggregatesFilter<"SlackInstallation"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SlackInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SlackInstallation"> | Date | string
+  userId?: Prisma.StringWithAggregatesFilter<"SlackInstallation"> | string
 }
 
 export type SlackInstallationCreateInput = {
@@ -350,7 +358,8 @@ export type SlackInstallationCreateInput = {
   appId?: string | null
   scopes?: Prisma.SlackInstallationCreatescopesInput | string[]
   botToken: string
-  installerSlackUserId?: string | null
+  installerSlackUserId: string
+  authorizedSlackUserIds?: Prisma.SlackInstallationCreateauthorizedSlackUserIdsInput | string[]
   raw: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
@@ -360,7 +369,6 @@ export type SlackInstallationCreateInput = {
 
 export type SlackInstallationUncheckedCreateInput = {
   id?: string
-  userId: string
   teamId: string
   teamName?: string | null
   enterpriseId?: string | null
@@ -369,11 +377,13 @@ export type SlackInstallationUncheckedCreateInput = {
   appId?: string | null
   scopes?: Prisma.SlackInstallationCreatescopesInput | string[]
   botToken: string
-  installerSlackUserId?: string | null
+  installerSlackUserId: string
+  authorizedSlackUserIds?: Prisma.SlackInstallationCreateauthorizedSlackUserIdsInput | string[]
   raw: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  userId: string
 }
 
 export type SlackInstallationUpdateInput = {
@@ -386,7 +396,8 @@ export type SlackInstallationUpdateInput = {
   appId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scopes?: Prisma.SlackInstallationUpdatescopesInput | string[]
   botToken?: Prisma.StringFieldUpdateOperationsInput | string
-  installerSlackUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installerSlackUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorizedSlackUserIds?: Prisma.SlackInstallationUpdateauthorizedSlackUserIdsInput | string[]
   raw?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -396,7 +407,6 @@ export type SlackInstallationUpdateInput = {
 
 export type SlackInstallationUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
   teamName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enterpriseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -405,16 +415,17 @@ export type SlackInstallationUncheckedUpdateInput = {
   appId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scopes?: Prisma.SlackInstallationUpdatescopesInput | string[]
   botToken?: Prisma.StringFieldUpdateOperationsInput | string
-  installerSlackUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installerSlackUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorizedSlackUserIds?: Prisma.SlackInstallationUpdateauthorizedSlackUserIdsInput | string[]
   raw?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type SlackInstallationCreateManyInput = {
   id?: string
-  userId: string
   teamId: string
   teamName?: string | null
   enterpriseId?: string | null
@@ -423,11 +434,13 @@ export type SlackInstallationCreateManyInput = {
   appId?: string | null
   scopes?: Prisma.SlackInstallationCreatescopesInput | string[]
   botToken: string
-  installerSlackUserId?: string | null
+  installerSlackUserId: string
+  authorizedSlackUserIds?: Prisma.SlackInstallationCreateauthorizedSlackUserIdsInput | string[]
   raw: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  userId: string
 }
 
 export type SlackInstallationUpdateManyMutationInput = {
@@ -440,7 +453,8 @@ export type SlackInstallationUpdateManyMutationInput = {
   appId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scopes?: Prisma.SlackInstallationUpdatescopesInput | string[]
   botToken?: Prisma.StringFieldUpdateOperationsInput | string
-  installerSlackUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installerSlackUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorizedSlackUserIds?: Prisma.SlackInstallationUpdateauthorizedSlackUserIdsInput | string[]
   raw?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -449,7 +463,6 @@ export type SlackInstallationUpdateManyMutationInput = {
 
 export type SlackInstallationUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   teamId?: Prisma.StringFieldUpdateOperationsInput | string
   teamName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enterpriseId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -458,11 +471,13 @@ export type SlackInstallationUncheckedUpdateManyInput = {
   appId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scopes?: Prisma.SlackInstallationUpdatescopesInput | string[]
   botToken?: Prisma.StringFieldUpdateOperationsInput | string
-  installerSlackUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installerSlackUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorizedSlackUserIds?: Prisma.SlackInstallationUpdateauthorizedSlackUserIdsInput | string[]
   raw?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type SlackInstallationNullableScalarRelationFilter = {
@@ -480,7 +495,6 @@ export type StringNullableListFilter<$PrismaModel = never> = {
 
 export type SlackInstallationCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
   teamName?: Prisma.SortOrder
   enterpriseId?: Prisma.SortOrder
@@ -490,15 +504,16 @@ export type SlackInstallationCountOrderByAggregateInput = {
   scopes?: Prisma.SortOrder
   botToken?: Prisma.SortOrder
   installerSlackUserId?: Prisma.SortOrder
+  authorizedSlackUserIds?: Prisma.SortOrder
   raw?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
 }
 
 export type SlackInstallationMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
   teamName?: Prisma.SortOrder
   enterpriseId?: Prisma.SortOrder
@@ -510,11 +525,11 @@ export type SlackInstallationMaxOrderByAggregateInput = {
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
 }
 
 export type SlackInstallationMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  userId?: Prisma.SortOrder
   teamId?: Prisma.SortOrder
   teamName?: Prisma.SortOrder
   enterpriseId?: Prisma.SortOrder
@@ -526,6 +541,7 @@ export type SlackInstallationMinOrderByAggregateInput = {
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  userId?: Prisma.SortOrder
 }
 
 export type SlackInstallationCreateNestedOneWithoutUserInput = {
@@ -564,7 +580,16 @@ export type SlackInstallationCreatescopesInput = {
   set: string[]
 }
 
+export type SlackInstallationCreateauthorizedSlackUserIdsInput = {
+  set: string[]
+}
+
 export type SlackInstallationUpdatescopesInput = {
+  set?: string[]
+  push?: string | string[]
+}
+
+export type SlackInstallationUpdateauthorizedSlackUserIdsInput = {
   set?: string[]
   push?: string | string[]
 }
@@ -579,7 +604,8 @@ export type SlackInstallationCreateWithoutUserInput = {
   appId?: string | null
   scopes?: Prisma.SlackInstallationCreatescopesInput | string[]
   botToken: string
-  installerSlackUserId?: string | null
+  installerSlackUserId: string
+  authorizedSlackUserIds?: Prisma.SlackInstallationCreateauthorizedSlackUserIdsInput | string[]
   raw: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
@@ -596,7 +622,8 @@ export type SlackInstallationUncheckedCreateWithoutUserInput = {
   appId?: string | null
   scopes?: Prisma.SlackInstallationCreatescopesInput | string[]
   botToken: string
-  installerSlackUserId?: string | null
+  installerSlackUserId: string
+  authorizedSlackUserIds?: Prisma.SlackInstallationCreateauthorizedSlackUserIdsInput | string[]
   raw: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: boolean
   createdAt?: Date | string
@@ -629,7 +656,8 @@ export type SlackInstallationUpdateWithoutUserInput = {
   appId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scopes?: Prisma.SlackInstallationUpdatescopesInput | string[]
   botToken?: Prisma.StringFieldUpdateOperationsInput | string
-  installerSlackUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installerSlackUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorizedSlackUserIds?: Prisma.SlackInstallationUpdateauthorizedSlackUserIdsInput | string[]
   raw?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -646,7 +674,8 @@ export type SlackInstallationUncheckedUpdateWithoutUserInput = {
   appId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   scopes?: Prisma.SlackInstallationUpdatescopesInput | string[]
   botToken?: Prisma.StringFieldUpdateOperationsInput | string
-  installerSlackUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installerSlackUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorizedSlackUserIds?: Prisma.SlackInstallationUpdateauthorizedSlackUserIdsInput | string[]
   raw?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -657,7 +686,6 @@ export type SlackInstallationUncheckedUpdateWithoutUserInput = {
 
 export type SlackInstallationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  userId?: boolean
   teamId?: boolean
   teamName?: boolean
   enterpriseId?: boolean
@@ -667,16 +695,17 @@ export type SlackInstallationSelect<ExtArgs extends runtime.Types.Extensions.Int
   scopes?: boolean
   botToken?: boolean
   installerSlackUserId?: boolean
+  authorizedSlackUserIds?: boolean
   raw?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  userId?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["slackInstallation"]>
 
 export type SlackInstallationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  userId?: boolean
   teamId?: boolean
   teamName?: boolean
   enterpriseId?: boolean
@@ -686,16 +715,17 @@ export type SlackInstallationSelectCreateManyAndReturn<ExtArgs extends runtime.T
   scopes?: boolean
   botToken?: boolean
   installerSlackUserId?: boolean
+  authorizedSlackUserIds?: boolean
   raw?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  userId?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["slackInstallation"]>
 
 export type SlackInstallationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  userId?: boolean
   teamId?: boolean
   teamName?: boolean
   enterpriseId?: boolean
@@ -705,16 +735,17 @@ export type SlackInstallationSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   scopes?: boolean
   botToken?: boolean
   installerSlackUserId?: boolean
+  authorizedSlackUserIds?: boolean
   raw?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  userId?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["slackInstallation"]>
 
 export type SlackInstallationSelectScalar = {
   id?: boolean
-  userId?: boolean
   teamId?: boolean
   teamName?: boolean
   enterpriseId?: boolean
@@ -724,13 +755,15 @@ export type SlackInstallationSelectScalar = {
   scopes?: boolean
   botToken?: boolean
   installerSlackUserId?: boolean
+  authorizedSlackUserIds?: boolean
   raw?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  userId?: boolean
 }
 
-export type SlackInstallationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "teamId" | "teamName" | "enterpriseId" | "botUserId" | "botId" | "appId" | "scopes" | "botToken" | "installerSlackUserId" | "raw" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["slackInstallation"]>
+export type SlackInstallationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "teamId" | "teamName" | "enterpriseId" | "botUserId" | "botId" | "appId" | "scopes" | "botToken" | "installerSlackUserId" | "authorizedSlackUserIds" | "raw" | "isActive" | "createdAt" | "updatedAt" | "userId", ExtArgs["result"]["slackInstallation"]>
 export type SlackInstallationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -748,7 +781,6 @@ export type $SlackInstallationPayload<ExtArgs extends runtime.Types.Extensions.I
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    userId: string
     teamId: string
     teamName: string | null
     enterpriseId: string | null
@@ -757,11 +789,13 @@ export type $SlackInstallationPayload<ExtArgs extends runtime.Types.Extensions.I
     appId: string | null
     scopes: string[]
     botToken: string
-    installerSlackUserId: string | null
+    installerSlackUserId: string
+    authorizedSlackUserIds: string[]
     raw: runtime.JsonValue
     isActive: boolean
     createdAt: Date
     updatedAt: Date
+    userId: string
   }, ExtArgs["result"]["slackInstallation"]>
   composites: {}
 }
@@ -1187,7 +1221,6 @@ export interface Prisma__SlackInstallationClient<T, Null = never, ExtArgs extend
  */
 export interface SlackInstallationFieldRefs {
   readonly id: Prisma.FieldRef<"SlackInstallation", 'String'>
-  readonly userId: Prisma.FieldRef<"SlackInstallation", 'String'>
   readonly teamId: Prisma.FieldRef<"SlackInstallation", 'String'>
   readonly teamName: Prisma.FieldRef<"SlackInstallation", 'String'>
   readonly enterpriseId: Prisma.FieldRef<"SlackInstallation", 'String'>
@@ -1197,10 +1230,12 @@ export interface SlackInstallationFieldRefs {
   readonly scopes: Prisma.FieldRef<"SlackInstallation", 'String[]'>
   readonly botToken: Prisma.FieldRef<"SlackInstallation", 'String'>
   readonly installerSlackUserId: Prisma.FieldRef<"SlackInstallation", 'String'>
+  readonly authorizedSlackUserIds: Prisma.FieldRef<"SlackInstallation", 'String[]'>
   readonly raw: Prisma.FieldRef<"SlackInstallation", 'Json'>
   readonly isActive: Prisma.FieldRef<"SlackInstallation", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"SlackInstallation", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SlackInstallation", 'DateTime'>
+  readonly userId: Prisma.FieldRef<"SlackInstallation", 'String'>
 }
     
 

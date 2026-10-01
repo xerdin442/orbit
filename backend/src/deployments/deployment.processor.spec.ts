@@ -154,6 +154,9 @@ describe('DeploymentProcessor', () => {
     activity = {
       log: jest.fn().mockResolvedValue(undefined),
     };
+    const slackApi = {
+      enqueue: jest.fn().mockResolvedValue(undefined),
+    };
 
     processor = new DeploymentProcessor(
       docker as any,
@@ -163,6 +166,7 @@ describe('DeploymentProcessor', () => {
       logService as any,
       deployments as any,
       activity as any,
+      slackApi as any,
     );
 
     // default: every step succeeds
