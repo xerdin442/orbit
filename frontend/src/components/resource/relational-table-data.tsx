@@ -1,7 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/shared/data-table";
 
-interface ResourceTableDataProps {
+interface RelationalTableDataProps {
   columns: { name: string }[];
   rows: Record<string, unknown>[];
   isLoading?: boolean;
@@ -14,9 +14,10 @@ interface ResourceTableDataProps {
     pageIndex: number;
     onPageChange: (page: number) => void;
   };
+  bounded?: boolean;
 }
 
-export function ResourceTableData({
+export function RelationalTableData({
   columns,
   rows,
   isLoading,
@@ -24,7 +25,8 @@ export function ResourceTableData({
   onRetry,
   emptyMessage = "No rows to see here.",
   pagination,
-}: ResourceTableDataProps) {
+  bounded = true,
+}: RelationalTableDataProps) {
   const tableColumns: ColumnDef<Record<string, unknown>>[] = columns.map(
     (col) => ({
       accessorKey: col.name,
@@ -52,7 +54,7 @@ export function ResourceTableData({
       pageIndex={pagination?.pageIndex ?? 0}
       onPageChange={pagination?.onPageChange}
       emptyMessage={emptyMessage}
-      stickyHeader
+      stickyHeader={bounded}
     />
   );
 }

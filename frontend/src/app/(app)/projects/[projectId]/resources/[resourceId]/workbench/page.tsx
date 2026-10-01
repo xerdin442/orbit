@@ -16,7 +16,8 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Skeleton } from "@/components/shared/skeleton";
 import { LoadingButton } from "@/components/shared/loading-button";
 import { Button } from "@/components/ui/button";
-import { ResourceTableData } from "@/components/resource/resource-table-data";
+import { RelationalTableData } from "@/components/resource/relational-table-data";
+import { NonRelationalTableData } from "@/components/resource/non-relational-table-data";
 import { api } from "@/lib/api";
 import { cn, RESOURCE_TYPE_LABELS, supportsWorkbench } from "@/lib/utils";
 import { registerSqlCompletionProvider } from "@/lib/sql-completion";
@@ -290,7 +291,7 @@ export default function WorkbenchPage() {
               <ResizablePanel defaultSize="55" minSize="20" className="min-w-0">
                 <div
                   className={cn(
-                    "custom-scrollbar h-full overflow-auto",
+                    "h-full",
                     !result &&
                       !queryError &&
                       "flex items-center justify-center",
@@ -303,11 +304,20 @@ export default function WorkbenchPage() {
                       className="py-10"
                     />
                   ) : result ? (
-                    <ResourceTableData
-                      columns={result.columns}
-                      rows={result.rows}
-                      isLoading={isRunning}
-                    />
+                    resource.type === "mongo" ? (
+                      <NonRelationalTableData
+                        rows={result.rows}
+                        isLoading={isRunning}
+                        bounded={false}
+                      />
+                    ) : (
+                      <RelationalTableData
+                        columns={result.columns}
+                        rows={result.rows}
+                        isLoading={isRunning}
+                        bounded={false}
+                      />
+                    )
                   ) : (
                     <EmptyState
                       icon={Play}
