@@ -5,6 +5,7 @@ import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { GitHubService } from '@src/github/github.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { CleanupService } from '@src/cleanup/cleanup.service';
 import { ActivityType } from '@generated/client';
 
 @Injectable()
@@ -14,17 +15,25 @@ export class ProjectsService {
     private readonly encryption: EncryptionService,
     private readonly github: GitHubService,
     private readonly activity: ActivityService,
+    private readonly cleanup: CleanupService,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
   async create(userId: string, dto: CreateProjectDto) {
-    const defaultBranch = dto.defaultBranch ?? 'main';
+    if (dto.installationId) {
+      await this.validateGitHubSource(
+        userId,
+        dto.installationId,
+        dto.repositoryUrl,
+        dto.defaultBranch,
+      );
+    }
 
     const environment = await this.db.$transaction(async (tx) => {
       const env = await tx.environment.create({
         data: {
           name: 'production',
-          branch: defaultBranch,
+          branch: dto.defaultBranch,
           autoDeploy: true,
           project: {
             create: {
@@ -35,7 +44,7 @@ export class ProjectsService {
                 create: {
                   repositoryUrl: dto.repositoryUrl,
                   provider: 'github',
-                  defaultBranch,
+                  defaultBranch: dto.defaultBranch,
                   installationId: dto.installationId,
                 },
               },
@@ -53,6 +62,12 @@ export class ProjectsService {
         }));
 
         await tx.environmentVariable.createMany({ data: vars });
+
+        await this.activity.log(ActivityType.variable_created, userId, {
+          projectId: env.projectId,
+          environmentId: env.id,
+          keys: Object.keys(dto.envVars).join(','),
+        });
       }
 
       return env;
@@ -64,7 +79,10 @@ export class ProjectsService {
 
     await this.invalidateCache();
 
-    return environment;
+    return {
+      environmentId: environment.projectId,
+      project: environment.project,
+    };
   }
 
   async findAllByUser(userId: string) {
@@ -89,13 +107,7 @@ export class ProjectsService {
   }
 
   async update(id: string, userId: string, dto: UpdateProjectDto) {
-    const project = await this.db.project.findFirst({
-      where: { id, ownerId: userId },
-    });
-
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+    await this.findById(id, userId);
 
     const updated = await this.db.project.update({
       where: { id },
@@ -116,13 +128,9 @@ export class ProjectsService {
   }
 
   async delete(id: string, userId: string) {
-    const project = await this.db.project.findFirst({
-      where: { id, ownerId: userId },
-    });
+    await this.findById(id, userId);
 
-    if (!project) {
-      throw new NotFoundException('Project not found');
-    }
+    await this.cleanup.enqueueProjectCleanup(id);
 
     await this.db.project.delete({ where: { id } });
 
@@ -150,9 +158,51 @@ export class ProjectsService {
     const branches = await this.github.listBranches(
       source.installationId,
       source.repositoryUrl,
+      userId,
     );
 
     return branches.filter((b) => b.name !== source.defaultBranch);
+  }
+
+  private async validateGitHubSource(
+    userId: string,
+    installationId: number,
+    repositoryUrl: string,
+    defaultBranch: string,
+  ) {
+    const installation = await this.db.gitHubInstallation.findFirst({
+      where: { installationId, userId },
+    });
+
+    if (!installation) {
+      throw new NotFoundException('GitHub installation not found');
+    }
+
+    const repositories = await this.github.listRepositories(
+      installationId,
+      userId,
+    );
+    const repo = repositories.find(
+      (r) => `https://github.com/${r.full_name}` === repositoryUrl,
+    );
+
+    if (!repo) {
+      throw new NotFoundException(
+        'Repository is not accessible through this installation',
+      );
+    }
+
+    const branches = await this.github.listBranches(
+      installationId,
+      repositoryUrl,
+      userId,
+    );
+
+    if (!branches.some((b) => b.name === defaultBranch)) {
+      throw new NotFoundException(
+        `Branch "${defaultBranch}" not found in repository`,
+      );
+    }
   }
 
   private async invalidateCache(projectId?: string) {

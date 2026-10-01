@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import jwt from 'jsonwebtoken';
 import { Secrets } from '@src/common/secrets';
 import { DbService } from '@src/db/db.service';
@@ -20,7 +20,11 @@ export class GitHubService {
     return `https://github.com/apps/${Secrets.GITHUB_APP_ID}/installations/new`;
   }
 
-  getUpdateAccessUrl(installationId: number): string {
+  async getUpdateAccessUrl(
+    installationId: number,
+    userId: string,
+  ): Promise<string> {
+    await this.verifyOwnership(installationId, userId);
     return `https://github.com/settings/installations/${installationId}`;
   }
 
@@ -95,9 +99,10 @@ export class GitHubService {
     return data.token;
   }
 
-  async listRepositories(installationId: number) {
-    const token = await this.getInstallationToken(installationId);
+  async listRepositories(installationId: number, userId: string) {
+    await this.verifyOwnership(installationId, userId);
 
+    const token = await this.getInstallationToken(installationId);
     const response = await fetch(
       'https://api.github.com/installation/repositories',
       {
@@ -116,11 +121,18 @@ export class GitHubService {
     return data.repositories;
   }
 
-  async listBranches(installationId: number, repositoryUrl: string) {
+  async listBranches(
+    installationId: number,
+    repositoryUrl: string,
+    userId: string,
+  ) {
+    await this.verifyOwnership(installationId, userId);
+
     const token = await this.getInstallationToken(installationId);
 
     const url = new URL(repositoryUrl);
     const [, owner, repo] = url.pathname.split('/');
+
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/branches`,
       {
@@ -145,5 +157,17 @@ export class GitHubService {
       issuer: Secrets.GITHUB_APP_ID,
       expiresIn: 600,
     });
+  }
+
+  private async verifyOwnership(installationId: number, userId: string) {
+    const installation = await this.db.gitHubInstallation.findFirst({
+      where: { installationId, userId },
+    });
+
+    if (!installation) {
+      throw new NotFoundException('Installation not found');
+    }
+
+    return installation;
   }
 }

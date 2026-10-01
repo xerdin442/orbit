@@ -24,8 +24,7 @@ export class ProjectsController {
     @Req() req: AuthenticatedRequest,
     @Body() dto: CreateProjectDto,
   ) {
-    const env = await this.projects.create(req.user.id, dto);
-    return { environmentId: env.id, project: env.project };
+    return this.projects.create(req.user.id, dto);
   }
 
   @Get()

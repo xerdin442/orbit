@@ -4,6 +4,7 @@ import { EnvironmentsService } from './environments.service';
 import { DbService } from '@src/db/db.service';
 import { EncryptionService } from '@src/infrastructure/encryption.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { CleanupService } from '@src/cleanup/cleanup.service';
 import { NotFoundException } from '@nestjs/common';
 import type { Queue } from 'bull';
 
@@ -17,6 +18,9 @@ describe('EnvironmentsService', () => {
   >;
   let encryption: jest.Mocked<Pick<EncryptionService, 'encrypt' | 'decrypt'>>;
   let activity: jest.Mocked<Pick<ActivityService, 'log'>>;
+  let cleanup: jest.Mocked<
+    Pick<CleanupService, 'enqueueProjectCleanup' | 'enqueueEnvironmentCleanup'>
+  >;
   let queue: jest.Mocked<Pick<Queue, 'add'>>;
 
   beforeEach(async () => {
@@ -49,6 +53,10 @@ describe('EnvironmentsService', () => {
       decrypt: jest.fn((v) => v.replace('enc_', '')),
     };
     activity = { log: jest.fn() };
+    cleanup = {
+      enqueueProjectCleanup: jest.fn(),
+      enqueueEnvironmentCleanup: jest.fn(),
+    };
     queue = { add: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -57,6 +65,7 @@ describe('EnvironmentsService', () => {
         { provide: DbService, useValue: db },
         { provide: EncryptionService, useValue: encryption },
         { provide: ActivityService, useValue: activity },
+        { provide: CleanupService, useValue: cleanup },
         { provide: CACHE_MANAGER, useValue: { del: jest.fn() } },
         { provide: 'BullQueue_deployments', useValue: queue },
       ],
@@ -145,6 +154,10 @@ describe('EnvironmentsService', () => {
         ownerId: 'user-1',
       });
       db.environmentVariable.create.mockResolvedValue({ id: 'v1' });
+      db.environment.findUnique.mockResolvedValue({
+        id: 'env-1',
+        deployments: [],
+      });
       db.deployment.create.mockResolvedValue({ id: 'dep-1' });
 
       await service.createVariable('env-1', 'user-1', {
@@ -176,7 +189,7 @@ describe('EnvironmentsService', () => {
   });
 
   describe('delete', () => {
-    it('deletes after verification', async () => {
+    it('enqueues cleanup and deletes after verification', async () => {
       db.environment.findUnique.mockResolvedValue({
         id: 'env-1',
         projectId: 'proj-1',
@@ -187,6 +200,7 @@ describe('EnvironmentsService', () => {
       });
 
       await service.delete('env-1', 'user-1');
+      expect(cleanup.enqueueEnvironmentCleanup).toHaveBeenCalledWith('env-1');
       expect(db.environment.delete).toHaveBeenCalledWith({
         where: { id: 'env-1' },
       });
