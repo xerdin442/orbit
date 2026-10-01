@@ -22,11 +22,15 @@ import {
 } from './dto/variable.dto';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import type { AuthenticatedRequest } from '@src/common/types';
+import { CleanupService } from '@src/cleanup/cleanup.service';
 
 @Controller('projects/:projectId/environments')
 @UseGuards(JwtAuthGuard)
 export class EnvironmentsController {
-  constructor(private readonly environments: EnvironmentsService) {}
+  constructor(
+    private readonly environments: EnvironmentsService,
+    private readonly cleanup: CleanupService,
+  ) {}
 
   @Post()
   create(
@@ -61,7 +65,7 @@ export class EnvironmentsController {
 
   @Delete(':id')
   delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.environments.delete(id, req.user.id);
+    return this.cleanup.enqueueEnvironmentCleanup(id, req.user.id);
   }
 
   @Get(':id/variables')

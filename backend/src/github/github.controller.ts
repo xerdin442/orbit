@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Delete,
   Param,
   Query,
   UseGuards,
@@ -38,7 +39,15 @@ export class GitHubController {
     return this.github.listInstallations(req.user.id);
   }
 
-  @Get(':installationId/repositories')
+  @Delete('installations/:installationId')
+  removeInstallation(
+    @Req() req: AuthenticatedRequest,
+    @Param('installationId', ParseIntPipe) installationId: number,
+  ) {
+    return this.github.deleteInstallation(installationId, req.user.id);
+  }
+
+  @Get('installations/:installationId/repositories')
   listRepositories(
     @Req() req: AuthenticatedRequest,
     @Param('installationId', ParseIntPipe) installationId: number,
@@ -46,7 +55,7 @@ export class GitHubController {
     return this.github.listRepositories(installationId, req.user.id);
   }
 
-  @Get(':installationId/update-access')
+  @Get('installations/:installationId/update-access')
   async updateAccess(
     @Req() req: AuthenticatedRequest,
     @Param('installationId', ParseIntPipe) installationId: number,
@@ -58,10 +67,10 @@ export class GitHubController {
     return { url };
   }
 
-  @Get('branches')
+  @Get('installations/:installationId/branches')
   listBranches(
     @Req() req: AuthenticatedRequest,
-    @Query('installationId', ParseIntPipe) installationId: number,
+    @Param('installationId', ParseIntPipe) installationId: number,
     @Query('repo') repoFullName: string,
   ) {
     const url = `https://github.com/${repoFullName}`;
