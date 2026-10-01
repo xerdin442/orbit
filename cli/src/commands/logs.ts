@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import chalk from "chalk";
-import { api } from "../lib/api.js";
-import { getApiUrl, ensureContext } from "../lib/config.js";
+import { api, apiFetch } from "../lib/api.js";
+import { ensureContext } from "../lib/config.js";
 import { error } from "../lib/format.js";
 
 interface Deployment {
@@ -58,10 +58,9 @@ export async function streamLogs(
   token: string,
   deploymentId: string,
 ): Promise<void> {
-  const baseUrl = getApiUrl();
-  const url = `${baseUrl}/deployments/${deploymentId}/logs/stream?token=${token}`;
-
-  const response = await fetch(url);
+  const response = await apiFetch(`/deployments/${deploymentId}/logs/stream`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
   if (!response.ok || !response.body) {
     error("Failed to connect to log stream.");

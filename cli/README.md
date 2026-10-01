@@ -1,39 +1,54 @@
 # Orbit CLI
 
-Command-line interface for deploying applications on [Orbit](frontend url or demo) — your self-hosted PaaS.
+Command-line interface for Orbit, a self-hosted PaaS. Orbit has no hosted service: you run your own instance (backend + dashboard), and this CLI talks to that instance's API.
+
+## Requirements
+
+- Node.js 22.12 or later
+- A running Orbit instance, and its API URL
 
 ## Installation
 
 ```bash
-npm install -g orbit-cli
+npm install -g @xerdin442/orbit-cli
 ```
 
-Or run it directly without installing:
+This installs the `orbit` command. Or run it directly without installing:
 
 ```bash
-npx orbit-cli
+npx @xerdin442/orbit-cli <command>
 ```
 
 ## Configuration
 
-The Orbit CLI stores its configuration at `~/.orbit/config.json`.
+### API URL (required)
 
-### API URL
-
-Point the CLI to your self-hosted Orbit instance by setting the API URL. You only need to do this once — the value persists across sessions.
+The CLI has **no default server**. Until you point it at your Orbit instance's API, every command stops with a notice explaining how to set it up (only `orbit auth logout` and `orbit auth reset` run without one).
 
 ```bash
-# Option 1: Environment variable
-export ORBIT_API_URL=https://orbit.example.com/api
-
-# Option 2: Pass it to any command
-orbit --api-url https://orbit.example.com/api deploy
-
-# Option 3: Set it during login
+# Option 1: set it while logging in (saved for later commands)
 orbit auth login --api-url https://orbit.example.com/api
+
+# Option 2: pass it to any command (also saved for later commands)
+orbit --api-url https://orbit.example.com/api info
+
+# Option 3: environment variable (applies while set, not saved; use this in CI)
+export ORBIT_API_URL=https://orbit.example.com/api
 ```
 
-The default fallback is `http://localhost:3000/api`.
+`ORBIT_API_URL` takes precedence over a saved URL. Use `https://`: the CLI warns if a non-local URL uses plain `http://`, because your session and project tokens would be sent unencrypted.
+
+### Where configuration is stored
+
+The saved API URL, your session token and the linked project live in a config file readable only by your user:
+
+| OS | Path |
+| --- | --- |
+| Linux | `~/.config/orbit-nodejs/config.json` |
+| macOS | `~/Library/Preferences/orbit-nodejs/config.json` |
+| Windows | `%APPDATA%\orbit-nodejs\Config\config.json` |
+
+`orbit auth reset` clears it.
 
 ## Authentication
 
@@ -51,9 +66,11 @@ This opens your browser to GitHub. Once you authorize, the token is stored local
 $ orbit auth login
 Opening browser for authentication...
 If the browser doesn't open, visit:
-http://localhost:3000/api/auth/github?redirect_uri=http://localhost:58493/callback
+https://github.com/login/oauth/authorize?client_id=...&state=...
 ✔ Logged in successfully.
 ```
+
+If the browser doesn't open automatically, open the printed URL yourself in a browser **on the same machine**: GitHub redirects back to a temporary `localhost` port that the CLI is listening on.
 
 ### See your profile
 
@@ -133,11 +150,41 @@ After deployment, the CLI reminds you that managed databases can be created via 
 
 ### Deploying from CI/CD
 
-For pipelines that aren't logged in (`orbit auth login`), deploy with a project-scoped access token instead. Find it on the project's page in the dashboard:
+For pipelines that aren't logged in (`orbit auth login`), deploy with a project-scoped access token instead. `orbit init` prints it when the project is created, and it's also shown on the project's page in your Orbit dashboard.
+
+Pass the token, project ID and API URL as environment variables, so the secret stays out of the command line and CI logs:
 
 ```bash
-orbit deploy --token <secretAccessToken> --project <projectId>
+ORBIT_API_URL=https://orbit.example.com/api \
+ORBIT_TOKEN=<secretAccessToken> \
+ORBIT_PROJECT_ID=<projectId> \
+orbit deploy
 ```
+
+`--token` and `--project` flags also work and take precedence over the variables.
+
+A GitHub Actions workflow in your app's repository:
+
+```yaml
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx -y @xerdin442/orbit-cli@1 deploy --follow
+        env:
+          ORBIT_API_URL: ${{ secrets.ORBIT_API_URL }}
+          ORBIT_TOKEN: ${{ secrets.ORBIT_TOKEN }}
+          ORBIT_PROJECT_ID: ${{ secrets.ORBIT_PROJECT_ID }}
+```
+
+No checkout step is needed: Orbit builds from GitHub on its own server, and the branch comes from `GITHUB_REF_NAME`.
 
 This bypasses the locally linked context entirely. The environment to deploy is resolved from the current git branch (or `GITHUB_REF_NAME` / `CI_COMMIT_REF_NAME` / `BRANCH_NAME` in CI) — it must match the branch of an existing environment on the project, or the deploy is rejected.
 
@@ -332,11 +379,8 @@ You'll be asked to confirm. Only deployments that are still in progress (pending
 ## Complete Workflow
 
 ```bash
-# 1. Point to your Orbit instance
-export ORBIT_API_URL=https://orbit.example.com/api
-
-# 2. Log in
-orbit auth login
+# 1–2. Point the CLI at your Orbit instance and log in (the URL is saved for later commands)
+orbit auth login --api-url https://orbit.example.com/api
 
 # 3. Create and deploy a project
 orbit init
@@ -383,7 +427,7 @@ orbit env --help
 | `orbit link` | Link to an existing project |
 | `orbit deploy` | Trigger a deployment |
 | `orbit deploy -f` | Deploy and stream logs |
-| `orbit deploy --token <t> --project <id>` | Deploy from CI/CD via project access token |
+| `orbit deploy --token <t> --project <id>` | Deploy from CI/CD via project access token (or `ORBIT_TOKEN` / `ORBIT_PROJECT_ID`) |
 | `orbit logs [id]` | Stream or view deployment logs |
 | `orbit list` | List recent deployments |
 | `orbit env ls` | List environment variables |
