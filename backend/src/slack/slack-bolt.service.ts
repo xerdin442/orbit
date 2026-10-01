@@ -519,6 +519,26 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
           return;
         }
 
+        let previousDeployment: { id: string } | null = null;
+        if (metadata.action === 'rollback') {
+          previousDeployment = await this.db.deployment.findFirst({
+            where: {
+              environmentId: metadata.environmentId,
+              lifecycleStatus: LifecycleStatus.inactive,
+              buildStatus: BuildStatus.ready,
+            },
+            orderBy: { createdAt: 'desc' },
+          });
+
+          if (!previousDeployment) {
+            await respond({
+              text: `No previous successful deployment to rollback to in ${metadata.projectName} (${metadata.environmentName}).`,
+              replace_original: true,
+            });
+            return;
+          }
+        }
+
         const startedAt = new Date().toISOString();
         const blocks = buildDeploymentStatusBlocks({
           project: metadata.projectName,
@@ -576,25 +596,8 @@ export class SlackBoltService implements OnModuleInit, OnModuleDestroy {
             slackMetadata,
           });
         } else {
-          const previousDeployment = await this.db.deployment.findFirst({
-            where: {
-              environmentId: metadata.environmentId,
-              lifecycleStatus: LifecycleStatus.inactive,
-              buildStatus: BuildStatus.ready,
-            },
-            orderBy: { createdAt: 'desc' },
-          });
-
-          if (!previousDeployment) {
-            await respond({
-              text: `No previous successful deployment to rollback to in ${metadata.projectName} (${metadata.environmentName}).`,
-              replace_original: true,
-            });
-            return;
-          }
-
           const deployment = await this.deployments.findForRollback(
-            previousDeployment.id,
+            previousDeployment!.id,
             record.userId,
           );
 
