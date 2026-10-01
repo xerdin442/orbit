@@ -100,16 +100,18 @@ export default function ProjectOverviewPage() {
   }, [domains]);
 
   async function handleRedeploy() {
-    if (!latestDeployment) return;
+    if (!selectedEnvironment) return;
     setRedeploying(true);
     try {
-      await api.deployments.redeploy(latestDeployment.id);
+      await api.environments.redeploy(selectedEnvironment.id);
       await queryClient.invalidateQueries({
-        queryKey: ["deployments", selectedEnvironment?.id],
+        queryKey: ["deployments", selectedEnvironment.id],
       });
       await queryClient.invalidateQueries({
         queryKey: ["activity", projectId],
       });
+    } catch {
+      // error toast already surfaced by the API client
     } finally {
       setRedeploying(false);
     }
