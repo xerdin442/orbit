@@ -156,6 +156,7 @@ model Deployment {
   buildStatus     BuildStatus       @default(pending)
   lifecycleStatus LifecycleStatus   @default(inactive)
   createdAt       DateTime          @default(now())
+  completedAt     DateTime?
   updatedAt       DateTime          @updatedAt
 
   environmentId String
