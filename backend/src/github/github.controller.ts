@@ -6,6 +6,7 @@ import {
   UseGuards,
   Req,
   Redirect,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { GitHubService } from './github.service';
 import { Secrets } from '@src/common/secrets';
@@ -26,13 +27,9 @@ export class GitHubController {
   @Redirect()
   async installCallback(
     @Req() req: AuthenticatedRequest,
-    @Query('installation_id') installationId: string,
+    @Query('installation_id', ParseIntPipe) installationId: number,
   ) {
-    await this.github.handleInstallCallback(
-      Number(installationId),
-      req.user.id,
-    );
-
+    await this.github.handleInstallCallback(installationId, req.user.id);
     return { url: Secrets.FRONTEND_URL };
   }
 
@@ -42,21 +39,23 @@ export class GitHubController {
   }
 
   @Get(':installationId/repositories')
-  listRepositories(@Param('installationId') installationId: string) {
-    return this.github.listRepositories(Number(installationId));
+  listRepositories(
+    @Param('installationId', ParseIntPipe) installationId: number,
+  ) {
+    return this.github.listRepositories(installationId);
   }
 
   @Get(':installationId/update-access')
-  updateAccess(@Param('installationId') installationId: string) {
-    return { url: this.github.getUpdateAccessUrl(Number(installationId)) };
+  updateAccess(@Param('installationId', ParseIntPipe) installationId: number) {
+    return { url: this.github.getUpdateAccessUrl(installationId) };
   }
 
   @Get('branches')
   listBranches(
-    @Query('installationId') installationId: string,
+    @Query('installationId', ParseIntPipe) installationId: number,
     @Query('repo') repoFullName: string,
   ) {
     const url = `https://github.com/${repoFullName}`;
-    return this.github.listBranches(Number(installationId), url);
+    return this.github.listBranches(installationId, url);
   }
 }

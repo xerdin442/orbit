@@ -60,7 +60,8 @@ export const ModelName = {
   Resource: 'Resource',
   EnvironmentVariable: 'EnvironmentVariable',
   Domain: 'Domain',
-  GitHubInstallation: 'GitHubInstallation'
+  GitHubInstallation: 'GitHubInstallation',
+  Activity: 'Activity'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -212,6 +213,17 @@ export const GitHubInstallationScalarFieldEnum = {
 } as const
 
 export type GitHubInstallationScalarFieldEnum = (typeof GitHubInstallationScalarFieldEnum)[keyof typeof GitHubInstallationScalarFieldEnum]
+
+
+export const ActivityScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  actorId: 'actorId',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type ActivityScalarFieldEnum = (typeof ActivityScalarFieldEnum)[keyof typeof ActivityScalarFieldEnum]
 
 
 export const SortOrder = {
