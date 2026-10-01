@@ -52,6 +52,14 @@ export class CreateProjectDto {
   @IsObject()
   @IsOptional()
   envVars?: Record<string, string>;
+
+  @IsString()
+  @IsOptional()
+  buildDirectory?: string;
+
+  @IsString()
+  @IsOptional()
+  startCommand?: string;
 }
 
 export class UpdateProjectDto {
@@ -79,4 +87,12 @@ export class UpdateProjectDto {
   @IsNumber()
   @IsOptional()
   healthCheckTimeout?: number;
+
+  @IsString()
+  @IsOptional()
+  buildDirectory?: string;
+
+  @IsString()
+  @IsOptional()
+  startCommand?: string;
 }

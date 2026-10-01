@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { BuildImageStep } from '../build-image.step';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
@@ -5,14 +6,14 @@ import { DeploymentContext } from '@src/common/types';
 import { DeploymentStepExecutionError } from '@src/common/types';
 import { LogLevel } from '@generated/client';
 
-const mockCtx = (): DeploymentContext =>
+const mockCtx = (overrides?: { project?: Record<string, unknown> }) =>
   ({
     deployment: { id: 'dep-1' },
-    project: { id: 'proj-1' },
+    project: { id: 'proj-1', ...overrides?.project },
     workspace: '/tmp/build',
     commitSha: 'abc123',
     imageTag: null,
-  }) as DeploymentContext;
+  }) as unknown as DeploymentContext;
 
 describe('BuildImageStep', () => {
   let step: BuildImageStep;
@@ -39,6 +40,43 @@ describe('BuildImageStep', () => {
     expect(command.railpackBuild).toHaveBeenCalledWith(
       '/tmp/build',
       'project-proj-1:abc123',
+      undefined,
+      expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it('resolves the source path from buildDirectory, stripping ".." segments', async () => {
+    command.railpackBuild.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+
+    await step.execute(mockCtx({ project: { buildDirectory: '../../apps/web' } }));
+
+    expect(command.railpackBuild).toHaveBeenCalledWith(
+      join('/tmp/build', 'apps', 'web'),
+      'project-proj-1:abc123',
+      undefined,
+      expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it('passes startCommand through to railpackBuild', async () => {
+    command.railpackBuild.mockResolvedValue({
+      exitCode: 0,
+      stdout: '',
+      stderr: '',
+    });
+
+    await step.execute(mockCtx({ project: { startCommand: 'npm run start:prod' } }));
+
+    expect(command.railpackBuild).toHaveBeenCalledWith(
+      '/tmp/build',
+      'project-proj-1:abc123',
+      'npm run start:prod',
       expect.any(Function),
       expect.any(Function),
     );
@@ -58,7 +96,7 @@ describe('BuildImageStep', () => {
 
   it('logs stdout as INFO and stderr as WARN', async () => {
     command.railpackBuild.mockImplementation(
-      async (_source, _tag, onStdout, onStderr) => {
+      async (_source, _tag, _startCommand, onStdout, onStderr) => {
         onStdout?.('installing dependencies\n');
         onStderr?.('deprecated inflight@1.0.6\n');
         return { exitCode: 0, stdout: '', stderr: '' };

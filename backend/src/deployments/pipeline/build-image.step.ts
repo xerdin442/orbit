@@ -1,3 +1,4 @@
+import { join } from 'path';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { LogLevel } from '@generated/client';
@@ -7,6 +8,16 @@ import {
   DeploymentStepName,
   DeploymentStepExecutionError,
 } from '@src/common/types';
+
+function resolveSourcePath(workspace: string, buildDirectory?: string | null) {
+  if (!buildDirectory) return workspace;
+
+  const safeSegments = buildDirectory
+    .split('/')
+    .filter((segment) => segment !== '' && segment !== '.' && segment !== '..');
+
+  return join(workspace, ...safeSegments);
+}
 
 export class BuildImageStep implements DeploymentStep {
   readonly name = DeploymentStepName.BuildImage;
@@ -19,9 +30,15 @@ export class BuildImageStep implements DeploymentStep {
   async execute(ctx: DeploymentContext): Promise<void> {
     ctx.imageTag = `project-${ctx.project.id}:${ctx.commitSha}`;
 
-    const result = await this.command.railpackBuild(
+    const sourcePath = resolveSourcePath(
       ctx.workspace,
+      ctx.project.buildDirectory,
+    );
+
+    const result = await this.command.railpackBuild(
+      sourcePath,
       ctx.imageTag,
+      ctx.project.startCommand ?? undefined,
       (data) => {
         void this.log.append(ctx.deployment.id, LogLevel.INFO, data.trimEnd());
       },
