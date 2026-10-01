@@ -88,11 +88,6 @@ export class ResourceProcessor extends WorkerHost {
 
       await this.docker.startContainer(container.id);
 
-      await this.db.resource.update({
-        where: { id: resourceId },
-        data: { containerId: container.id },
-      });
-
       const healthy = await this.docker.checkContainerHealth(
         container.id,
         150_000,
@@ -113,6 +108,7 @@ export class ResourceProcessor extends WorkerHost {
       await this.db.resource.update({
         where: { id: resourceId },
         data: {
+          containerId: container.id,
           status: ResourceStatus.ready,
           hostname: containerName,
           credentials,
@@ -123,6 +119,16 @@ export class ResourceProcessor extends WorkerHost {
         where: { id: resource.environmentId },
         include: { project: true },
       });
+
+      const network = await this.docker.getOrCreateProjectNetwork(
+        env.project.id,
+      );
+
+      try {
+        await this.docker.connectContainerToNetwork(network.id, container.id);
+      } catch {
+        // container may already be connected
+      }
 
       await this.activity.log(
         ActivityType.resource_provisioned,

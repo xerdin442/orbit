@@ -306,29 +306,26 @@ export class DeploymentProcessor extends WorkerHost {
       const ready = resources.filter((r) => r.status === ResourceStatus.ready);
 
       if (ready.length === resourceCount) {
-        const network = await this.docker.getOrCreateProjectNetwork(
-          ctx.project.id,
+        const variablesByKey = new Map(
+          ctx.variables.map((variable) => {
+            const separator = variable.indexOf('=');
+            return [
+              separator === -1 ? variable : variable.slice(0, separator),
+              variable,
+            ];
+          }),
         );
 
         for (const r of ready) {
-          if (r.containerId) {
-            try {
-              await this.docker.connectContainerToNetwork(
-                network.id,
-                r.containerId,
-              );
-            } catch {
-              // container may already be connected
-            }
-          }
-
           const creds = r.credentials as Record<string, string> | null;
           if (creds) {
             for (const [key, value] of Object.entries(creds)) {
-              ctx.variables.push(`${key}=${value}`);
+              variablesByKey.set(key, `${key}=${value}`);
             }
           }
         }
+
+        ctx.variables = Array.from(variablesByKey.values());
 
         await this.logService.append(
           deploymentId,

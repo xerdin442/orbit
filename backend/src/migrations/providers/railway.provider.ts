@@ -232,10 +232,12 @@ export class RailwayProvider implements MigrationProvider {
       );
     }
 
-    return Object.entries(result.data.variables).map(([key, value]) => ({
-      key,
-      value,
-    }));
+    return Object.entries(result.data.variables)
+      .filter(([key]) => !key.startsWith('RAILWAY_'))
+      .map(([key, value]) => ({
+        key,
+        value,
+      }));
   }
 
   private async fetchDomains(

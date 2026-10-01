@@ -13,7 +13,8 @@ function resolveContainerCommand(startCommand: string | null) {
   const trimmed = startCommand?.trim();
   if (!trimmed) return undefined;
 
-  return ['sh', '-c', trimmed];
+  const command = trimmed.replace(/^sh\s+-c\s+/, '');
+  return ['sh', '-c', command];
 }
 
 export class CreateContainerStep implements DeploymentStep {
