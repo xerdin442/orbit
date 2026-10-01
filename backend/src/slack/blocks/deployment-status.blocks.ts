@@ -34,7 +34,7 @@ const STATUS_LABEL: Record<StatusCardParams['status'], string> = {
   queued: 'Queued',
   building: 'Building',
   deploying: 'Deploying',
-  success: 'Deployed',
+  success: 'Success',
   failed: 'Failed',
   rolled_back: 'Rolled Back',
   no_deployments: 'No Deployments',

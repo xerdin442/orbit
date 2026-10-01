@@ -64,6 +64,16 @@ function isPrefetch(headers: unknown): boolean {
   return false;
 }
 
+function normalizeQuery(rawQuery: string): string | undefined {
+  if (!rawQuery) return undefined;
+
+  const params = new URLSearchParams(rawQuery);
+  params.delete('_rsc');
+
+  const cleaned = params.toString();
+  return cleaned ? cleaned.slice(0, 1024) : undefined;
+}
+
 export function isNoiseRequest(path: string): boolean {
   if (NOISE_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))) {
     return true;
@@ -126,8 +136,7 @@ export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
 
   const q = uri.indexOf('?');
   const path = q === -1 ? uri : uri.slice(0, q);
-  const query =
-    q === -1 ? undefined : uri.slice(q + 1, q + 1 + 1024) || undefined;
+  const query = q === -1 ? undefined : normalizeQuery(uri.slice(q + 1));
 
   if (isNoiseRequest(path)) return null;
 
