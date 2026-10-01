@@ -40,6 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# development
+mocks/
+
 # agents
 plan.md
 tracker.md
