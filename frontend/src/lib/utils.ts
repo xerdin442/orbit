@@ -34,6 +34,15 @@ export function domainSslVariant(
   return "pending";
 }
 
+export function requestStatusVariant(
+  statusCode: number,
+): "ready" | "inactive" | "warning" | "failed" {
+  if (statusCode < 300) return "ready";
+  if (statusCode < 400) return "inactive";
+  if (statusCode < 500) return "warning";
+  return "failed";
+}
+
 export function domainSslLabel(status: DomainStatus): string {
   if (status === "active") return "Issued";
   if (status === "failed") return "Not issued";

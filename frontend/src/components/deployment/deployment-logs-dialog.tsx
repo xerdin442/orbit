@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -11,13 +12,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { TerminalViewer } from "@/components/shared/terminal-viewer";
 import { api } from "@/lib/api";
-import { formatLogLine, logLevelColor } from "@/lib/utils";
+import { useSSE } from "@/hooks/use-sse";
+import { formatLogLine, isBuildInProgress, logLevelColor } from "@/lib/utils";
+import type { BuildStatus, DeploymentLog } from "@/lib/types";
+
+const MOCK_MODE = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
 
 interface DeploymentLogsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
   deploymentId: string;
+  buildStatus: BuildStatus;
 }
 
 export function DeploymentLogsDialog({
@@ -25,13 +31,34 @@ export function DeploymentLogsDialog({
   onOpenChange,
   projectId,
   deploymentId,
+  buildStatus,
 }: DeploymentLogsDialogProps) {
   const router = useRouter();
 
-  const { data: logs, isLoading } = useQuery({
+  const [logs, setLogs] = useState<DeploymentLog[]>([]);
+  const [seededLogsFor, setSeededLogsFor] = useState<string | null>(null);
+
+  const { data: persistedLogs, isLoading } = useQuery({
     queryKey: ["deployment-logs", deploymentId],
     queryFn: () => api.deployments.logs(deploymentId),
     enabled: open,
+  });
+
+  if (persistedLogs && seededLogsFor !== deploymentId) {
+    setSeededLogsFor(deploymentId);
+    setLogs(persistedLogs);
+  }
+
+  const isInProgress = isBuildInProgress(buildStatus);
+  const streamUrl =
+    open && isInProgress && !MOCK_MODE
+      ? api.deployments.logsStreamUrl(deploymentId)
+      : null;
+
+  useSSE<DeploymentLog>(streamUrl, (entry) => {
+    setLogs((prev) =>
+      prev.some((l) => l.id === entry.id) ? prev : [...prev, entry],
+    );
   });
 
   return (
@@ -43,7 +70,7 @@ export function DeploymentLogsDialog({
           lines={
             isLoading
               ? []
-              : (logs ?? []).map((log) => ({
+              : logs.map((log) => ({
                   text: formatLogLine(log),
                   className: logLevelColor(log.level),
                 }))
