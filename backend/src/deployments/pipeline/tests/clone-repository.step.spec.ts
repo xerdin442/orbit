@@ -1,8 +1,16 @@
+import { mkdtemp, rm } from 'fs/promises';
 import { CloneRepositoryStep } from '../clone-repository.step';
 import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { DeploymentContext } from '@src/common/types';
 import { DeploymentStepExecutionError } from '@src/common/types';
+
+jest.mock('fs/promises', () => ({
+  mkdtemp: jest.fn().mockResolvedValue('/tmp/builds-12345'),
+  rm: jest.fn().mockResolvedValue(undefined),
+}));
+
+const WORKSPACE = '/tmp/builds-12345';
 
 const mockCtx = (): DeploymentContext =>
   ({
@@ -20,6 +28,11 @@ describe('CloneRepositoryStep', () => {
   let log: jest.Mocked<Pick<LogService, 'append'>>;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
+    (mkdtemp as jest.Mock).mockResolvedValue(WORKSPACE);
+    (rm as jest.Mock).mockResolvedValue(undefined);
+
     command = { gitClone: jest.fn() };
     log = { append: jest.fn() };
     step = new CloneRepositoryStep(
@@ -33,15 +46,16 @@ describe('CloneRepositoryStep', () => {
 
     await step.execute(mockCtx());
 
+    expect(mkdtemp).toHaveBeenCalledWith(expect.stringContaining('builds-'));
     expect(command.gitClone).toHaveBeenCalledWith(
       'https://github.com/owner/repo',
       'main',
-      expect.stringContaining('builds-'),
+      WORKSPACE,
       expect.any(Function),
     );
   });
 
-  it('throws on clone failure', async () => {
+  it('throws on clone failure and removes the workspace', async () => {
     command.gitClone.mockResolvedValue({
       exitCode: 1,
       stdout: '',
@@ -49,7 +63,14 @@ describe('CloneRepositoryStep', () => {
     });
 
     await expect(step.execute(mockCtx())).rejects.toThrow(
-      DeploymentStepExecutionError,
+      new DeploymentStepExecutionError(
+        'Git clone failed: repository not found',
+      ),
     );
+
+    expect(rm).toHaveBeenCalledWith(WORKSPACE, {
+      recursive: true,
+      force: true,
+    });
   });
 });
