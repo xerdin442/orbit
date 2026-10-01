@@ -1,17 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
-import { User } from '@generated/client';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly db: DbService) {}
 
-  async findByGithubUserId(githubUserId: number): Promise<User | null> {
+  async findByGithubUserId(githubUserId: number) {
     return this.db.user.findUnique({ where: { githubUserId } });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return this.db.user.findUnique({ where: { id } });
+  async findById(id: string) {
+    const user = await this.db.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    return user;
   }
 
   async create(data: {
@@ -19,7 +23,7 @@ export class UsersService {
     githubUsername: string;
     email?: string;
     avatarUrl?: string;
-  }): Promise<User> {
+  }) {
     return this.db.user.create({ data });
   }
 }

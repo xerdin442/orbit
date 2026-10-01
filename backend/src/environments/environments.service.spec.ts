@@ -125,6 +125,35 @@ describe('EnvironmentsService', () => {
     });
   });
 
+  describe('findAllByProject', () => {
+    it('verifies ownership and returns environments', async () => {
+      db.project.findFirst.mockResolvedValue({
+        id: 'proj-1',
+        ownerId: 'user-1',
+      });
+      db.environment.findMany.mockResolvedValue([
+        { id: 'env-1', name: 'production', projectId: 'proj-1' },
+        { id: 'env-2', name: 'staging', projectId: 'proj-1' },
+      ]);
+
+      const result = await service.findAllByProject('proj-1', 'user-1');
+
+      expect(db.environment.findMany).toHaveBeenCalledWith({
+        where: { projectId: 'proj-1' },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(result).toHaveLength(2);
+    });
+
+    it('throws if project is not owned by user', async () => {
+      db.project.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.findAllByProject('proj-1', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('getVariables', () => {
     it('returns decrypted variables', async () => {
       db.environment.findUnique.mockResolvedValue({

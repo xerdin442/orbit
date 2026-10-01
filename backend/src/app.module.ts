@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DbModule } from './db/db.module';
+import { RedisModule } from './common/cache';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { Secrets } from './common/secrets';
@@ -43,6 +44,7 @@ import KeyvRedis from '@keyv/redis';
     }),
     ThrottlerModule.forRoot(applyThrottlerConfig()),
     DbModule,
+    RedisModule,
     AuthModule,
     UsersModule,
     ProjectsModule,
