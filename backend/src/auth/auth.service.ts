@@ -87,6 +87,7 @@ export class AuthService {
       email: user.email,
       avatarUrl: user.avatarUrl,
       slackInstallation: user.slackInstallation,
+      externalConnections: user.externalConnections,
     };
   }
 
@@ -135,7 +136,9 @@ export class AuthService {
     const data = (await response.json()) as GitHubTokenResponse;
 
     if (!data.access_token) {
-      throw new UnauthorizedException('No access token received from GitHub');
+      throw new UnauthorizedException(
+        `No access token received from GitHub: ${data.error_description ?? data.error ?? 'Unknown error'}`,
+      );
     }
 
     return data.access_token;

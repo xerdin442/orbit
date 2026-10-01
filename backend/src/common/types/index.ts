@@ -35,7 +35,9 @@ export interface GitHubUser {
 }
 
 export interface GitHubTokenResponse {
-  access_token: string;
+  access_token?: string;
+  error?: string;
+  error_description?: string;
 }
 
 export interface GitHubAccountResponse {

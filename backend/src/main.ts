@@ -8,6 +8,7 @@ import { WinstonModule } from 'nest-winston';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { Logger } from './common/logger';
+import { Secrets } from './common/secrets';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -15,7 +16,10 @@ async function bootstrap() {
     logger: WinstonModule.createLogger({ instance: Logger('Nest') }),
   });
 
-  app.enableCors();
+  app.enableCors({
+    origin: Secrets.FRONTEND_URL,
+    credentials: true,
+  });
   app.use(helmet());
   app.setGlobalPrefix('/api');
   app.enableShutdownHooks();
