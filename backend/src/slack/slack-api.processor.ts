@@ -7,17 +7,28 @@ import {
 } from '@slack/web-api';
 import { Logger } from '@src/common/logger';
 import type { SlackApiJob } from '@src/common/types';
+import { DbService } from '@src/db/db.service';
 import { SlackApiService } from './slack-api.service';
+
+const INACTIVE_INSTALLATION_RETENTION_MS = 20 * 24 * 60 * 60 * 1000;
 
 @Processor('slack-api')
 export class SlackApiProcessor extends WorkerHost {
   private readonly logger = Logger(SlackApiProcessor.name);
 
-  constructor(private readonly slackApi: SlackApiService) {
+  constructor(
+    private readonly slackApi: SlackApiService,
+    private readonly db: DbService,
+  ) {
     super();
   }
 
   async process(job: Job<SlackApiJob>): Promise<void> {
+    if (job.name === 'cleanup-inactive-installations') {
+      await this.clearInactiveInstallations();
+      return;
+    }
+
     const { teamId, method, args } = job.data;
 
     try {
@@ -49,5 +60,17 @@ export class SlackApiProcessor extends WorkerHost {
 
       throw error;
     }
+  }
+
+  private async clearInactiveInstallations(): Promise<void> {
+    const cutoff = new Date(Date.now() - INACTIVE_INSTALLATION_RETENTION_MS);
+    const result = await this.db.slackInstallation.deleteMany({
+      where: {
+        isActive: false,
+        updatedAt: { lt: cutoff },
+      },
+    });
+
+    this.logger.info(`Cleared ${result.count} inactive Slack installations`);
   }
 }
