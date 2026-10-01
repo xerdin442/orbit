@@ -248,9 +248,9 @@ describe('EnvironmentsService', () => {
       });
       expect(queue.add).toHaveBeenCalled();
       expect(activity.log).toHaveBeenCalledWith(
-        expect.stringContaining('variable_created'),
-        'user-1',
-        expect.objectContaining({ count: 2 }),
+        expect.stringContaining("variable_created"),
+        "user-1",
+        expect.objectContaining({ keys: "KEY_A,KEY_B" }),
       );
       expect(result).toEqual({ count: 2 });
     });
