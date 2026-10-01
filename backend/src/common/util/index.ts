@@ -30,3 +30,15 @@ export const applyThrottlerConfig = (): ThrottlerModuleOptions => {
 
   return Secrets.NODE_ENV !== 'test' ? throttles : [];
 };
+
+export const splitHostname = (
+  hostname: string,
+): { isApex: boolean; recordName: string } => {
+  const labels = hostname.split('.');
+
+  if (labels.length <= 2) {
+    return { isApex: true, recordName: '@' };
+  }
+
+  return { isApex: false, recordName: labels.slice(0, -2).join('.') };
+};

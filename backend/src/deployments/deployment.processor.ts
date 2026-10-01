@@ -103,24 +103,7 @@ export class DeploymentProcessor extends WorkerHost {
       );
 
       if (buildStatus === BuildStatus.aborted) {
-        await this.logService.append(
-          deploymentId,
-          LogLevel.INFO,
-          'Deployment has been aborted.',
-        );
-
-        await this.cleanupAborted(ctx);
-        this.logService.complete(deploymentId);
-
-        this.eventEmitter.emit(
-          'deployment.terminated',
-          new DeploymentTerminatedEvent(
-            ctx.deployment,
-            ctx.project,
-            ctx.environment,
-            slackMetadata,
-          ),
-        );
+        await this.handleAborted(ctx, slackMetadata);
         return;
       }
 
@@ -148,7 +131,14 @@ export class DeploymentProcessor extends WorkerHost {
           );
         }
 
-        await this.deployments.updateBuildStatus(deploymentId, nextStatus);
+        const updated = await this.deployments.updateBuildStatus(
+          deploymentId,
+          nextStatus,
+        );
+        if (!updated) {
+          await this.handleAborted(ctx, slackMetadata);
+          return;
+        }
 
         if (nextStatus !== BuildStatus.ready) {
           this.eventEmitter.emit(
@@ -418,7 +408,16 @@ export class DeploymentProcessor extends WorkerHost {
     throw new DeploymentStepExecutionError('Resource provisioning timed out.');
   }
 
-  private async cleanupAborted(ctx: DeploymentContext): Promise<void> {
+  private async handleAborted(
+    ctx: DeploymentContext,
+    slackMetadata?: DeploymentJob['slackMetadata'],
+  ): Promise<void> {
+    await this.logService.append(
+      ctx.deployment.id,
+      LogLevel.INFO,
+      'Deployment has been aborted.',
+    );
+
     if (ctx.containerId) {
       try {
         await this.docker.stopContainer(ctx.containerId);
@@ -431,6 +430,18 @@ export class DeploymentProcessor extends WorkerHost {
     if (ctx.workspace) {
       await rm(ctx.workspace, { recursive: true, force: true });
     }
+
+    this.logService.complete(ctx.deployment.id);
+
+    this.eventEmitter.emit(
+      'deployment.terminated',
+      new DeploymentTerminatedEvent(
+        ctx.deployment,
+        ctx.project,
+        ctx.environment,
+        slackMetadata,
+      ),
+    );
   }
 
   private async handleError(
@@ -439,7 +450,15 @@ export class DeploymentProcessor extends WorkerHost {
     slackMetadata?: DeploymentJob['slackMetadata'],
     failedStage?: BuildStatus,
   ): Promise<void> {
-    await this.deployments.markFailed(ctx.deployment.id, failedStage);
+    const failed = await this.deployments.markFailed(
+      ctx.deployment.id,
+      failedStage,
+    );
+
+    if (!failed) {
+      await this.handleAborted(ctx, slackMetadata);
+      return;
+    }
 
     await this.activity.log(
       ActivityType.deployment_failed,

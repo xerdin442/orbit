@@ -19,6 +19,13 @@ import { ActivityService } from '@src/activity/activity.service';
 import { FilterDeploymentsDto } from './dto/deployment.dto';
 import { PaginatedResult } from '@src/common/types';
 
+const IN_PROGRESS_BUILD_STATUSES: BuildStatus[] = [
+  BuildStatus.pending,
+  BuildStatus.cloning,
+  BuildStatus.building,
+  BuildStatus.deploying,
+];
+
 @Injectable()
 export class DeploymentsService {
   constructor(
@@ -226,11 +233,15 @@ export class DeploymentsService {
     return rolledDeployment;
   }
 
-  async updateBuildStatus(id: string, buildStatus: BuildStatus) {
-    return this.db.deployment.update({
-      where: { id },
+  async updateBuildStatus(
+    id: string,
+    buildStatus: BuildStatus,
+  ): Promise<boolean> {
+    const { count } = await this.db.deployment.updateMany({
+      where: { id, buildStatus: { not: BuildStatus.aborted } },
       data: { buildStatus },
     });
+    return count > 0;
   }
 
   async markCompleted(id: string) {
@@ -261,22 +272,23 @@ export class DeploymentsService {
     });
   }
 
-  async markFailed(id: string, failedStage?: BuildStatus) {
-    return this.db.deployment.update({
-      where: { id },
+  async markFailed(id: string, failedStage?: BuildStatus): Promise<boolean> {
+    const { count } = await this.db.deployment.updateMany({
+      where: { id, buildStatus: { not: BuildStatus.aborted } },
       data: {
         buildStatus: BuildStatus.failed,
         ...(failedStage ? { failedStage } : {}),
         lifecycleStatus: LifecycleStatus.aborted,
       },
     });
+    return count > 0;
   }
 
   async abortDeployment(id: string, userId: string, resourceIds?: string[]) {
     const deployment = await this.findById(id, userId);
 
-    await this.db.deployment.update({
-      where: { id },
+    const { count } = await this.db.deployment.updateMany({
+      where: { id, buildStatus: { in: IN_PROGRESS_BUILD_STATUSES } },
       data: {
         buildStatus: BuildStatus.aborted,
         failedStage: deployment.buildStatus,
@@ -284,6 +296,12 @@ export class DeploymentsService {
         completedAt: new Date(),
       },
     });
+
+    if (count === 0) {
+      throw new BadRequestException(
+        'Only deployments that are still in progress can be aborted',
+      );
+    }
 
     await this.activity.log(ActivityType.deployment_aborted, userId, {
       deploymentId: id,
