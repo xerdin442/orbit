@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { spawn } from 'child_process';
 import { CommandResult } from '@src/common/types';
-import { Logger } from '@src/common/logger';
-
-const logger = Logger('CommandService');
 
 export type OnStdout = (data: string) => void;
 
@@ -15,8 +12,6 @@ export class CommandService {
     onStdout?: OnStdout,
   ): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
-      logger.info(`Executing: ${command} ${args.join(' ')}`);
-
       const child = spawn(command, args, { shell: false });
 
       let stdout = '';
