@@ -10,9 +10,13 @@ import {
   LifecycleStatus,
   DeploymentTrigger,
   ActivityType,
+  Prisma,
+  Deployment,
 } from '@generated/client';
 import { ResourcesService } from '@src/resources/resources.service';
 import { ActivityService } from '@src/activity/activity.service';
+import { FilterDeploymentsDto } from './dto/deployment.dto';
+import { PaginatedResult } from '@src/common/types';
 
 @Injectable()
 export class DeploymentsService {
@@ -83,11 +87,53 @@ export class DeploymentsService {
     return deployment;
   }
 
-  async findByEnvironment(environmentId: string) {
-    return this.db.deployment.findMany({
-      where: { environmentId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findByEnvironment(
+    environmentId: string,
+    filters: FilterDeploymentsDto,
+  ): Promise<PaginatedResult<Deployment>> {
+    const page = Number(filters?.page ?? 1);
+    const limit = Number(filters?.limit ?? 20);
+
+    const where: Prisma.DeploymentWhereInput = { environmentId };
+
+    if (filters.trigger) {
+      where.trigger = filters.trigger;
+    }
+
+    if (filters.status) {
+      where.buildStatus = filters.status;
+    }
+
+    if (filters.endDate) {
+      filters.endDate.setHours(23, 59, 59, 999);
+      where.createdAt = { lte: filters.endDate };
+    }
+
+    if (filters.startDate) {
+      where.createdAt = { gte: filters.startDate };
+    }
+
+    const [deployments, total] = await Promise.all([
+      this.db.deployment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      this.db.deployment.count(),
+    ]);
+
+    return {
+      data: deployments,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async findForRollback(deploymentId: string) {

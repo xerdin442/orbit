@@ -16,6 +16,7 @@ import { LogService } from '@src/infrastructure/log.service';
 import type { LogEntry, DeploymentJob } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { DeploymentTrigger } from '@generated/client';
+import { FilterDeploymentsDto } from './dto/deployment.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -80,8 +81,11 @@ export class DeploymentsController {
   }
 
   @Get('environments/:environmentId/deployments')
-  listByEnvironment(@Param('environmentId') environmentId: string) {
-    return this.deployments.findByEnvironment(environmentId);
+  listByEnvironment(
+    @Param('environmentId') environmentId: string,
+    @Query() filters: FilterDeploymentsDto,
+  ) {
+    return this.deployments.findByEnvironment(environmentId, filters);
   }
 
   @Get('deployments/:id/logs')
