@@ -61,7 +61,7 @@ export default function ActivityPage() {
             : "All activity across your projects"
         }
       >
-        {activeFilterKey && activity && activity.length > 0 && (
+        {activeFilterKey && activity && activity.data.length > 0 && (
           <Link
             href="/activity"
             className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -86,9 +86,9 @@ export default function ActivityPage() {
             onRetry={() => refetch()}
             className="py-16"
           />
-        ) : activity && activity.length > 0 ? (
+        ) : activity && activity.data.length > 0 ? (
           <div className="space-y-3">
-            {activity.map((a) => (
+            {activity.data.map((a) => (
               <ActivityItem key={a.id} activity={a} details />
             ))}
           </div>
