@@ -25,6 +25,9 @@ export class BuildImageStep implements DeploymentStep {
       (data) => {
         void this.log.append(ctx.deployment.id, LogLevel.INFO, data.trimEnd());
       },
+      (data) => {
+        void this.log.append(ctx.deployment.id, LogLevel.WARN, data.trimEnd());
+      },
     );
 
     if (result.exitCode !== 0) {

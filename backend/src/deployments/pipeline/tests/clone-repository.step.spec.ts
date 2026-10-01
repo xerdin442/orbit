@@ -4,6 +4,7 @@ import { CommandService } from '@src/infrastructure/command.service';
 import { LogService } from '@src/infrastructure/log.service';
 import { DeploymentContext } from '@src/common/types';
 import { DeploymentStepExecutionError } from '@src/common/types';
+import { LogLevel } from '@generated/client';
 
 jest.mock('fs/promises', () => ({
   mkdtemp: jest.fn().mockResolvedValue('/tmp/builds-12345'),
@@ -52,6 +53,30 @@ describe('CloneRepositoryStep', () => {
       'main',
       WORKSPACE,
       expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it('logs stdout as INFO and stderr as WARN', async () => {
+    command.gitClone.mockImplementation(
+      async (_url, _branch, _path, onStdout, onStderr) => {
+        onStdout?.('cloning into workspace\n');
+        onStderr?.('Receiving objects: 100% (42/42), done.\n');
+        return { exitCode: 0, stdout: '', stderr: '' };
+      },
+    );
+
+    await step.execute(mockCtx());
+
+    expect(log.append).toHaveBeenCalledWith(
+      'dep-1',
+      LogLevel.INFO,
+      'cloning into workspace',
+    );
+    expect(log.append).toHaveBeenCalledWith(
+      'dep-1',
+      LogLevel.WARN,
+      'Receiving objects: 100% (42/42), done.',
     );
   });
 
