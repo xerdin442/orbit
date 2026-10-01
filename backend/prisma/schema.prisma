@@ -17,6 +17,7 @@ enum BuildStatus {
   deploying
   ready
   failed
+  aborted
 }
 
 enum LifecycleStatus {

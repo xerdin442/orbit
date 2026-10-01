@@ -52,6 +52,11 @@ export class DeploymentsController {
     return { deploymentId: deployment.id, status: deployment.buildStatus };
   }
 
+  @Post('deployments/:id/abort')
+  abort(@Param('id') id: string) {
+    return this.deployments.abortDeployment(id);
+  }
+
   @Get('deployments/:id')
   findOne(@Param('id') id: string) {
     return this.deployments.findById(id);
