@@ -123,6 +123,8 @@ export function AddDomainDialog({
               <DnsInstructions instructions={instructions} />
 
               <p className="text-xs text-muted-foreground leading-[1.4]">
+                The record must not be proxied. If your DNS provider offers a
+                proxy (e.g. Cloudflare&apos;s orange cloud), set it to DNS only.
                 DNS changes can take a few minutes to propagate. This domain
                 will verify automatically once it resolves. Click the refresh
                 button to check its status.
