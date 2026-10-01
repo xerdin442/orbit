@@ -45,9 +45,7 @@ describe('DomainsService', () => {
     });
 
     it('throws if domain already registered', async () => {
-      db.environment.findUnique = jest
-        .fn()
-        .mockResolvedValue({ id: 'env-1' });
+      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest
         .fn()
         .mockResolvedValue({ hostname: 'api.example.com' });
@@ -58,9 +56,7 @@ describe('DomainsService', () => {
     });
 
     it('creates custom domain and returns DNS instructions for subdomain', async () => {
-      db.environment.findUnique = jest
-        .fn()
-        .mockResolvedValue({ id: 'env-1' });
+      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest.fn().mockResolvedValue(null);
       db.domain.create = jest.fn().mockResolvedValue({
         id: 'd1',
@@ -92,9 +88,7 @@ describe('DomainsService', () => {
     });
 
     it('returns A record for apex domain', async () => {
-      db.environment.findUnique = jest
-        .fn()
-        .mockResolvedValue({ id: 'env-1' });
+      db.environment.findUnique = jest.fn().mockResolvedValue({ id: 'env-1' });
       db.domain.findFirst = jest.fn().mockResolvedValue(null);
       db.domain.create = jest.fn().mockResolvedValue({
         id: 'd1',
@@ -120,9 +114,9 @@ describe('DomainsService', () => {
   describe('deleteDomain', () => {
     it('throws if not found', async () => {
       db.domain.findUnique = jest.fn().mockResolvedValue(null);
-      await expect(
-        service.deleteDomain('d1', 'user-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteDomain('d1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws if managed hostname', async () => {
@@ -130,9 +124,9 @@ describe('DomainsService', () => {
         id: 'd1',
         type: DomainType.managed,
       });
-      await expect(
-        service.deleteDomain('d1', 'user-1'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.deleteDomain('d1', 'user-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('deletes custom domain', async () => {

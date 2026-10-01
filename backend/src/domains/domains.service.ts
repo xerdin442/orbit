@@ -49,6 +49,8 @@ export class DomainsService {
       },
     });
 
+    await this.invalidateCache(environmentId);
+
     await this.activity.log(ActivityType.domain_added, userId, {
       domainId: domain.id,
       hostname,
@@ -80,7 +82,7 @@ export class DomainsService {
 
     await this.db.domain.delete({ where: { id } });
 
-    await this.cache.del(`/api/environments/${domain.environmentId}/domains`);
+    await this.invalidateCache(domain.environmentId);
 
     await this.activity.log(ActivityType.domain_removed, userId, {
       domainId: id,
@@ -106,5 +108,9 @@ export class DomainsService {
       host: parts[0],
       value: Secrets.INGRESS_HOST,
     };
+  }
+
+  private async invalidateCache(envId: string) {
+    await this.cache.del(`/api/environments/${envId}/domains`);
   }
 }

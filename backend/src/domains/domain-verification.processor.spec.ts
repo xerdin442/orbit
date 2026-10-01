@@ -8,8 +8,8 @@ const mockResolve4 = jest.fn();
 const mockResolveCname = jest.fn();
 
 jest.mock('dns', () => ({
-  resolve4: (...args: any[]) => mockResolve4(...args),
-  resolveCname: (...args: any[]) => mockResolveCname(...args),
+  resolve4: (...args: string[]) => mockResolve4(...args),
+  resolveCname: (...args: string[]) => mockResolveCname(...args),
 }));
 
 jest.mock('util', () => ({
