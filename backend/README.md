@@ -1,6 +1,6 @@
 # Orbit Backend
 
-Orbit is a self-hosted platform-as-a-service in the spirit of Railway, Vercel and Heroku. Connect a GitHub repository and Orbit builds it, runs it in a container and serves it on a live HTTPS URL, with managed databases, custom domains, request logs and one-click rollbacks included.
+Orbit is a self-hosted platform-as-a-service in the spirit of Railway, Vercel and Render. Connect a GitHub repository and Orbit builds it, runs it in a container and serves it on a live HTTPS URL, with managed databases, custom domains, request logs and one-click rollbacks included.
 
 This is the API and deployment engine. The [dashboard](../frontend) and the [CLI](../cli) are both clients of it.
 
