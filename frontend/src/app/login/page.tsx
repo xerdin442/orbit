@@ -18,7 +18,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-6">
           <Logo className="text-3xl text-foreground" />
 
-          <div className="flex flex-col items-center gap-2 text-center">
+          <div className="flex flex-col items-center gap-3 text-center">
             <h1 className="text-2xl font-medium text-foreground">
               A better way to ship software.
             </h1>
