@@ -51,12 +51,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar projects={projects ?? []} user={user!} />
       <div
         className={cn(
-          "flex flex-1 flex-col transition-all duration-200",
+          "flex min-w-0 flex-1 flex-col transition-all duration-200",
           sidebarCollapsed ? "ml-16" : "ml-60",
         )}
       >
         <TopNav />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto p-6">{children}</main>
       </div>
     </div>
   );
