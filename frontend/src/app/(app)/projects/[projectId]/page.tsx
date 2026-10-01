@@ -24,13 +24,14 @@ import { ActivityItem } from "@/components/shared/activity-item";
 import { Button } from "@/components/ui/button";
 import { RedeployButton } from "@/components/deployment/redeploy-button";
 import { RollbackButton } from "@/components/deployment/rollback-button";
+import { ManualDeployButton } from "@/components/deployment/manual-deploy-button";
 import { DeploymentLogsDialog } from "@/components/deployment/deployment-logs-dialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import Link from "next/link";
 import { useSelectedEnvironment } from "@/hooks/use-selected-environment";
 import { useDialog } from "@/hooks/use-dialog";
-import { buildStatusBadgeVariant } from "@/lib/utils";
+import { buildStatusBadgeVariant, isBuildInProgress } from "@/lib/utils";
 
 export default function ProjectOverviewPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -72,6 +73,11 @@ export default function ProjectOverviewPage() {
 
   const latestDeployment = deployments?.data?.[0];
   const previousDeployment = deployments?.data?.[1];
+  const currentDeployment = deployments?.data?.find(
+    (d) => d.lifecycleStatus === "active" && d.buildStatus === "ready",
+  );
+  const canRedeploy =
+    !!currentDeployment && currentDeployment.id === latestDeployment?.id;
   const canRollbackToPrevious =
     !!previousDeployment &&
     (previousDeployment.lifecycleStatus === "inactive" ||
@@ -129,20 +135,20 @@ export default function ProjectOverviewPage() {
               </div>
             )}
 
-            {latestDeployment ? (
+            {currentDeployment ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <GitCommitHorizontal className="size-4 shrink-0" />
                 <span className="font-mono text-xs">
-                  [{latestDeployment.commitSha.slice(0, 7)}]
+                  [{currentDeployment.commitSha.slice(0, 7)}]
                 </span>
                 <span className="truncate">
-                  {latestDeployment.commitMessage ?? "No commit message"}
+                  {currentDeployment.commitMessage ?? "No commit message"}
                 </span>
               </div>
             ) : (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <GitCommitHorizontal className="size-4 shrink-0" />
-                <span>No deployments yet</span>
+                <span>No active deployment yet</span>
               </div>
             )}
 
@@ -171,35 +177,50 @@ export default function ProjectOverviewPage() {
             title="Latest Deployment"
             description={selectedEnvironment?.name}
             actions={
-              latestDeployment && (
-                <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5">
+                {canRedeploy && (
                   <RedeployButton
-                    environmentId={latestDeployment.environmentId}
-                    commitSha={latestDeployment.commitSha}
+                    environmentId={currentDeployment.environmentId}
+                    commitSha={currentDeployment.commitSha}
                     branch={selectedEnvironment?.branch ?? ""}
                     onRedeployed={handleDeploymentChanged}
                     className="text-xs"
                   />
-                  {previousDeployment && (
-                    <RollbackButton
-                      deploymentId={previousDeployment.id}
-                      commitSha={previousDeployment.commitSha}
-                      onRolledBack={handleDeploymentChanged}
-                      disabled={!canRollbackToPrevious}
-                      className="text-xs"
-                    />
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
+                )}
+                {previousDeployment && (
+                  <RollbackButton
+                    deploymentId={previousDeployment.id}
+                    commitSha={previousDeployment.commitSha}
+                    onRolledBack={handleDeploymentChanged}
+                    disabled={!canRollbackToPrevious}
                     className="text-xs"
-                    onClick={logsDialog.open}
-                  >
-                    <Terminal className="size-3.5" />
-                    View Logs
-                  </Button>
-                </div>
-              )
+                  />
+                )}
+                {selectedEnvironment && (
+                  <ManualDeployButton
+                    environmentId={selectedEnvironment.id}
+                    branch={selectedEnvironment.branch}
+                    onDeployed={handleDeploymentChanged}
+                    disabled={
+                      !!latestDeployment &&
+                      isBuildInProgress(latestDeployment.buildStatus)
+                    }
+                    className="text-xs"
+                  />
+                )}
+                {latestDeployment &&
+                  isBuildInProgress(latestDeployment.buildStatus) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs"
+                      onClick={logsDialog.open}
+                    >
+                      <Terminal className="size-3.5" />
+                      View Logs
+                    </Button>
+                  )}
+              </div>
             }
           >
             {latestDeployment ? (
@@ -276,7 +297,7 @@ export default function ProjectOverviewPage() {
               {activityLoading ? (
                 <div className="space-y-3">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
+                    <Skeleton key={i} className="h-8 w-full bg-input" />
                   ))}
                 </div>
               ) : activity && activity.data.length > 0 ? (
@@ -310,7 +331,7 @@ export default function ProjectOverviewPage() {
               {deploymentsLoading ? (
                 <div className="space-y-3">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-8 w-full" />
+                    <Skeleton key={i} className="h-8 w-full bg-input" />
                   ))}
                 </div>
               ) : deployments?.data && deployments.data.length > 0 ? (
