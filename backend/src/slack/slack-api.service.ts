@@ -39,15 +39,10 @@ export class SlackApiService {
       throw new NotFoundException('No active Slack installation found');
     }
 
-    const result = await this.call(installation.teamId, 'apps.uninstall', {
+    await this.call(installation.teamId, 'apps.uninstall', {
       client_id: Secrets.SLACK_CLIENT_ID,
       client_secret: Secrets.SLACK_CLIENT_SECRET,
     });
-
-    if (!result.ok) {
-      const error = (result as { error?: string }).error;
-      throw new Error(`Failed to uninstall Slack app: ${error}`);
-    }
 
     await this.db.slackInstallation.update({
       where: { id: installation.id },

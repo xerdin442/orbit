@@ -44,7 +44,7 @@ export class GitHubService {
       expiration: { type: 'EX', value: this.STATE_TTL_SECONDS },
     });
 
-    return `https://github.com/apps/${Secrets.GITHUB_APP_ID}/installations/new?state=${state}`;
+    return `https://github.com/apps/${Secrets.GITHUB_APP_SLUG}/installations/new?state=${state}`;
   }
 
   async getUpdateAccessUrl(
