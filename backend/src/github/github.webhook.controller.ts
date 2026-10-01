@@ -21,7 +21,7 @@ import {
   DeploymentTrigger,
   LifecycleStatus,
 } from '@generated/client';
-import { GitHubWebhookPayload } from '@src/common/types';
+import { GitHubWebhookPayload, DeploymentJob } from '@src/common/types';
 
 @Controller('github')
 export class GitHubWebhookController {
@@ -30,7 +30,8 @@ export class GitHubWebhookController {
   constructor(
     private readonly db: DbService,
     private readonly activity: ActivityService,
-    @InjectQueue('deployments') private readonly deployQueue: Queue,
+    @InjectQueue('deployments')
+    private readonly deployQueue: Queue<DeploymentJob>,
   ) {}
 
   @Post('webhook')
@@ -113,7 +114,7 @@ export class GitHubWebhookController {
         },
       });
 
-      await this.deployQueue.add({ deploymentId: deployment.id });
+      await this.deployQueue.add({ deployment });
     }
   }
 

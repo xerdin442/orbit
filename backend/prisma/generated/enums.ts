@@ -11,7 +11,6 @@
 
 export const BuildStatus = {
   pending: 'pending',
-  provisioning: 'provisioning',
   cloning: 'cloning',
   building: 'building',
   deploying: 'deploying',

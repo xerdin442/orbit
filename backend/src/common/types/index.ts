@@ -4,7 +4,6 @@ import type {
   Project,
   Source,
   Environment,
-  Resource,
   ActivityType,
 } from '@generated/client';
 import type { LogLevel } from '@generated/client';
@@ -72,8 +71,9 @@ export interface LogEntry {
   message: string;
 }
 
-export interface DeploymentJobData {
-  deploymentId: string;
+export interface DeploymentJob {
+  deployment: Deployment;
+  skipImageBuild?: boolean;
 }
 
 export interface DeploymentContext {
@@ -85,17 +85,14 @@ export interface DeploymentContext {
   commitSha: string;
   commitMessage: string;
   containerId: string;
-  networkId: string;
   domain: string;
-  variables: Record<string, string>;
-  resources: Resource[];
+  variables: string[];
 }
 
 export enum DeploymentStepName {
   CloneRepository = 'Clone Repository',
   ResolveCommit = 'Resolve Commit',
   BuildImage = 'Build Image',
-  ProvisionRuntime = 'Provision Runtime',
   CreateContainer = 'Create Container',
   StartContainer = 'Start Container',
   HealthCheck = 'Health Check',

@@ -23,19 +23,14 @@ export class CreateContainerStep implements DeploymentStep {
       'Creating container...',
     );
 
-    const name = `project-${ctx.project.id}-deployment-${ctx.deployment.id}`;
-
-    const envVars: string[] = [];
-    for (const [key, value] of Object.entries(ctx.variables)) {
-      envVars.push(`${key}=${value}`);
-    }
+    const network = await this.docker.getOrCreateProjectNetwork(ctx.project.id);
 
     const options: Docker.ContainerCreateOptions = {
-      name,
+      name: `project-${ctx.project.id}-deployment-${ctx.deployment.id}`,
       Image: ctx.imageTag,
-      Env: envVars,
+      Env: ctx.variables,
       HostConfig: {
-        NetworkMode: ctx.networkId,
+        NetworkMode: network.id,
         RestartPolicy: { Name: 'unless-stopped' },
       },
       Labels: {
