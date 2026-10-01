@@ -4,8 +4,9 @@ import ora from "ora";
 import fs from "fs-extra";
 import { api } from "../lib/api.js";
 import { setContext, ensureAuth } from "../lib/config.js";
-import { success, error } from "../lib/format.js";
+import { success } from "../lib/format.js";
 import { parseEnvFile } from "../lib/env-file.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface Installation {
   id: string;
@@ -53,16 +54,17 @@ export function registerInitCommand(program: Command) {
     .action(async () => {
       ensureAuth();
 
+      const spinner = ora();
+
       try {
         const installations = await api.get<Installation[]>(
           "/github/installations",
         );
 
         if (installations.length === 0) {
-          error(
+          fail(
             "No GitHub installations found. Install the Orbit GitHub App first.",
           );
-          process.exit(1);
         }
 
         const { inst } = await inquirer.prompt<{ inst: Installation }>([
@@ -77,7 +79,7 @@ export function registerInitCommand(program: Command) {
           },
         ]);
 
-        const spinner = ora("Fetching repositories...").start();
+        spinner.start("Fetching repositories...");
         const repos = await api.get<Repository[]>(
           `/github/installations/${inst.installationId}/repositories`,
         );
@@ -145,8 +147,7 @@ export function registerInitCommand(program: Command) {
               success(`Parsed ${parsed.length} variables from ${envPath}`);
             }
           } catch {
-            error(`Could not read file: ${envPath}`);
-            process.exit(1);
+            fail(`Could not read file: ${envPath}`);
           }
         }
 
@@ -194,8 +195,8 @@ export function registerInitCommand(program: Command) {
           );
         }
       } catch (err) {
-        error(err instanceof Error ? err.message : "Initialization failed");
-        process.exit(1);
+        if (spinner.isSpinning) spinner.stop();
+        failWith(err, "Initialization failed");
       }
     });
 }

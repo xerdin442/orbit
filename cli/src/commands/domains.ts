@@ -2,7 +2,8 @@ import type { Command } from "commander";
 import inquirer from "inquirer";
 import { api } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { success, error, warn, printTable } from "../lib/format.js";
+import { success, warn, printTable } from "../lib/format.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface Domain {
   id: string;
@@ -43,8 +44,7 @@ export function registerDomainCommands(program: Command) {
 
         printTable(headers, rows);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to list domains");
-        process.exit(1);
+        failWith(err, "Failed to list domains");
       }
     });
 
@@ -68,8 +68,7 @@ export function registerDomainCommands(program: Command) {
           "The record must not be proxied. If your DNS provider offers a proxy (e.g. Cloudflare's orange cloud), set it to DNS only.",
         );
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to add domain");
-        process.exit(1);
+        failWith(err, "Failed to add domain");
       }
     });
 
@@ -80,16 +79,19 @@ export function registerDomainCommands(program: Command) {
       const { ctx } = ensureContext();
 
       try {
-        const id = await api.get<Domain[]>(
+        const domains = await api.get<Domain[]>(
           `/environments/${ctx.environmentId}/domains`,
         );
-        const domain = id.find(
-          (d) => d.hostname === hostname && d.type === "custom",
-        );
+        const domain = domains.find((d) => d.hostname === hostname);
 
         if (!domain) {
-          error(`Custom domain "${hostname}" not found.`);
-          process.exit(1);
+          fail(`Domain "${hostname}" not found in this environment.`);
+        }
+
+        if (domain.type !== "custom") {
+          fail(
+            `"${hostname}" is the environment's managed Orbit domain and can't be removed. Only custom domains added with \`orbit domains add\` can be removed.`,
+          );
         }
 
         const { confirm } = await inquirer.prompt<{ confirm: boolean }>([
@@ -106,8 +108,7 @@ export function registerDomainCommands(program: Command) {
         await api.del(`/domains/${domain.id}`);
         success(`Domain "${hostname}" removed.`);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to remove domain");
-        process.exit(1);
+        failWith(err, "Failed to remove domain");
       }
     });
 }

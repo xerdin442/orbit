@@ -2,7 +2,7 @@ import type { Command } from "commander";
 import chalk from "chalk";
 import { api, apiFetch } from "../lib/api.js";
 import { ensureContext } from "../lib/config.js";
-import { error } from "../lib/format.js";
+import { fail, failWith } from "../lib/exit.js";
 
 interface Deployment {
   id: string;
@@ -39,8 +39,7 @@ export function registerLogsCommand(program: Command) {
 
           const latest = deps.data[0];
           if (!latest) {
-            error("No deployments found.");
-            process.exit(1);
+            fail("No deployments found.");
           }
 
           deploymentId = latest.id;
@@ -48,8 +47,7 @@ export function registerLogsCommand(program: Command) {
 
         await streamLogs(token, deploymentId);
       } catch (err) {
-        error(err instanceof Error ? err.message : "Failed to fetch logs");
-        process.exit(1);
+        failWith(err, "Failed to fetch logs");
       }
     });
 }
@@ -63,8 +61,7 @@ export async function streamLogs(
   });
 
   if (!response.ok || !response.body) {
-    error("Failed to connect to log stream.");
-    process.exit(1);
+    fail("Failed to connect to log stream.");
   }
 
   const reader = response.body.getReader();
