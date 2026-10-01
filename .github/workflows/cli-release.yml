@@ -29,6 +29,8 @@ jobs:
         working-directory: cli
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags, for the release notes
 
       - uses: actions/setup-node@v4
         with:
@@ -57,6 +59,11 @@ jobs:
           fi
           echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Generate release notes
+        env:
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: ../.github/scripts/cli-release-notes.sh "$GITHUB_REF_NAME" "$PRERELEASE" > "$RUNNER_TEMP/notes.md"
+
       - run: npm ci
 
       - run: npm run typecheck
@@ -72,11 +79,19 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           DIST_TAG: ${{ steps.version.outputs.dist_tag }}
         run: |
+          {
+            cat "$RUNNER_TEMP/notes.md"
+            echo
+            echo "---"
+            echo
+            echo "Published to npm as [@xerdin442/orbit-cli@$VERSION](https://www.npmjs.com/package/@xerdin442/orbit-cli/v/$VERSION) (dist-tag \`$DIST_TAG\`)."
+            echo
+            echo '```bash'
+            echo "npm install -g @xerdin442/orbit-cli@$VERSION"
+            echo '```'
+          } > "$RUNNER_TEMP/release.md"
+
           gh release create "$GITHUB_REF_NAME" \
             --title "CLI $VERSION" \
-            --notes "Published to npm as [@xerdin442/orbit-cli@$VERSION](https://www.npmjs.com/package/@xerdin442/orbit-cli/v/$VERSION) (dist-tag \`$DIST_TAG\`).
-
-          \`\`\`bash
-          npm install -g @xerdin442/orbit-cli@$VERSION
-          \`\`\`" \
+            --notes-file "$RUNNER_TEMP/release.md" \
             ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}
