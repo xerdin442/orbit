@@ -27,6 +27,30 @@ export interface GitHubTokenResponse {
   access_token: string;
 }
 
+export interface GitHubAccountResponse {
+  account: {
+    login: string;
+    type: string;
+  };
+}
+
+export interface GitHubRepositoryList {
+  total_count: number;
+  repositories: {
+    id: number;
+    full_name: string;
+    name: string;
+    private: boolean;
+  }[];
+}
+
+export interface GitHubWebhookPayload {
+  installation?: { id: number };
+  repository?: { full_name: string };
+  ref?: string;
+  action?: string;
+}
+
 export interface CommandResult {
   exitCode: number | null;
   stdout: string;

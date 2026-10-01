@@ -45,7 +45,6 @@ enum ResourceType {
   mysql
   redis
   mongo
-  clickhouse
 }
 
 enum ResourceStatus {

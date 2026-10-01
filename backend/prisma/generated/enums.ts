@@ -56,8 +56,7 @@ export const ResourceType = {
   postgres: 'postgres',
   mysql: 'mysql',
   redis: 'redis',
-  mongo: 'mongo',
-  clickhouse: 'clickhouse'
+  mongo: 'mongo'
 } as const
 
 export type ResourceType = (typeof ResourceType)[keyof typeof ResourceType]

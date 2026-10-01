@@ -47,4 +47,9 @@ export class ProjectsController {
   delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.projects.delete(id, req.user.id);
   }
+
+  @Get(':id/branches')
+  listBranches(@Param('id') id: string) {
+    return this.projects.findAvailableBranches(id);
+  }
 }
