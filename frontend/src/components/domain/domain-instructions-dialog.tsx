@@ -33,6 +33,7 @@ export function DomainInstructionsDialog({
     queryKey: ["domain-instructions", domain?.id],
     queryFn: () => (domain ? api.domains.instructions(domain.id) : null),
     enabled: open && !!domain,
+    staleTime: 12 * 60 * 60 * 1000,
   });
 
   return (
