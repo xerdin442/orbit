@@ -45,6 +45,7 @@
     "mongodb": "^7.5.0",
     "mongodb-query-parser": "^4.7.16",
     "mysql2": "^3.23.1",
+    "nest-winston": "^1.10.2",
     "pg": "^8.22.0",
     "redis": "^6.1.0",
     "reflect-metadata": "^0.2.2",
