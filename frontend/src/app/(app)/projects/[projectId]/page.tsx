@@ -1,0 +1,398 @@
+"use client";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { PageHeader } from "@/components/shared/page-header";
+import { SectionCard } from "@/components/shared/section-card";
+import { StatusBadge } from "@/components/shared/status-badge";
+import { TimestampDisplay } from "@/components/shared/timestamp-display";
+import { Skeleton } from "@/components/shared/skeleton";
+import { useUIStore } from "@/lib/store";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  GitCommitHorizontal,
+  Link as LinkIcon,
+  RotateCw,
+  Eye,
+  Clock,
+  Globe,
+  Dot,
+  Undo2,
+} from "lucide-react";
+import { CopyToClipboardButton } from "@/components/shared/copy-to-clipboard-button";
+import { ActivityItem } from "@/components/shared/activity-item";
+import { Button } from "@/components/ui/button";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faGithub } from "@fortawesome/free-brands-svg-icons";
+import Link from "next/link";
+
+export default function ProjectOverviewPage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setSelectedProject, selectedEnvironment, setSelectedEnvironment } =
+    useUIStore();
+  const [redeploying, setRedeploying] = useState(false);
+  const [rollingBack, setRollingBack] = useState(false);
+
+  const { data: project } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: () => api.projects.get(projectId),
+  });
+
+  const { data: environments } = useQuery({
+    queryKey: ["environments", projectId],
+    queryFn: () => api.environments.list(projectId),
+  });
+
+  useEffect(() => {
+    if (!environments || environments.length === 0) return;
+    if (!selectedEnvironment || selectedEnvironment.projectId !== projectId) {
+      const env =
+        environments.find((e) => e.name === "production") ?? environments[0];
+      setSelectedEnvironment(env);
+    }
+  }, [environments, projectId, selectedEnvironment, setSelectedEnvironment]);
+
+  const { data: deployments, isLoading: deploymentsLoading } = useQuery({
+    queryKey: ["deployments", selectedEnvironment?.id],
+    queryFn: () =>
+      selectedEnvironment
+        ? api.deployments.listByEnvironment(selectedEnvironment.id)
+        : null,
+    enabled: !!selectedEnvironment,
+  });
+
+  const { data: domains } = useQuery({
+    queryKey: ["domains", selectedEnvironment?.id],
+    queryFn: () =>
+      selectedEnvironment ? api.domains.list(selectedEnvironment.id) : null,
+    enabled: !!selectedEnvironment,
+  });
+
+  const { data: activity, isLoading: activityLoading } = useQuery({
+    queryKey: ["activity", projectId],
+    queryFn: () => api.activity.list({ projectId }),
+  });
+
+  useEffect(() => {
+    if (project) setSelectedProject(project);
+  }, [project, setSelectedProject]);
+
+  const latestDeployment = deployments?.data?.[0];
+  const repoName = project?.source?.repositoryUrl.replace(
+    "https://github.com/",
+    "",
+  );
+
+  const displayDomain = useMemo(() => {
+    if (!domains || domains.length === 0) return null;
+    const customDomains = domains.filter((d) => d.type === "custom");
+    if (customDomains.length > 0) {
+      return customDomains.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )[0];
+    }
+    return domains.find((d) => d.type === "managed") ?? domains[0];
+  }, [domains]);
+
+  async function handleRedeploy() {
+    if (!latestDeployment) return;
+    setRedeploying(true);
+    try {
+      await api.deployments.redeploy(latestDeployment.id);
+      await queryClient.invalidateQueries({
+        queryKey: ["deployments", selectedEnvironment?.id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["activity", projectId],
+      });
+    } finally {
+      setRedeploying(false);
+    }
+  }
+
+  async function handleRollback() {
+    if (!latestDeployment) return;
+    setRollingBack(true);
+    try {
+      await api.deployments.rollback(latestDeployment.id);
+      await queryClient.invalidateQueries({
+        queryKey: ["deployments", selectedEnvironment?.id],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ["activity", projectId],
+      });
+    } finally {
+      setRollingBack(false);
+    }
+  }
+
+  if (!projectId) return null;
+
+  return (
+    <div>
+      <PageHeader title={project?.name ?? "Overview"} />
+
+      {!project && (
+        <div className="space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      )}
+
+      {project && (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            {repoName && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FontAwesomeIcon icon={faGithub} className="size-4 shrink-0" />
+                <span className="truncate">{repoName}</span>
+                {selectedEnvironment?.branch && (
+                  <span className="ml-1 inline-flex items-center rounded-md bg-muted border border-white/10 px-1.5 py-0.5 text-xs font-medium font-mono text-muted-foreground">
+                    {selectedEnvironment.branch}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {latestDeployment ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <GitCommitHorizontal className="size-4 shrink-0" />
+                <span className="font-mono text-xs">
+                  [{latestDeployment.commitSha.slice(0, 7)}]
+                </span>
+                <span className="truncate">
+                  {latestDeployment.commitMessage ?? "No commit message"}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <GitCommitHorizontal className="size-4 shrink-0" />
+                <span>No deployments yet</span>
+              </div>
+            )}
+
+            {displayDomain && (
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href={`https://${displayDomain.hostname}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <LinkIcon className="size-3.5 shrink-0" />
+                  <span className="truncate underline underline-offset-2 hover:text-primary/60 transition-colors">
+                    {displayDomain.hostname}
+                  </span>
+                </Link>
+                <CopyToClipboardButton
+                  text={`https://${displayDomain.hostname}`}
+                  className="h-5 w-5"
+                />
+              </div>
+            )}
+          </div>
+
+          <SectionCard
+            title="Latest Deployment"
+            description={selectedEnvironment?.name}
+            actions={
+              latestDeployment && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    disabled={redeploying}
+                    onClick={handleRedeploy}
+                  >
+                    <RotateCw className="size-3.5" />
+                    Redeploy
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    disabled={rollingBack}
+                    onClick={handleRollback}
+                  >
+                    <Undo2 className="size-3.5" />
+                    Rollback
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() =>
+                      router.push(
+                        `/projects/${projectId}/deployments/${latestDeployment.id}`,
+                      )
+                    }
+                  >
+                    <Eye className="size-3.5" />
+                    Inspect
+                  </Button>
+                </div>
+              )
+            }
+          >
+            {latestDeployment ? (
+              <div className="flex items-start gap-12">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.25 text-[0.8125rem] text-muted-foreground">
+                    <Activity className="size-3.5" />
+                    <span>Status</span>
+                  </div>
+                  <StatusBadge
+                    variant={
+                      latestDeployment.buildStatus === "ready"
+                        ? "ready"
+                        : latestDeployment.buildStatus === "failed"
+                          ? "failed"
+                          : latestDeployment.buildStatus === "building" ||
+                              latestDeployment.buildStatus === "pending"
+                            ? "building"
+                            : "inactive"
+                    }
+                  >
+                    {latestDeployment.buildStatus}
+                  </StatusBadge>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.25 text-[0.8125rem] text-muted-foreground">
+                    <Clock className="size-3.5" />
+                    <span>Created</span>
+                  </div>
+                  <TimestampDisplay
+                    value={latestDeployment.createdAt}
+                    className="text-sm text-foreground"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.25 text-[0.8125rem] text-muted-foreground">
+                    <Globe className="size-3.5" />
+                    <span>Domains</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-foreground">
+                    <span>{domains?.length ?? 0} configured</span>
+                    <Dot size={12} />
+                    <Link
+                      href={`/projects/${projectId}/domains`}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      See details
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No deployments yet for this environment.
+              </p>
+            )}
+          </SectionCard>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SectionCard
+              title="Recent Activity"
+              actions={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => router.push(`/projects/${projectId}/activity`)}
+                >
+                  View all
+                </Button>
+              }
+            >
+              {activityLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : activity && activity.length > 0 ? (
+                <div className="space-y-3">
+                  {activity.slice(0, 5).map((a) => (
+                    <ActivityItem key={a.id} activity={a} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No recent activity.
+                </p>
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title="Recent Deployments"
+              actions={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() =>
+                    router.push(`/projects/${projectId}/deployments`)
+                  }
+                >
+                  View all
+                </Button>
+              }
+            >
+              {deploymentsLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-8 w-full" />
+                  ))}
+                </div>
+              ) : deployments?.data && deployments.data.length > 0 ? (
+                <div className="space-y-3">
+                  {deployments.data.slice(0, 5).map((d) => (
+                    <Link
+                      key={d.id}
+                      href={`/projects/${projectId}/deployments/${d.id}`}
+                      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 text-sm border-b border-border last:border-b-0 pb-3 last:pb-0 hover:text-foreground transition-colors"
+                    >
+                      <StatusBadge
+                        variant={
+                          d.buildStatus === "ready"
+                            ? "ready"
+                            : d.buildStatus === "failed"
+                              ? "failed"
+                              : d.buildStatus === "building" ||
+                                  d.buildStatus === "pending"
+                                ? "building"
+                                : "inactive"
+                        }
+                      >
+                        {d.buildStatus}
+                      </StatusBadge>
+                      <span className="text-foreground truncate">
+                        {d.commitMessage ?? d.commitSha.slice(0, 7)}
+                      </span>
+                      <TimestampDisplay
+                        value={d.createdAt}
+                        className="text-xs shrink-0"
+                      />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No deployments yet.
+                </p>
+              )}
+            </SectionCard>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

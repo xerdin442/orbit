@@ -9,10 +9,17 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { Plus } from "lucide-react";
 
 export function TopNav() {
   const { selectedProject, selectedEnvironment, setSelectedEnvironment } =
     useUIStore();
+  const initialized = useRef(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const { data: environments } = useQuery({
     queryKey: ["environments", selectedProject?.id],
@@ -21,8 +28,26 @@ export function TopNav() {
     enabled: !!selectedProject,
   });
 
+  useEffect(() => {
+    if (
+      environments &&
+      environments.length > 0 &&
+      !selectedEnvironment &&
+      !initialized.current
+    ) {
+      initialized.current = true;
+      const env =
+        environments.find((e) => e.name === "production") ?? environments[0];
+      setSelectedEnvironment(env);
+    }
+  }, [environments, selectedEnvironment, setSelectedEnvironment]);
+
+  useEffect(() => {
+    initialized.current = false;
+  }, [selectedProject?.id]);
+
   return (
-    <header className="flex items-center gap-3 h-12 px-4 border-b border-border bg-background shrink-0">
+    <header className="flex items-center gap-3 h-12 px-6 border-b border-border bg-background shrink-0">
       <span className="text-sm font-medium text-foreground">
         {selectedProject?.name ?? "Orbit"}
       </span>
@@ -52,6 +77,17 @@ export function TopNav() {
       )}
 
       <div className="flex-1" />
+
+      {pathname !== "/projects" && (
+        <Button
+          onClick={() => router.push("/projects/new")}
+          size="sm"
+          className="text-[0.8125rem]"
+        >
+          <Plus className="size-3.5" />
+          New Project
+        </Button>
+      )}
     </header>
   );
 }
