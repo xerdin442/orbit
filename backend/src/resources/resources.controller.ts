@@ -43,6 +43,14 @@ export class ResourcesController {
     );
   }
 
+  @Get('environments/:environmentId/resources')
+  findByEnvironment(
+    @Req() req: AuthenticatedRequest,
+    @Param('environmentId') environmentId: string,
+  ) {
+    return this.resources.findByEnvironment(environmentId, req.user.id);
+  }
+
   @Get('resources/:id')
   findOne(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.resources.findById(id, req.user.id);
