@@ -1,5 +1,5 @@
-import { Processor, Process } from '@nestjs/bull';
-import type { Job } from 'bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import type { Job } from 'bullmq';
 import { randomBytes } from 'crypto';
 import { Logger } from '@src/common/logger';
 import { DbService } from '@src/db/db.service';
@@ -31,17 +31,18 @@ const MOUNT_PATH: Record<ResourceType, string> = {
 };
 
 @Processor('resources')
-export class ResourceProcessor {
+export class ResourceProcessor extends WorkerHost {
   private readonly logger = Logger(ResourceProcessor.name);
 
   constructor(
     private readonly db: DbService,
     private readonly docker: DockerService,
     private readonly activity: ActivityService,
-  ) {}
+  ) {
+    super();
+  }
 
-  @Process()
-  async handleProvision(job: Job<ResourceJob>): Promise<void> {
+  async process(job: Job<ResourceJob>): Promise<void> {
     const { resourceId } = job.data;
 
     const resource = await this.db.resource.findUnique({

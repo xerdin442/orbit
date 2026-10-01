@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { DbModule } from './db/db.module';
 import { RedisModule } from './common/cache';
 import { ConfigModule } from '@nestjs/config';
-import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bullmq';
 import { Secrets } from './common/secrets';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { applyThrottlerConfig } from './common/util';
@@ -26,11 +26,10 @@ import KeyvRedis from '@keyv/redis';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     BullModule.forRoot({
-      redis: {
+      connection: {
         host: Secrets.REDIS_HOST,
         port: Secrets.REDIS_PORT,
         password: Secrets.REDIS_PASSWORD,
-        family: 0,
       },
     }),
     CacheModule.registerAsync({

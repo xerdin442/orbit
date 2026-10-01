@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import type { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { DbService } from '@src/db/db.service';
 import type { CleanupJob } from '@src/common/types';
 
@@ -43,7 +43,7 @@ export class CleanupService {
       }
     }
 
-    await this.cleanupQueue.add({
+    await this.cleanupQueue.add('project-cleanup', {
       projectId,
       deploymentContainerIds,
       resourceContainers,
@@ -75,7 +75,7 @@ export class CleanupService {
       volumeId: r.volumeId ?? undefined,
     }));
 
-    await this.cleanupQueue.add({
+    await this.cleanupQueue.add('environment-cleanup', {
       environmentId,
       deploymentContainerIds,
       resourceContainers,

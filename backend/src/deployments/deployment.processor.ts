@@ -1,6 +1,6 @@
 import { rm } from 'fs/promises';
-import { Processor, Process } from '@nestjs/bull';
-import type { Job } from 'bull';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import type { Job } from 'bullmq';
 import { Logger } from '@src/common/logger';
 import {
   ActivityType,
@@ -36,7 +36,7 @@ import {
 } from './pipeline';
 
 @Processor('deployments')
-export class DeploymentProcessor {
+export class DeploymentProcessor extends WorkerHost {
   private readonly logger = Logger(DeploymentProcessor.name);
 
   constructor(
@@ -47,10 +47,11 @@ export class DeploymentProcessor {
     private readonly logService: LogService,
     private readonly deployments: DeploymentsService,
     private readonly activity: ActivityService,
-  ) {}
+  ) {
+    super();
+  }
 
-  @Process()
-  async handleDeploy(job: Job<DeploymentJob>): Promise<void> {
+  async process(job: Job<DeploymentJob>): Promise<void> {
     const { deployment, skipImageBuild, resourceCount } = job.data;
     const deploymentId = deployment.id;
 

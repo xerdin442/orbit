@@ -181,11 +181,11 @@ describe('DeploymentProcessor', () => {
     jest.useRealTimers();
   });
 
-  describe('handleDeploy — happy path', () => {
+  describe('process — happy path', () => {
     it('runs the full pipeline (including build steps) and marks the deployment completed', async () => {
       const job = buildJob({ skipImageBuild: false });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(mockExecuteCloneRepository).toHaveBeenCalledTimes(1);
       expect(mockExecuteResolveCommit).toHaveBeenCalledTimes(1);
@@ -223,7 +223,7 @@ describe('DeploymentProcessor', () => {
     it('skips the build steps when skipImageBuild is true', async () => {
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(mockExecuteCloneRepository).not.toHaveBeenCalled();
       expect(mockExecuteResolveCommit).not.toHaveBeenCalled();
@@ -235,7 +235,7 @@ describe('DeploymentProcessor', () => {
     it('sets the correct build status before each step executes', async () => {
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       const calls = deployments.updateBuildStatus.mock.calls.map(
         ([, status]: [string, BuildStatus]) => status,
@@ -252,7 +252,7 @@ describe('DeploymentProcessor', () => {
     });
   });
 
-  describe('handleDeploy — abort handling', () => {
+  describe('process — abort handling', () => {
     it('stops the pipeline, cleans up, and does not mark completed when a deployment is aborted mid-run', async () => {
       deployments.findById
         .mockResolvedValueOnce({ buildStatus: BuildStatus.pending })
@@ -260,7 +260,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(mockExecuteCreateContainer).toHaveBeenCalledTimes(1);
       expect(mockExecuteStartContainer).not.toHaveBeenCalled();
@@ -284,7 +284,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(docker.stopContainer).toHaveBeenCalledWith('container-123');
       expect(docker.removeContainer).toHaveBeenCalledWith('container-123');
@@ -302,7 +302,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await expect(processor.handleDeploy(job)).resolves.toBeUndefined();
+      await expect(processor.process(job)).resolves.toBeUndefined();
     });
 
     it('removes the workspace directory during aborted cleanup when one was set', async () => {
@@ -316,7 +316,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(rm).toHaveBeenCalledWith('/tmp/workspace-1', {
         recursive: true,
@@ -325,7 +325,7 @@ describe('DeploymentProcessor', () => {
     });
   });
 
-  describe('handleDeploy — step failure handling', () => {
+  describe('process — step failure handling', () => {
     it('marks the deployment failed and logs the message for a DeploymentStepExecutionError', async () => {
       mockExecuteStartContainer.mockRejectedValue(
         new DeploymentStepExecutionError('container failed to start'),
@@ -333,7 +333,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(deployments.markFailed).toHaveBeenCalledWith(DEPLOYMENT_ID);
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
@@ -359,9 +359,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await expect(processor.handleDeploy(job)).rejects.toThrow(
-        'database error',
-      );
+      await expect(processor.process(job)).rejects.toThrow('database error');
 
       expect(deployments.markFailed).toHaveBeenCalledWith(DEPLOYMENT_ID);
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
@@ -372,7 +370,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(deployments.markFailed).not.toHaveBeenCalled();
       expect(deployments.markCompleted).toHaveBeenCalledWith(DEPLOYMENT_ID);
@@ -384,19 +382,19 @@ describe('DeploymentProcessor', () => {
     });
   });
 
-  describe('handleDeploy — context building', () => {
+  describe('process — context building', () => {
     it('throws when the environment cannot be found', async () => {
       db.environment.findUnique.mockResolvedValue(null);
 
       const job = buildJob();
 
-      await expect(processor.handleDeploy(job)).rejects.toThrow(
+      await expect(processor.process(job)).rejects.toThrow(
         'Environment not found',
       );
     });
   });
 
-  describe('handleDeploy — variable loading', () => {
+  describe('process — variable loading', () => {
     it('loads and flattens environment variables as KEY=VALUE strings', async () => {
       db.environmentVariable.findMany.mockResolvedValue([
         { key: 'NODE_ENV', value: 'production' },
@@ -405,7 +403,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
@@ -415,11 +413,11 @@ describe('DeploymentProcessor', () => {
     });
   });
 
-  describe('handleDeploy — resource provisioning', () => {
+  describe('process — resource provisioning', () => {
     it('skips provisioning entirely when resourceCount is 0', async () => {
       const job = buildJob({ skipImageBuild: true, resourceCount: 0 });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(db.resource.findMany).not.toHaveBeenCalled();
     });
@@ -435,7 +433,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true, resourceCount: 1 });
 
-      await processor.handleDeploy(job);
+      await processor.process(job);
 
       expect(logService.append).toHaveBeenCalledWith(
         DEPLOYMENT_ID,
@@ -455,7 +453,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true, resourceCount: 1 });
 
-      const promise = processor.handleDeploy(job);
+      const promise = processor.process(job);
 
       await jest.advanceTimersByTimeAsync(10_000);
       await jest.advanceTimersByTimeAsync(10_000);
@@ -471,7 +469,7 @@ describe('DeploymentProcessor', () => {
 
       const job = buildJob({ skipImageBuild: true, resourceCount: 1 });
 
-      const promise = processor.handleDeploy(job);
+      const promise = processor.process(job);
 
       for (let i = 0; i < 14; i++) {
         await jest.advanceTimersByTimeAsync(10_000);

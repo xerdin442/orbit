@@ -54,7 +54,7 @@ describe('DomainVerificationProcessor', () => {
     ]);
     mockResolveCname.mockResolvedValue(['192.168.1.55.sslip.io']);
 
-    await processor.verifyDomains();
+    await processor.process();
 
     expect(db.domain.update).toHaveBeenCalledWith({
       where: { id: 'd1' },
@@ -79,7 +79,7 @@ describe('DomainVerificationProcessor', () => {
     ]);
     mockResolve4.mockResolvedValue(['10.0.0.1']);
 
-    await processor.verifyDomains();
+    await processor.process();
 
     expect(db.domain.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: DomainStatus.failed } }),
@@ -98,7 +98,7 @@ describe('DomainVerificationProcessor', () => {
     ]);
     mockResolve4.mockResolvedValue(['10.0.0.1']);
 
-    await processor.verifyDomains();
+    await processor.process();
 
     const calls = (db.domain.update as jest.Mock).mock.calls as any[][];
     const statusUpdates = calls.map((c) => c[0].data.status as string);
