@@ -20,8 +20,12 @@ export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
 
   @Post()
-  create(@Req() req: AuthenticatedRequest, @Body() dto: CreateProjectDto) {
-    return this.projects.create(req.user.id, dto);
+  async create(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateProjectDto,
+  ) {
+    const env = await this.projects.create(req.user.id, dto);
+    return { environmentId: env.id, project: env.project };
   }
 
   @Get()

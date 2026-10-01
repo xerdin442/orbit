@@ -2,7 +2,12 @@ import { rm } from 'fs/promises';
 import { Processor, Process } from '@nestjs/bull';
 import type { Job } from 'bull';
 import { Logger } from '@src/common/logger';
-import { ActivityType, LogLevel, BuildStatus } from '@generated/client';
+import {
+  ActivityType,
+  LogLevel,
+  BuildStatus,
+  ResourceStatus,
+} from '@generated/client';
 import type { Deployment } from '@generated/client';
 import { DockerService } from '@src/infrastructure/docker.service';
 import { CommandService } from '@src/infrastructure/command.service';
@@ -44,13 +49,20 @@ export class DeploymentProcessor {
 
   @Process()
   async handleDeploy(job: Job<DeploymentJob>): Promise<void> {
-    const { deployment, skipImageBuild } = job.data;
+    const { deployment, skipImageBuild, resourceCount } = job.data;
     const deploymentId = deployment.id;
 
     const ctx = await this.buildContext(deployment);
 
     await this.loadVariables(ctx);
-    await this.provisionResources(ctx);
+
+    if (resourceCount && resourceCount > 0) {
+      try {
+        await this.provisionResources(ctx, resourceCount);
+      } catch (error) {
+        await this.handleError(ctx, error as Error);
+      }
+    }
 
     const pipeline = this.buildPipeline(skipImageBuild);
 
@@ -77,28 +89,7 @@ export class DeploymentProcessor {
 
         await step.execute(ctx);
       } catch (error) {
-        if (error instanceof DeploymentStepExecutionError) {
-          await this.logService.append(
-            deploymentId,
-            LogLevel.ERROR,
-            `[${step.name}] ${error.message}`,
-          );
-
-          await this.deployments.markFailed(deploymentId);
-          this.logService.complete(deploymentId);
-
-          await this.activity.log(
-            ActivityType.deployment_failed,
-            ctx.project.ownerId,
-            { deploymentId, environmentId: ctx.environment.id },
-          );
-          return;
-        }
-
-        this.logger.error(
-          `[${deploymentId}] System error during ${step.name}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        throw error;
+        await this.handleError(ctx, error as Error);
       }
     }
 
@@ -115,14 +106,13 @@ export class DeploymentProcessor {
       LogLevel.SUCCESS,
       `Congratulations! Your deployment is now live at ${ctx.domain}`,
     );
+    this.logService.complete(deploymentId);
 
     await this.activity.log(
       ActivityType.deployment_completed,
       ctx.project.ownerId,
       { deploymentId, environmentId: ctx.environment.id },
     );
-
-    this.logService.complete(deploymentId);
   }
 
   private async buildContext(
@@ -200,28 +190,52 @@ export class DeploymentProcessor {
 
   private async provisionResources(
     ctx: DeploymentContext,
-    skipImageBuild?: boolean,
+    resourceCount: number,
   ): Promise<void> {
-    if (skipImageBuild) return;
+    const deploymentId = ctx.deployment.id;
 
     await this.logService.append(
-      ctx.deployment.id,
+      deploymentId,
       LogLevel.INFO,
       'Provisioning resources...',
     );
 
-    const resources = await this.db.resource.findMany({
-      where: { environmentId: ctx.environment.id, status: 'ready' },
-    });
+    const maxRetries = 15;
+    const retryInterval = 10_000;
 
-    for (const r of resources) {
-      const creds = r.credentials as Record<string, string> | null;
-      if (creds) {
-        for (const [key, value] of Object.entries(creds)) {
-          ctx.variables.push(`${key}=${value}`);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const resources = await this.db.resource.findMany({
+        where: {
+          environmentId: ctx.environment.id,
+          status: ResourceStatus.ready,
+        },
+      });
+
+      if (resources.length === resourceCount) {
+        for (const r of resources) {
+          const creds = r.credentials as Record<string, string> | null;
+          if (creds) {
+            for (const [key, value] of Object.entries(creds)) {
+              ctx.variables.push(`${key}=${value}`);
+            }
+          }
         }
+
+        await this.logService.append(
+          deploymentId,
+          LogLevel.INFO,
+          'Resource provisioning complete.',
+        );
+
+        return;
+      }
+
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, retryInterval));
       }
     }
+
+    throw new DeploymentStepExecutionError('Resource provisioning timed out.');
   }
 
   private async cleanupAborted(ctx: DeploymentContext): Promise<void> {
@@ -237,6 +251,35 @@ export class DeploymentProcessor {
     if (ctx.workspace) {
       await rm(ctx.workspace, { recursive: true, force: true });
     }
+  }
+
+  private async handleError(
+    ctx: DeploymentContext,
+    error: Error,
+  ): Promise<void> {
+    await this.deployments.markFailed(ctx.deployment.id);
+
+    await this.activity.log(
+      ActivityType.deployment_failed,
+      ctx.project.ownerId,
+      { deploymentId: ctx.deployment.id, environmentId: ctx.environment.id },
+    );
+
+    if (error instanceof DeploymentStepExecutionError) {
+      await this.logService.append(
+        ctx.deployment.id,
+        LogLevel.ERROR,
+        error.message,
+      );
+
+      this.logService.complete(ctx.deployment.id);
+      return;
+    }
+
+    this.logger.error(
+      `System error for deployment ${ctx.deployment.id}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
   }
 
   private statusForStep(stepName: DeploymentStepName): BuildStatus {
