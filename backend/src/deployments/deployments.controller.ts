@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  Body,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
@@ -23,7 +24,7 @@ import type {
 } from '@src/common/types';
 import { JwtAuthGuard } from '@src/auth/jwt-auth.guard';
 import { DeploymentTrigger } from '@generated/client';
-import { FilterDeploymentsDto, MarkedResourcesDto } from './dto/deployment.dto';
+import { FilterDeploymentsDto, AbortDeploymentDto } from './dto/deployment.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
@@ -85,12 +86,12 @@ export class DeploymentsController {
   async abort(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Query() query?: MarkedResourcesDto,
+    @Body() dto: AbortDeploymentDto,
   ) {
     return this.deployments.abortDeployment(
       id,
       req.user.id,
-      query?.marked_resources,
+      dto.marked_resources,
     );
   }
 
