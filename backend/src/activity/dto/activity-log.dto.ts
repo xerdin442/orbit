@@ -1,6 +1,7 @@
 import { IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from '@src/common/dto/pagination.dto';
 
-export class FilterActivityLogsDto {
+export class FilterActivityLogsDto extends PaginationDto {
   @IsOptional()
   @IsString()
   projectId?: string;

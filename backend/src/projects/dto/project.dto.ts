@@ -35,6 +35,18 @@ export class CreateProjectDto {
 
   @IsNumber()
   @IsOptional()
+  healthCheckPort?: number;
+
+  @IsString()
+  @IsOptional()
+  healthCheckPath?: string;
+
+  @IsNumber()
+  @IsOptional()
+  healthCheckTimeout?: number;
+
+  @IsNumber()
+  @IsOptional()
   installationId?: number;
 
   @IsObject()
@@ -55,4 +67,16 @@ export class UpdateProjectDto {
   @IsBoolean()
   @IsOptional()
   healthCheck?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  healthCheckPort?: number;
+
+  @IsString()
+  @IsOptional()
+  healthCheckPath?: string;
+
+  @IsNumber()
+  @IsOptional()
+  healthCheckTimeout?: number;
 }

@@ -98,8 +98,8 @@ export class DeploymentsService {
   ): Promise<PaginatedResult<Deployment>> {
     await this.verifyEnvironmentOwnership(environmentId, userId);
 
-    const page = Number(filters?.page ?? 1);
-    const limit = Number(filters?.limit ?? 20);
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 20;
 
     const where: Prisma.DeploymentWhereInput = { environmentId };
 
