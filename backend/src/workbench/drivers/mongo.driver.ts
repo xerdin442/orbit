@@ -169,7 +169,10 @@ export class MongoDriver implements DatabaseDriver {
     }
 
     const rows = Array.isArray(result) ? result : [result];
-    const columns = this.inferColumns(rows);
+    const columns =
+      rows.length > 0
+        ? this.inferColumns(rows)
+        : (await this.describeTable(collectionName)).columns;
 
     return {
       columns,
@@ -238,7 +241,6 @@ export class MongoDriver implements DatabaseDriver {
     name: string,
     options: PaginationOptions,
   ): Promise<PaginatedRows> {
-    const { columns } = await this.describeTable(name);
     const limit = Math.min(options.limit, 50);
     const offset = (options.page - 1) * limit;
 
@@ -258,7 +260,7 @@ export class MongoDriver implements DatabaseDriver {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      columns,
+      columns: [],
       rows: rows,
       meta: {
         total,
