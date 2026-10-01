@@ -1,6 +1,7 @@
-import { IsOptional, IsInt, IsString, Min } from 'class-validator';
+import { IsOptional, IsInt, IsIn, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationDto } from '@src/common/dto/pagination.dto';
+import { STATUS_CLASSES, type StatusClass } from '@src/common/types';
 
 export class FilterRequestLogsDto extends PaginationDto {
   @IsOptional()
@@ -10,6 +11,10 @@ export class FilterRequestLogsDto extends PaginationDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(100)
+  @Min(200)
   statusCode?: number;
+
+  @IsOptional()
+  @IsIn(STATUS_CLASSES)
+  statusClass?: StatusClass;
 }

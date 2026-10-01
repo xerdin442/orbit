@@ -2,8 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Subject } from 'rxjs';
 import { Prisma } from '@generated/client';
 import { DbService } from '@src/db/db.service';
-import type { PaginatedResult, RequestLogEntry } from '@src/common/types';
+import type {
+  PaginatedResult,
+  RequestLogEntry,
+  StatusClass,
+} from '@src/common/types';
 import type { FilterRequestLogsDto } from './dto/request-log.dto';
+
+function statusClassRange(statusClass: StatusClass): {
+  gte: number;
+  lt: number;
+} {
+  const base = Number(statusClass[0]) * 100;
+  return { gte: base, lt: base + 100 };
+}
 
 @Injectable()
 export class RequestLogsService {
@@ -51,6 +63,8 @@ export class RequestLogsService {
 
     if (filters.statusCode) {
       where.statusCode = filters.statusCode;
+    } else if (filters.statusClass) {
+      where.statusCode = statusClassRange(filters.statusClass);
     }
 
     const [data, total] = await Promise.all([
