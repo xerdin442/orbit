@@ -1,80 +1,11 @@
 import type { ParsedAccessLogLine } from '@src/common/types';
-
-const NOISE_PATH_PREFIXES = [
-  '/_next/', // Next.js — chunks, /_next/image, /_next/data, .rsc segments
-  '/_nuxt/', // Nuxt 3/4 — hashed bundles, /_nuxt/builds/meta/*.json
-  '/_astro/', // Astro — hashed bundles
-  '/_app/', // SvelteKit — reserved dir: /_app/immutable/*, /_app/version.json
-  '/_vercel/', // @vercel/analytics + @vercel/speed-insights beacons
-  '/@vite/', // Vite — hashed bundles, /@vite/client, /@vite/env
-  '/.well-known/', // Chrome DevTools probe on every page load, SSL certification challenges
-  '/wp', // WordPress scanner sweeps — /wp-json/, /wp-admin/, /wp-content/, /wp-includes/, /wp-login.php
-];
-
-const NOISE_PATH_EXTENSIONS = [
-  '.js',
-  '.mjs',
-  '.cjs',
-  '.css',
-  '.map',
-  '.rsc',
-  '.webmanifest',
-  '.wasm',
-  '.ico',
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.svg',
-  '.webp',
-  '.avif',
-  '.woff',
-  '.woff2',
-  '.ttf',
-  '.otf',
-  '.eot',
-];
-
-const SCANNER_PROBE_PATTERNS = [
-  /(^|\/)\.env(\.[^/]*)?$/i, // .env, api/.env, .env.production
-  /(^|\/)\.git(\/|$)/i,
-  /(^|\/)\.vscode\//i,
-  /(^|\/)\.DS_Store$/i,
-  /(^|\/)\.aws\//i, // .aws/credentials, .aws/config
-  /(^|\/)\.gcp\//i, // .gcp/credentials.json, .gcp/service-account.json
-  /(^|\/)\.docker\/config\.json$/i,
-  /(^|\/)\.config\/gcloud\//i, // root/.config/gcloud/*, home/*/.config/gcloud/*
-  /(^|\/)(gcp|google|firebase)[-_](credentials|service-account|cloud-key|adminsdk)\.json$/i,
-  /(^|\/)(service-account|application_default_credentials)\.json$/i,
-  /(^|\/)wlwmanifest\.xml$/i, // WordPress-enumeration scanner artifact
-];
-
-const BOT_USER_AGENT_PATTERNS = [
-  /^curl\//i,
-  /^wget\//i,
-  /python-(requests|httpx|urllib)/i,
-  /go-http-client/i,
-  /okhttp/i,
-  /^java\//i,
-  /libwww-perl/i,
-  /^scrapy/i,
-  /nuclei/i,
-  /zgrab/i,
-  /masscan/i,
-  /^nmap/i,
-  /censysinspect/i,
-  /internet[- ]?measurement/i,
-  /l9explore/i,
-  /l9scan/i, // LeakIX
-  /leakix/i,
-  /expanse/i,
-  /postmanruntime/i,
-  /insomnia/i,
-  /apache-httpclient/i,
-  /node-fetch/i,
-  /^axios\//i,
-  /guzzlehttp/i,
-];
+import {
+  BOT_USER_AGENT_PATTERNS,
+  NOISE_PATH_EXTENSIONS,
+  NOISE_PATH_PREFIXES,
+  SCANNER_PROBE_EXTENSIONS,
+  SCANNER_PROBE_PATTERNS,
+} from './filters';
 
 function decodePath(path: string): string {
   try {
@@ -151,10 +82,23 @@ export function isNoiseRequest(path: string): boolean {
   const dot = lastSegment.lastIndexOf('.');
   if (dot <= 0) return false;
 
-  return NOISE_PATH_EXTENSIONS.includes(lastSegment.slice(dot).toLowerCase());
+  const extension = lastSegment.slice(dot).toLowerCase();
+  return (
+    NOISE_PATH_EXTENSIONS.includes(extension) ||
+    SCANNER_PROBE_EXTENSIONS.includes(extension)
+  );
 }
 
-export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
+export function isScannerQuery(rawQuery: string): boolean {
+  if (!rawQuery) return false;
+
+  const params = new URLSearchParams(rawQuery);
+  return params.has('rest_route') || params.has('phpinfo');
+}
+
+function parseRequest(
+  line: string,
+): { entry: Record<string, unknown>; req: Record<string, unknown> } | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
 
@@ -172,11 +116,19 @@ export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
 
   const request = entry.request;
   if (typeof request !== 'object' || request === null) return null;
-  const req = request as Record<string, unknown>;
+
+  return { entry, req: request as Record<string, unknown> };
+}
+
+export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
+  const parsed = parseRequest(line);
+  if (!parsed) return null;
+  const { entry, req } = parsed;
 
   const method = req.method;
   const uri = req.uri;
   const host = req.host;
+  const ip = req.client_ip ?? req.remote_ip;
   const statusCode = entry.status;
   const duration = entry.duration;
   const ts = entry.ts;
@@ -211,6 +163,7 @@ export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
   const query = q === -1 ? undefined : normalizeQuery(uri.slice(q + 1));
 
   if (isNoiseRequest(path)) return null;
+  if (q !== -1 && isScannerQuery(uri.slice(q + 1))) return null;
 
   return {
     method,
@@ -220,5 +173,6 @@ export function parseAccessLogLine(line: string): ParsedAccessLogLine | null {
     statusCode,
     durationMs: Math.round(duration * 1000),
     timestamp: typeof ts === 'number' ? new Date(ts * 1000) : undefined,
+    clientIp: typeof ip === 'string' ? ip : undefined,
   };
 }

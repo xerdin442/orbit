@@ -1571,6 +1571,7 @@ export const RequestLogScalarFieldEnum = {
   statusCode: 'statusCode',
   durationMs: 'durationMs',
   hostname: 'hostname',
+  clientIp: 'clientIp',
   environmentId: 'environmentId'
 } as const
 
