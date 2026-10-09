@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
   Inject,
 } from '@nestjs/common';
 import { DbService } from '@src/db/db.service';
@@ -29,6 +30,17 @@ export class DomainsService {
     userId: string,
   ) {
     await this.verifyEnvironmentOwnership(environmentId, userId);
+
+    // The ingress host and everything under it belong to Orbit (the API and
+    // managed app hostnames). They already resolve to INGRESS_IP, so they would
+    // pass verification and their route would shadow Orbit's own.
+    const normalized = hostname.toLowerCase();
+    const ingressHost = Secrets.INGRESS_HOST.toLowerCase();
+    if (normalized === ingressHost || normalized.endsWith(`.${ingressHost}`)) {
+      throw new BadRequestException(
+        'Hostnames under the Orbit ingress domain cannot be added as custom domains',
+      );
+    }
 
     const existing = await this.db.domain.findFirst({
       where: { hostname },

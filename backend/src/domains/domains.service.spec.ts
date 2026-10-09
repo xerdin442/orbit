@@ -8,6 +8,7 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { DomainType, DomainStatus } from '@generated/client';
 
@@ -51,6 +52,19 @@ describe('DomainsService', () => {
       await expect(
         service.addCustomDomain('env-1', 'api.example.com', 'user-1'),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it.each([
+      '192.168.1.55.sslip.io',
+      'my-app-k3j9x2a.192.168.1.55.sslip.io',
+      'API.192.168.1.55.SSLIP.IO',
+    ])('rejects %s because it is under the ingress host', async (hostname) => {
+      db.environment.findFirst = jest.fn().mockResolvedValue({ id: 'env-1' });
+
+      await expect(
+        service.addCustomDomain('env-1', hostname, 'user-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(db.domain.create).not.toHaveBeenCalled();
     });
 
     it('throws if domain already registered', async () => {
