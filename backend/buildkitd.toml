@@ -1,0 +1,11 @@
+# Railpack builds run on this BuildKit instance, so its cache lives in the
+# buildkit-data volume. The default limits are percentages of the whole disk,
+# which lets the cache grow far too large on a small server.
+[worker.oci]
+  gc = true
+  # Cache that is never pruned, so recent layers (e.g. npm ci) stay warm
+  reservedSpace = "1GB"
+  # Prune the oldest cache once it grows past this
+  maxUsedSpace = "4GB"
+  # Prune further if the disk's free space drops below this
+  minFreeSpace = "5GB"

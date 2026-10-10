@@ -387,4 +387,4 @@ curl -X PUT http://localhost:2019/config/apps/http/servers/srv0/routes/0 \
   3. **run the tests**: a failing suite stops the update before anything restarts
   4. build and restart the service
 - [`.github/workflows/deploy-backend.yml`](../.github/workflows/deploy-backend.yml) runs `deploy.sh` over SSH on every push to `main` that touches `backend/`. It needs the `DEPLOY_HOST`, `DEPLOY_USER` and `DEPLOY_SSH_KEY` secrets, and passwordless `sudo` for `systemctl restart orbit-backend` only.
-- **Disk usage**: build images and BuildKit's cache are the main consumers. Images are pruned automatically after 14 days. Check usage with `docker system df`, and reclaim build cache with `docker builder prune`.
+- **Disk usage**: build images and BuildKit's cache are the main consumers. Images are pruned automatically after 14 days. Railpack's cache lives in the `buildkit-data` volume and is capped by [`buildkitd.toml`](buildkitd.toml); inspect it with `docker exec buildkit buildctl du`. Dockerfile builds use the Docker daemon's own cache, reclaimed with `docker builder prune`.

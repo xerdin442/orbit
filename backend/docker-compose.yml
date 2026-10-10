@@ -49,6 +49,7 @@ services:
     restart: unless-stopped
     privileged: true
     volumes:
+      - ./buildkitd.toml:/etc/buildkit/buildkitd.toml
       - buildkit-data:/var/lib/buildkit
 
 volumes:
