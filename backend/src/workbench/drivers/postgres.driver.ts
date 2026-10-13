@@ -1,4 +1,4 @@
-import { Client } from 'pg';
+import { Client, type QueryConfig } from 'pg';
 import type {
   DatabaseDriver,
   PaginatedRows,
@@ -40,15 +40,27 @@ export class PostgresDriver implements DatabaseDriver {
   }
 
   async execute(query: string): Promise<QueryResult> {
-    const result = await this.client.query(query);
-
-    return {
-      columns: (result.fields as PgField[]).map((field) => ({
-        name: field.name,
-      })),
-      rows: result.rows as unknown[],
-      rowCount: result.rowCount ?? result.rows.length,
+    const config: QueryConfig & { queryMode: 'extended' } = {
+      text: query,
+      queryMode: 'extended',
     };
+
+    await this.client.query('BEGIN READ ONLY');
+
+    try {
+      const result = await this.client.query(config);
+
+      return {
+        columns: (result.fields as PgField[]).map((field) => ({
+          name: field.name,
+        })),
+        rows: result.rows as unknown[],
+        rowCount: result.rowCount ?? result.rows.length,
+      };
+    } finally {
+      // Swallowed so a failed rollback doesn't mask the query's own error
+      await this.client.query('ROLLBACK').catch(() => undefined);
+    }
   }
 
   async listDatabases(): Promise<string[]> {

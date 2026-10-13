@@ -4,6 +4,7 @@ import { MysqlDriver } from './mysql.driver';
 jest.mock('mysql2/promise');
 
 const mockExecute = jest.fn();
+const mockQuery = jest.fn();
 const mockEnd = jest.fn();
 
 describe('MysqlDriver', () => {
@@ -11,6 +12,7 @@ describe('MysqlDriver', () => {
     jest.clearAllMocks();
     (mysql.createConnection as jest.Mock).mockResolvedValue({
       execute: mockExecute,
+      query: mockQuery,
       end: mockEnd,
     });
   });
@@ -138,6 +140,45 @@ describe('MysqlDriver', () => {
 
     expect(result.meta.total).toBe(250);
     expect(result.rows).toEqual([{ id: 1, email: 'a@example.com' }]);
+  });
+
+  it('runs a query inside a read-only transaction', async () => {
+    const driver = new MysqlDriver(credentials);
+    await driver.connect();
+
+    mockQuery.mockResolvedValue([[], []]);
+    mockExecute.mockResolvedValue([[{ id: 1 }], [{ name: 'id' }]]);
+
+    const result = await driver.execute('SELECT id FROM users');
+
+    expect(mockQuery.mock.calls).toEqual([
+      ['START TRANSACTION READ ONLY'],
+      ['ROLLBACK'],
+    ]);
+    expect(mockExecute).toHaveBeenCalledWith('SELECT id FROM users');
+    expect(mockQuery.mock.invocationCallOrder[0]).toBeLessThan(
+      mockExecute.mock.invocationCallOrder[0],
+    );
+    expect(result).toEqual({
+      columns: [{ name: 'id' }],
+      rows: [{ id: 1 }],
+      rowCount: 1,
+    });
+  });
+
+  it('rolls back and rethrows when the query fails', async () => {
+    const driver = new MysqlDriver(credentials);
+    await driver.connect();
+
+    mockQuery.mockResolvedValue([[], []]);
+    mockExecute.mockRejectedValue(
+      new Error('Cannot execute statement in a READ ONLY transaction.'),
+    );
+
+    await expect(
+      driver.execute('EXPLAIN ANALYZE DELETE a FROM users a JOIN orders b'),
+    ).rejects.toThrow('READ ONLY transaction');
+    expect(mockQuery).toHaveBeenLastCalledWith('ROLLBACK');
   });
 
   it('closes the connection', async () => {

@@ -38,17 +38,24 @@ export class MysqlDriver implements DatabaseDriver {
   }
 
   async execute(query: string): Promise<QueryResult> {
-    const [rows, fields] = await this.connection.execute(query);
+    await this.connection.query('START TRANSACTION READ ONLY');
 
-    const fieldArray = Array.isArray(fields) ? fields : [];
+    try {
+      const [rows, fields] = await this.connection.execute(query);
 
-    return {
-      columns: fieldArray.map((field: { name: string }) => ({
-        name: field.name,
-      })),
-      rows: Array.isArray(rows) ? rows : [],
-      rowCount: Array.isArray(rows) ? rows.length : 0,
-    };
+      const fieldArray = Array.isArray(fields) ? fields : [];
+
+      return {
+        columns: fieldArray.map((field: { name: string }) => ({
+          name: field.name,
+        })),
+        rows: Array.isArray(rows) ? rows : [],
+        rowCount: Array.isArray(rows) ? rows.length : 0,
+      };
+    } finally {
+      // Swallowed so a failed rollback doesn't mask the query's own error
+      await this.connection.query('ROLLBACK').catch(() => undefined);
+    }
   }
 
   async listDatabases(): Promise<string[]> {

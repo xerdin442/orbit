@@ -145,6 +145,52 @@ describe('PostgresDriver', () => {
     expect(result.rows).toEqual([{ id: 1, email: 'a@example.com' }]);
   });
 
+  it('runs a query as a single statement inside a read-only transaction', async () => {
+    const driver = new PostgresDriver(credentials);
+    await driver.connect();
+
+    mockQuery.mockReset();
+    mockQuery.mockResolvedValue({
+      rows: [{ id: 1 }],
+      fields: [{ name: 'id' }],
+      rowCount: 1,
+    });
+
+    const result = await driver.execute('SELECT id FROM users');
+
+    expect(mockQuery.mock.calls).toEqual([
+      ['BEGIN READ ONLY'],
+      [{ text: 'SELECT id FROM users', queryMode: 'extended' }],
+      ['ROLLBACK'],
+    ]);
+    expect(result).toEqual({
+      columns: [{ name: 'id' }],
+      rows: [{ id: 1 }],
+      rowCount: 1,
+    });
+  });
+
+  it('rolls back and rethrows when the query fails', async () => {
+    const driver = new PostgresDriver(credentials);
+    await driver.connect();
+
+    mockQuery.mockReset();
+    mockQuery.mockImplementation((query: unknown) =>
+      typeof query === 'string'
+        ? Promise.resolve({ rows: [], fields: [] })
+        : Promise.reject(
+            new Error(
+              'cannot insert multiple commands into a prepared statement',
+            ),
+          ),
+    );
+
+    await expect(driver.execute('SELECT 1; DROP TABLE users')).rejects.toThrow(
+      'cannot insert multiple commands',
+    );
+    expect(mockQuery).toHaveBeenLastCalledWith('ROLLBACK');
+  });
+
   it('closes the connection', async () => {
     const driver = new PostgresDriver(credentials);
     await driver.connect();
